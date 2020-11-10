@@ -1,14 +1,14 @@
 package com.zephyr.migration.client;
 
-import com.atlassian.jira.rest.client.api.IssueRestClient;
-import com.atlassian.jira.rest.client.api.JiraRestClient;
-import com.atlassian.jira.rest.client.api.domain.Issue;
-import com.atlassian.jira.rest.client.api.domain.input.IssueInput;
-import com.atlassian.jira.rest.client.api.domain.input.IssueInputBuilder;
-import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.JiraIssueDTO;
+import com.thed.zephyr.cloud.rest.ZFJCloudRestClient;
+import com.thed.zephyr.cloud.rest.client.JwtGenerator;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 
-import java.io.IOException;
 import java.net.URI;
 
 public class JiraCloudClient {
@@ -32,7 +32,7 @@ public class JiraCloudClient {
 
     }
 
-    public void createJWTToken(HttpMethod method, String url) {
+    public String createJWTToken(HttpMethod method, String url) {
         String jwt = "";
         try {
             ZFJCloudRestClient client = ZFJCloudRestClient.restBuilder(zephyrBaseUrl, accessKey, secretKey, accountId).build();
@@ -41,5 +41,6 @@ public class JiraCloudClient {
             jwt = jwtGenerator.generateJWT(method.name(), uri, 36000);
         }catch (Exception ex){
         }
+        return jwt;
     }
 }

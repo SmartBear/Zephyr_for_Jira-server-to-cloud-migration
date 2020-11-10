@@ -64,11 +64,14 @@
             <artifactId>httpasyncclient</artifactId>
             <version>4.1.4</version>
         </dependency>
-
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>2.9.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
         </dependency>
     </dependencies>
     <build>
@@ -84,6 +87,11 @@
         <repository>
             <id>atlassian-public</id>
             <url>https://packages.atlassian.com/maven/repository/public</url>
+        </repository>
+        <repository>
+            <id>zephyr-private-repo</id>
+            <name>Zephyr Private Repository</name>
+            <url>http://svninfra.yourzephyr.com/repository</url>
         </repository>
     </repositories>
     
