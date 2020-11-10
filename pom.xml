@@ -21,6 +21,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
+        <jira-rest-java-client-core.version>4.0.0</jira-rest-java-client-core.version>
+        <atlassian.fugue.version>2.6.1</atlassian.fugue.version>
     </properties>
     <dependencies>
         <dependency>
@@ -36,6 +38,17 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.atlassian.jira</groupId>
+            <artifactId>jira-rest-java-client-core</artifactId>
+            <version>${jira-rest-java-client-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.fugue</groupId>
+            <artifactId>fugue</artifactId>
+            <version>${atlassian.fugue.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -45,5 +58,12 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>atlassian-public</id>
+            <url>https://packages.atlassian.com/maven/repository/public</url>
+        </repository>
+    </repositories>
     
 </project>
