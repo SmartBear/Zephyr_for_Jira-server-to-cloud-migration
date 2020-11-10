@@ -1,5 +1,6 @@
 package com.zephyr.migration.controllers;
 
+import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.zephyr.migration.service.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ public class TestController {
 
     @GetMapping("/getIssueDescription")
     public String getIssueDescription(@RequestParam(value = "issueKey", defaultValue = "World") String issueKey) {
-        return String.format("Hello %s!", issueKey);
+        Issue issue = testService.getIssue(issueKey);
+        return String.format("Hello %s!", issue.getDescription());
     }
 }

@@ -11,7 +11,7 @@ public class TestServiceImpl implements TestService {
     @Override
     public Issue getIssue(String issueKey) {
 
-        JiraServerClient jiraServerClient = new JiraServerClient("user.name", "pass", "http://jira.company.com");
+        JiraServerClient jiraServerClient = new JiraServerClient("admin", "password", "http://15.207.184.119:8089/");
 
         Issue issue = jiraServerClient.getIssue(issueKey);
         System.out.println(issue.getDescription());
