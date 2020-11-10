@@ -6,6 +6,7 @@ import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.atlassian.jira.rest.client.api.domain.input.IssueInput;
 import com.atlassian.jira.rest.client.api.domain.input.IssueInputBuilder;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
+import com.zephyr.migration.dto.JiraIssueDTO;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,11 +17,18 @@ public class JiraCloudClient {
     private String accessKey;
     private String secretKey;
     private String zephyrBaseUrl;
+    public String ZAPIACCESSKEY = "zapiAccessKey";
 
     public void createIssue(){
         String createUrl = zephyrBaseUrl + "/public/rest/api/2.0/issue/create";
         String jwt = createJWTToken(HttpMethod.POST, createUrl);
-
+        JiraIssueDTO jiraIssueDTO = new JiraIssueDTO();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ZAPIACCESSKEY, accessKey);
+        HttpEntity<String> request = new HttpEntity<String>(new Gson().toJson(jiraIssueDTO), headers);
+        JsonNode responseNode = restTemplate.postForObject(createUrl, request, JsonNode.class);
 
     }
 
