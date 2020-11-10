@@ -22,12 +22,15 @@ public class JiraCloudClient {
     public void createIssue(){
         String createUrl = zephyrBaseUrl + "/public/rest/api/2.0/issue/create";
         String jwt = createJWTToken(HttpMethod.POST, createUrl);
+
         JiraIssueDTO jiraIssueDTO = new JiraIssueDTO();
+
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ZAPIACCESSKEY, accessKey);
         HttpEntity<String> request = new HttpEntity<String>(new Gson().toJson(jiraIssueDTO), headers);
+        RestTemplate restTemplate = new RestTemplate();
         JsonNode responseNode = restTemplate.postForObject(createUrl, request, JsonNode.class);
 
     }
