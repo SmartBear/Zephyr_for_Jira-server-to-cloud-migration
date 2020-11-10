@@ -21,6 +21,6 @@ public class TestController {
     @GetMapping("/getIssueDescription")
     public String getIssueDescription(@RequestParam(value = "issueKey", defaultValue = "World") String issueKey) {
         Issue issue = testService.getIssue(issueKey);
-        return String.format("Hello %s!", issue.getDescription());
+        return String.format("Issue Summary ::: %s!", issue.getSummary());
     }
 }
