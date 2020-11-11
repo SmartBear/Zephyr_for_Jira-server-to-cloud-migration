@@ -8,9 +8,6 @@ import org.joda.time.DateTime;
 import javax.annotation.Nullable;
 import java.util.*;
 
-/**
- * Created by Masud on 3/13/19.
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JiraIssueDTO {
@@ -49,13 +46,9 @@ public class JiraIssueDTO {
     @Nullable
     @JsonIgnore
     private  List<String> issues= Collections.emptyList();
-    @JsonIgnore
-    private List<IssueLinkType> issuelinks=new ArrayList<>();
-
 
     private  Collection<String> worklogs;
     private  String watchers;
-
 
     private List<String> labels;
 
@@ -321,13 +314,5 @@ public class JiraIssueDTO {
 
     public void setIssues(@Nullable List<String> issues) {
         this.issues = issues;
-    }
-
-    public List<IssueLinkType> getIssuelinks() {
-        return issuelinks;
-    }
-
-    public void setIssuelinks(List<IssueLinkType> issuelinks) {
-        this.issuelinks = issuelinks;
     }
 }
