@@ -1,7 +1,6 @@
 package com.zephyr.migration.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.gson.Gson;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.thed.zephyr.cloud.rest.ZFJCloudRestClient;
 import com.thed.zephyr.cloud.rest.client.JwtGenerator;
@@ -9,7 +8,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 

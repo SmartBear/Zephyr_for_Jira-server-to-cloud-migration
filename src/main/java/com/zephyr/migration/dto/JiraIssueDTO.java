@@ -1,6 +1,5 @@
 package com.zephyr.migration.dto;
 
-import com.atlassian.jira.rest.client.api.domain.IssueLinkType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
