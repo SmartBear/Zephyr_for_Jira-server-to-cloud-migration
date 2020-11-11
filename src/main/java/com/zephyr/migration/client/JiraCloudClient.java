@@ -29,7 +29,7 @@ public class JiraCloudClient {
     }
 
     public JiraIssueDTO createIssue(JiraIssueDTO requestObject){
-        String createUrl = zephyrBaseUrl + "/public/rest/api/2.0/issue/create";
+        String createUrl = zephyrBaseUrl + "/public/rest/api/3.0/issue/create";
         String jwt = createJWTToken(HttpMethod.POST, createUrl);
 
         HttpHeaders headers = new HttpHeaders();

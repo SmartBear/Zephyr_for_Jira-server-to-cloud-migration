@@ -43,9 +43,9 @@ public class JiraIssueDTO {
     private  Collection<String> comments;
 
 
-    @Nullable
+    /*@Nullable
     @JsonIgnore
-    private  List<String> issues= Collections.emptyList();
+    private  List<String> issues= Collections.emptyList();*/
 
     private  Collection<String> worklogs;
     private  String watchers;
@@ -307,12 +307,12 @@ public class JiraIssueDTO {
         this.priority = priority;
     }
 
-    @Nullable
+    /*@Nullable
     public List<String> getIssues() {
         return issues;
     }
 
     public void setIssues(@Nullable List<String> issues) {
         this.issues = issues;
-    }
+    }*/
 }
