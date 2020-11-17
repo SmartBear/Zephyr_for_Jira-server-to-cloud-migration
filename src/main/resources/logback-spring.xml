@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+
+    <appender name="console-root" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date - %level - %logger{15} - %message%n%xException</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+           <!-- <level>INFO</level>-->
+        </filter>
+    </appender>
+
+    <!--<appender name="console-application" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date - %highlight(%-5level) %cyan(%logger{25}) %class{15} - %message%n%xException</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>TRACE</level>
+        </filter>
+    </appender>-->
+
+    <appender name="file-raw-logs" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>./migration/logs/migration_%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date - %level - %logger{15} - %message%n%xException</pattern>
+        </encoder>
+        <!--<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>-->
+    </appender>
+
+    <appender name="file-only-error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>./migration/logs/error/error%d{yyyy-MM}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date - %level - %logger in %thread class:%class{} nodeId=%X{nodeId} %message%n%xException </pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="file-only-error" />
+        <appender-ref ref="console-root" />
+        <appender-ref ref="file-raw-logs" />
+    </root>
+
+</configuration>
