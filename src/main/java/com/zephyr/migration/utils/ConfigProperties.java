@@ -1,4 +1,4 @@
-package com.zephyr.migration.util;
+package com.zephyr.migration.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.PropertySource;

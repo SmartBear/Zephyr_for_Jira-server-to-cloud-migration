@@ -1,13 +1,11 @@
 package com.zephyr.migration.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.service.VersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletResponse;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,9 +49,9 @@ public class MigrationMappingFileGenerationUtil {
      * @throws Exception
      */
     public List<List<String>> versionDataToPrintInExcel(String projectId) throws Exception {
-        List<List<String>> recordToAdd = new ArrayList<List<String>>();
+        List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
-        JsonNode response =  versionService.getVersions(projectId, zephyrBaseUrl, accessKey);
+        JsonNode response =  versionService.getVersionsFromZephyrCloud(projectId, zephyrBaseUrl, accessKey);
         if (response == null) {
             //do something
         }else {

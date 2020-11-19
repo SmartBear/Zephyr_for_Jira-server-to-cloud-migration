@@ -3,6 +3,8 @@ package com.zephyr.migration.client;
 import com.atlassian.jira.rest.client.api.IssueRestClient;
 import com.atlassian.jira.rest.client.api.JiraRestClient;
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.atlassian.jira.rest.client.api.domain.Project;
+import com.atlassian.jira.rest.client.api.domain.Version;
 import com.atlassian.jira.rest.client.api.domain.input.IssueInput;
 import com.atlassian.jira.rest.client.api.domain.input.IssueInputBuilder;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
@@ -58,5 +60,29 @@ public class JiraServerClient {
             e.printStackTrace();
         }
         return issue;
+    }
+
+    public Project getProject(String projectKey) {
+        log.info("Serving --> {}", "getProject()");
+        Project project = restClient.getProjectClient().getProject(projectKey).claim();
+        try {
+            restClient.close();
+        } catch (IOException e) {
+            log.error("Failed to get project " + e.getMessage());
+            e.printStackTrace();
+        }
+        return project;
+    }
+
+    public Iterable<Version> getVersions(Long projectId) {
+        Iterable<Version> versions = restClient.getProjectClient().getProject(projectId+"").claim().getVersions();
+        log.info("Serving --> {}", "getVersions()");
+        try {
+            restClient.close();
+        } catch (IOException e) {
+            log.error("Failed to get versions for given project " + e.getMessage());
+            e.printStackTrace();
+        }
+        return versions;
     }
 }

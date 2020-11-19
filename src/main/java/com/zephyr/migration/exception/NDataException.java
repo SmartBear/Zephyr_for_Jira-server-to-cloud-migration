@@ -1,8 +1,5 @@
 package com.zephyr.migration.exception;
 
-/**
- * @author Vivek Srivastava.
- */
 public class NDataException extends RuntimeException {
 
     private static final long serialVersionUID = 930756950715810429L;

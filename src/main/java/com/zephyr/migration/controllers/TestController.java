@@ -6,7 +6,7 @@ import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
-import com.zephyr.migration.util.ConfigProperties;
+import com.zephyr.migration.utils.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -37,6 +35,7 @@ public class TestController {
     @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
+    @Autowired
     ConfigProperties configProp;
 
     @GetMapping("/hello")
