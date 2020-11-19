@@ -6,6 +6,7 @@ import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
+import com.zephyr.migration.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,11 +37,15 @@ public class TestController {
     @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
+    ConfigProperties configProp;
+
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
         log.info("Serving --> {}", "sayHello()");
         log.error("Serving --> {}", "sayHello()");
-        return String.format("Hello %s!", name);
+
+        String portNumber = configProp.getConfigValue("server.port");
+        return String.format("Hello %s!", name +portNumber);
     }
 
     @GetMapping("/getIssueDescription")
@@ -65,16 +70,19 @@ public class TestController {
         log.info("Serving --> {}", "createIssueDescription()");
         log.info("Create issue at cloud of issue key is : " + issueKey);
         String summary = "";
+        JiraIssueDTO issueDTO = null;
         try {
             Issue issue = testService.getIssueDetailsFromServer(issueKey);
             if(Objects.nonNull(issue)) {
-                JiraIssueDTO issueDTO = testService.createIssueInCloud(issue);
+                issueDTO = testService.createIssueInCloud(issue);
             }
             summary = issue.getSummary();
         }catch (Exception ex) {
             log.error("Failed to create issue at cloud" + ex.getMessage());
         }
-        return String.format("Issue Summary ::: %s!", summary);
+        return String.format("Issue Summary from cloud ::: %s! & Issue Summary from server ::: %s!",
+                null != issueDTO ? issueDTO.getSummary() : "", summary);
+
     }
 
     @GetMapping("migrationMappingFile")

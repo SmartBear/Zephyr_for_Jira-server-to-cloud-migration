@@ -41,14 +41,16 @@ public class TestServiceImpl implements TestService {
         JiraIssueDTO issueDTO = jiraCloudClient.createIssue(prepareRequestObject(issue));
         return issueDTO;
     }
-
     private JiraIssueDTO prepareRequestObject(Issue issue) {
         log.info("Serving --> {}", "prepareRequestObject()");
         JiraIssueDTO jiraIssue = new JiraIssueDTO();
         jiraIssue.setSummary(issue.getSummary());
+        jiraIssue.setDescription(issue.getDescription());
         //jiraIssue.setProject(ImmutableMap.of("id", issue.getProject().getId()));
         jiraIssue.setProject(ImmutableMap.of("id", 10026));
         jiraIssue.setIssuetype(ImmutableMap.of("id", 10005));
+        /*jiraIssue.setProject(ImmutableMap.of("id", 10000));
+        jiraIssue.setIssuetype(ImmutableMap.of("id", 10007));*/
         return jiraIssue;
     }
 }
