@@ -2,6 +2,7 @@ package com.zephyr.migration.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.client.JiraCloudClient;
+import com.zephyr.migration.service.VersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,12 @@ import java.util.List;
 
 @Component
 public class MigrationMappingFileGenerationUtil {
+
+    public String accessKey = "ZTI1YjE1YjctNzBiYi0zNzdkLTg5OGEtYmI4ZDdiYjg0ODU2IDVjZGQyNTRmYWVlMzA4MGRjMmY2MmFjNCBVU0VSX0RFRkFVTFRfTkFNRQ";
+    public String zephyrBaseUrl = "https://himanshuconnect.ngrok.io";
+
+    @Autowired
+    VersionService versionService;
 
     /*
     * Generate Excel File For Migration Report
@@ -46,8 +53,7 @@ public class MigrationMappingFileGenerationUtil {
     public List<List<String>> versionDataToPrintInExcel(String projectId) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<List<String>>();
         recordToAdd.add(generateHeader());
-        JiraCloudClient jiraCloudClient = new JiraCloudClient();
-        JsonNode response =  jiraCloudClient.getVersions(projectId);
+        JsonNode response =  versionService.getVersions(projectId, zephyrBaseUrl, accessKey);
         if (response == null) {
             //do something
         }else {

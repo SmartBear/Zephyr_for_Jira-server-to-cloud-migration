@@ -20,11 +20,11 @@ public class JiraCloudClient {
 
     private static final Logger log = LoggerFactory.getLogger(JiraCloudClient.class);
 
-    private String accountId = "5cdd254faee3080dc2f62ac4";
-    private String accessKey = "ZTI1YjE1YjctNzBiYi0zNzdkLTg5OGEtYmI4ZDdiYjg0ODU2IDVjZGQyNTRmYWVlMzA4MGRjMmY2MmFjNCBVU0VSX0RFRkFVTFRfTkFNRQ";
-    private String secretKey = "YxWFgOChDt9y3eOxVijVLkYkr32V39Tj6AJ5Pf31U0w";
-    private String zephyrBaseUrl = "https://himanshuconnect.ngrok.io";
-    private static final String ZAPIACCESSKEY = "zapiAccessKey";
+    public String accountId = "5cdd254faee3080dc2f62ac4";
+    public String accessKey = "ZTI1YjE1YjctNzBiYi0zNzdkLTg5OGEtYmI4ZDdiYjg0ODU2IDVjZGQyNTRmYWVlMzA4MGRjMmY2MmFjNCBVU0VSX0RFRkFVTFRfTkFNRQ";
+    public String secretKey = "YxWFgOChDt9y3eOxVijVLkYkr32V39Tj6AJ5Pf31U0w";
+    public String zephyrBaseUrl = "https://himanshuconnect.ngrok.io";
+    public static final String ZAPIACCESSKEY = "zapiAccessKey";
 
     public JiraCloudClient() {
     }
@@ -71,22 +71,4 @@ public class JiraCloudClient {
         return jwt;
     }
 
-    public JsonNode getVersions(String projectId) {
-        log.info("Serving --> {}", "getVersions()");
-        String getVersionsUrl = zephyrBaseUrl + "/public/rest/api/1.0/migration/fetch/versions";
-        String jwt = createJWTToken(HttpMethod.POST, getVersionsUrl);
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
-        headers.set(HttpHeaders.AUTHORIZATION, jwt);
-        headers.set(ZAPIACCESSKEY, this.accessKey);
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
-        JsonNode response = null;
-        try {
-            response = restTemplate.postForObject(getVersionsUrl, entity, JsonNode.class);
-        } catch (Exception e) {
-            log.error("Error while fetching version list " + e.getMessage());
-        }
-        return response;
-    }
 }
