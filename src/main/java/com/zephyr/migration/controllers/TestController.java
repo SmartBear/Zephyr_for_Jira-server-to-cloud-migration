@@ -3,6 +3,7 @@ package com.zephyr.migration.controllers;
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.service.TestService;
+import com.zephyr.migration.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +21,16 @@ public class TestController {
     @Autowired
     TestService testService;
 
+    @Autowired
+    ConfigProperties configProp;
+
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
         log.info("Serving --> {}", "sayHello()");
         log.error("Serving --> {}", "sayHello()");
-        return String.format("Hello %s!", name);
+
+        String portNumber = configProp.getConfigValue("server.port");
+        return String.format("Hello %s!", name +portNumber);
     }
 
     @GetMapping("/getIssueDescription")
