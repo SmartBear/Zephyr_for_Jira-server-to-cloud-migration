@@ -49,15 +49,18 @@ public class TestController {
         log.info("Serving --> {}", "createIssueDescription()");
         log.info("Create issue at cloud of issue key is : " + issueKey);
         String summary = "";
+        JiraIssueDTO issueDTO = null;
         try {
             Issue issue = testService.getIssueDetailsFromServer(issueKey);
             if(Objects.nonNull(issue)) {
-                JiraIssueDTO issueDTO = testService.createIssueInCloud(issue);
+                issueDTO = testService.createIssueInCloud(issue);
             }
             summary = issue.getSummary();
         }catch (Exception ex) {
             log.error("Failed to create issue at cloud" + ex.getMessage());
         }
-        return String.format("Issue Summary ::: %s!", summary);
+        return String.format("Issue Summary from cloud ::: %s! & Issue Summary from server ::: %s!",
+                null != issueDTO ? issueDTO.getSummary() : "", summary);
+
     }
 }
