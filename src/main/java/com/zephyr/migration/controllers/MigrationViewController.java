@@ -6,15 +6,12 @@ import com.zephyr.migration.vo.MigrationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-
-@RestController
-public class MigrationController {
-
+@Controller
+public class MigrationViewController {
     private static final Logger log = LoggerFactory.getLogger(MigrationController.class);
 
     @Autowired
@@ -23,10 +20,13 @@ public class MigrationController {
     @Autowired
     ConfigProperties configProp;
 
-    @GetMapping("/migrate/{projectId}")
-    public String sayHello(@PathVariable Long projectId) {
-        /*change it to post method*/
-        migrationService.migrateSingleProject(projectId);
-        return String.format("Hello Migration triggered for project %s!", projectId);
+    @GetMapping("/beginMigration")
+    public String sendForm(MigrationRequest migrationRequest) {
+        return "migrateProject";
+    }
+
+    @PostMapping("/beginMigration")
+    public String processForm(MigrationRequest migrationRequest) {
+        return "migrationSuccess";
     }
 }
