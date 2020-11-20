@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Zephyr Server-Cloud Migration</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<h1>Zephyr Server-Cloud Migration</h1>
+
+<form action="#" th:action="@{/beginMigration}" th:object="${migrationRequest}" method="post">
+    <p>
+        Please Enter Project Id: <input type="text" th:field="*{projectId}">
+    </p>
+    <p>
+        <input type="submit" value="Submit"/> <input type="reset" value="Reset">
+    </p>
+</form>
+
+</body>
+</html>
