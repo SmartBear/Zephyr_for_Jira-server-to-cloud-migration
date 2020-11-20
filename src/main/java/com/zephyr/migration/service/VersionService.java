@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public interface VersionService {
 
-    JsonNode getVersionsFromZephyrCloud(String projectId, String zephyrBaseUrl, String accessKey);
+    JsonNode getVersionsFromZephyrCloud(String projectId);
 
     Iterable<Version> getVersionsFromZephyrServer(Long projectId, String serverBaseUrl, String serverUserName, String serverUserPass);
 }

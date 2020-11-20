@@ -25,10 +25,9 @@ public class ExcelUtils {
      * @param fileName  excelFileName
      * @param sheetName
      * @param recordList  List of Records in this record first record should be header and after that Values
-     * @param response for downloading at web-page
      * @throws Exception
      */
-    public  void writeToExcelFileMethod(String migrationFilePath, String fileName, String sheetName,List<List<String>> recordList, HttpServletResponse response) throws Exception {
+    public  void writeToExcelFileMethod(String migrationFilePath, String fileName, String sheetName,List<List<String>> recordList) throws Exception {
         int rownum = 0;
         int noOfRecords = (recordList.size()-3);
         String errorMessage = "Sorry. The file you are looking for does not exist";
@@ -45,13 +44,6 @@ public class ExcelUtils {
         File excelFile = FileUtils.createFile(migrationFilePath, fileName+".xls");
         //File excelFile = File.createTempFile(fileName,".xls");
         fos=new FileOutputStream(excelFile);
-        if(!excelFile.exists()){
-            System.out.println("File Not Exist :" + errorMessage);
-            OutputStream outputStream = response.getOutputStream();
-            outputStream.write(errorMessage.getBytes(Charset.forName("UTF-8")));
-            outputStream.close();
-            return;
-        }
         try {
 
             for (int j = 0; j < recordList.size(); j++) {

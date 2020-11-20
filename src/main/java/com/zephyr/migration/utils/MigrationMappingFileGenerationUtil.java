@@ -1,5 +1,6 @@
 package com.zephyr.migration.utils;
 
+import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.service.VersionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,12 +9,11 @@ import org.springframework.stereotype.Component;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class MigrationMappingFileGenerationUtil {
 
-    public String accessKey = "ZTI1YjE1YjctNzBiYi0zNzdkLTg5OGEtYmI4ZDdiYjg0ODU2IDVjZGQyNTRmYWVlMzA4MGRjMmY2MmFjNCBVU0VSX0RFRkFVTFRfTkFNRQ";
-    public String zephyrBaseUrl = "https://himanshuconnect.ngrok.io";
 
     @Autowired
     VersionService versionService;
@@ -21,11 +21,11 @@ public class MigrationMappingFileGenerationUtil {
     /*
     * Generate Excel File For Migration Report
     * */
-    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, HttpServletResponse response)  throws Exception{
-        List<List<String>> sampleList = versionDataToPrintInExcel(projectId);
+    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud)  throws Exception{
+        List<List<String>> sampleList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
         try {
             ExcelUtils excelUtils = new ExcelUtils();
-            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, "version-mapping", sampleList, response);
+            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, "version-mapping", sampleList);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -37,7 +37,6 @@ public class MigrationMappingFileGenerationUtil {
     public static List<String> generateHeader()  throws Exception {
         List<String> header1 = new ArrayList<String>();;
         header1.add("Project Id");
-        header1.add("Version");
         header1.add("Server Version Id");
         header1.add("Cloud Version Id");
         return header1;
@@ -48,19 +47,25 @@ public class MigrationMappingFileGenerationUtil {
      * @return
      * @throws Exception
      */
-    public List<List<String>> versionDataToPrintInExcel(String projectId) throws Exception {
+    public List<List<String>> versionDataToPrintInExcel(String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
-        JsonNode response =  versionService.getVersionsFromZephyrCloud(projectId, zephyrBaseUrl, accessKey);
-        if (response == null) {
+        List serverVersionIdList = new ArrayList<>();
+        if(Objects.nonNull(versionsFromZephyrServer)) {
+            versionsFromZephyrServer.forEach(version -> {
+                serverVersionIdList.add(version.getId());
+            });
+        }
+
+        if (versionsFromZephyrCloud == null) {
             //do something
         }else {
             List versionMappingList = null;
-            for (JsonNode jn : response) {
+            int count = -1;
+            for (JsonNode jn : versionsFromZephyrCloud) {
                 versionMappingList = new ArrayList<>();
                 versionMappingList.add(projectId);
-                versionMappingList.add(jn.findValue("name").textValue());
-                versionMappingList.add("");
+                versionMappingList.add(serverVersionIdList.get(++count).toString());
                 versionMappingList.add(jn.findValue("versionId").toString());
                 recordToAdd.add(versionMappingList);
             }

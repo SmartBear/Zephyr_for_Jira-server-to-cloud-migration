@@ -22,7 +22,7 @@ public class MigrationController {
     ConfigProperties configProp;
 
     @GetMapping("/migrate/{projectId}")
-    public String sayHello(@PathVariable Long projectId) {
+    public String migrateVersion(@PathVariable Long projectId) throws Exception{
         /*change it to post method*/
         migrationService.migrateSingleProject(projectId);
         return String.format("Hello Migration triggered for project %s!", projectId);

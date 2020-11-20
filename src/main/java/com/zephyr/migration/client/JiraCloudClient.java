@@ -20,10 +20,10 @@ public class JiraCloudClient {
 
     private static final Logger log = LoggerFactory.getLogger(JiraCloudClient.class);
 
-    public String accountId = "5cdd254faee3080dc2f62ac4";
-    public String accessKey = "ZTI1YjE1YjctNzBiYi0zNzdkLTg5OGEtYmI4ZDdiYjg0ODU2IDVjZGQyNTRmYWVlMzA4MGRjMmY2MmFjNCBVU0VSX0RFRkFVTFRfTkFNRQ";
-    public String secretKey = "YxWFgOChDt9y3eOxVijVLkYkr32V39Tj6AJ5Pf31U0w";
-    public String zephyrBaseUrl = "https://himanshuconnect.ngrok.io";
+    public String accountId;
+    public String accessKey;
+    public String secretKey;
+    public String zephyrBaseUrl;
     public static final String ZAPIACCESSKEY = "zapiAccessKey";
 
     public JiraCloudClient() {

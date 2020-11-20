@@ -84,7 +84,7 @@ public class TestController {
 
     }
 
-    @GetMapping("migrationMappingFile")
+    /*@GetMapping("migrationMappingFile")
     public String versionMigrationFile(@RequestParam(value = "projectId", defaultValue = "World") String projectId,
                                        HttpServletResponse response) throws Exception {
         log.info("migration file path is : " + migrationFilePath);
@@ -95,5 +95,5 @@ public class TestController {
         }
         migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, projectId, response);
         return "true";
-    }
+    }*/
 }
