@@ -62,4 +62,9 @@ public class MigrationServiceImpl implements MigrationService {
         }
         migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud );
     }
+
+    @Override
+    public void createUnscheduledVersion(Long projectId) throws Exception {
+        versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
+    }
 }
