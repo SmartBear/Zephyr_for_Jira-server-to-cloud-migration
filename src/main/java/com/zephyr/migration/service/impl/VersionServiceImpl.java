@@ -78,7 +78,7 @@ public class VersionServiceImpl implements VersionService {
         try {
             response = restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
         } catch (Exception e) {
-            log.error("Error while fetching create unscheduled version " + e.getMessage());
+            log.error("Error while creating unscheduled version " + e.getMessage());
         }
         return response;
     }
