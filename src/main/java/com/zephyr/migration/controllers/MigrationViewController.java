@@ -10,6 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.io.IOException;
+
 @Controller
 public class MigrationViewController {
     private static final Logger log = LoggerFactory.getLogger(MigrationController.class);
@@ -27,6 +29,12 @@ public class MigrationViewController {
 
     @PostMapping("/beginMigration")
     public String processForm(MigrationRequest migrationRequest) {
+        System.out.println("Project id entered is : "+migrationRequest.getProjectId());
+        try {
+            migrationService.migrateSingleProject(migrationRequest.getProjectId());
+        } catch (Exception e) {
+            log.error("Error occurred while migrating the data.", e.fillInStackTrace());
+        }
         return "migrationSuccess";
     }
 }

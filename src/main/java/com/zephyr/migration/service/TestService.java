@@ -8,4 +8,6 @@ public interface TestService {
     Issue getIssueDetailsFromServer(String issueKey);
 
     JiraIssueDTO createIssueInCloud(Issue issue);
+
+    void createUnscheduledVersion(Long projectId)  throws Exception;
 }

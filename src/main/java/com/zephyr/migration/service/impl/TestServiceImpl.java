@@ -6,14 +6,19 @@ import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.service.TestService;
+import com.zephyr.migration.service.VersionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TestServiceImpl implements TestService {
 
     private static final Logger log = LoggerFactory.getLogger(TestServiceImpl.class);
+
+    @Autowired
+    VersionService versionService;
 
     @Override
     public Issue getIssueDetailsFromServer(String issueKey) {
@@ -40,6 +45,12 @@ public class TestServiceImpl implements TestService {
 
         JiraIssueDTO issueDTO = jiraCloudClient.createIssue(prepareRequestObject(issue));
         return issueDTO;
+    }
+
+
+    @Override
+    public void createUnscheduledVersion(Long projectId) throws Exception {
+        versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
     }
     private JiraIssueDTO prepareRequestObject(Issue issue) {
         log.info("Serving --> {}", "prepareRequestObject()");

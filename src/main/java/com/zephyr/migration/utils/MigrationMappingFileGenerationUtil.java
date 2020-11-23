@@ -7,16 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Component
 public class MigrationMappingFileGenerationUtil {
-
-
-    @Autowired
-    VersionService versionService;
 
     /*
     * Generate Excel File For Migration Report
@@ -51,25 +45,37 @@ public class MigrationMappingFileGenerationUtil {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
         List serverVersionIdList = new ArrayList<>();
+        Map<Long, Version> serverVersionMap = new HashMap<>();
         if(Objects.nonNull(versionsFromZephyrServer)) {
             versionsFromZephyrServer.forEach(version -> {
                 serverVersionIdList.add(version.getId());
+                serverVersionMap.put(version.getId(), version);
             });
         }
 
-        if (versionsFromZephyrCloud == null) {
-            //do something
-        }else {
-            List versionMappingList = null;
-            int count = -1;
-            for (JsonNode jn : versionsFromZephyrCloud) {
-                versionMappingList = new ArrayList<>();
+
+        List versionMappingList;
+        int count = -1;
+        for (JsonNode jn : versionsFromZephyrCloud) {
+            versionMappingList = new ArrayList<>();
+            Long cloudVersionId = Long.parseLong(jn.findValue("versionId").toString());
+            if(serverVersionMap.containsKey(cloudVersionId)) {
                 versionMappingList.add(projectId);
-                versionMappingList.add(serverVersionIdList.get(++count).toString());
-                versionMappingList.add(jn.findValue("versionId").toString());
+                versionMappingList.add(serverVersionMap.get(cloudVersionId).getId() + "");
+                versionMappingList.add(cloudVersionId + "");
+                recordToAdd.add(versionMappingList);
+            }else {
+                versionMappingList.add(projectId);
+                versionMappingList.add("");
+                versionMappingList.add(cloudVersionId + "");
                 recordToAdd.add(versionMappingList);
             }
-        }
+
+               /*versionMappingList.add(projectId);
+                versionMappingList.add(serverVersionIdList.get(++count).toString());
+                versionMappingList.add(jn.findValue("versionId").toString());
+                recordToAdd.add(versionMappingList);*/
+            }
         return recordToAdd;
     }
 

@@ -50,21 +50,26 @@ public class MigrationServiceImpl implements MigrationService {
         Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS);
 
         if(Objects.nonNull(versionsFromZephyrServer)) {
+            /*Just for sample validation*/
             versionsFromZephyrServer.forEach(version -> {
                 log.info("Version Details : "+ version.getName());
             });
         }
 
-        JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
         if(Files.exists(path)){
+            //TODO: Add logic to read the mapping file & validate whether corresponding cloud section exists.
             return;
+        }else {
+            versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
+            JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
+            if(Objects.nonNull(versionsFromZephyrCloud)) {
+                //TODO: Trigger project meta data
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
+            }else {
+                log.warn("Version list from cloud is empty");
+            }
         }
-        migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud );
-    }
 
-    @Override
-    public void createUnscheduledVersion(Long projectId) throws Exception {
-        versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
     }
 }

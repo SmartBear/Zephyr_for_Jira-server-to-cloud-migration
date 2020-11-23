@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,6 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
+/**
+ * This controller is for testing a specific flow.
+ */
 @RestController
 public class TestController {
 
@@ -84,6 +88,11 @@ public class TestController {
 
     }
 
+    @GetMapping("/create/unscheduled/version/{projectId}")
+    public String createUnscheduledVersion(@PathVariable Long projectId) throws Exception{
+        testService.createUnscheduledVersion(projectId);
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
+    }
     /*@GetMapping("migrationMappingFile")
     public String versionMigrationFile(@RequestParam(value = "projectId", defaultValue = "World") String projectId,
                                        HttpServletResponse response) throws Exception {

@@ -29,11 +29,4 @@ public class MigrationController {
         migrationService.migrateSingleProject(projectId);
         return String.format("Hello Migration triggered for project %s!", projectId);
     }
-
-    @GetMapping("/create/unscheduled/version/{projectId}")
-    public String createUnscheduledVersion(@PathVariable Long projectId) throws Exception{
-        /*change it to post method*/
-        migrationService.createUnscheduledVersion(projectId);
-        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
-    }
 }

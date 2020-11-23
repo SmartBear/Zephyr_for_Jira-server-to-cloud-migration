@@ -70,7 +70,7 @@ public class VersionServiceImpl implements VersionService {
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUnscheduledVersionsUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
