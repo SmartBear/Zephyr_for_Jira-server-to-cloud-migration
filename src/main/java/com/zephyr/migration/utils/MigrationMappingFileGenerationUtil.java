@@ -44,11 +44,11 @@ public class MigrationMappingFileGenerationUtil {
     public List<List<String>> versionDataToPrintInExcel(String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
-        List serverVersionIdList = new ArrayList<>();
+        //List serverVersionIdList = new ArrayList<>();
         Map<Long, Version> serverVersionMap = new HashMap<>();
         if(Objects.nonNull(versionsFromZephyrServer)) {
             versionsFromZephyrServer.forEach(version -> {
-                serverVersionIdList.add(version.getId());
+                //serverVersionIdList.add(version.getId());
                 serverVersionMap.put(version.getId(), version);
             });
         }
