@@ -2,11 +2,23 @@ package com.zephyr.migration.utils;
 
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.zephyr.migration.service.VersionService;
+import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 @Component
@@ -77,6 +89,58 @@ public class MigrationMappingFileGenerationUtil {
                 recordToAdd.add(versionMappingList);*/
             }
         return recordToAdd;
+    }
+
+    /**
+     * Data adding in list
+     * @return
+     * @throws Exception
+     */
+    public void doEntryOfUnscheduledVersionInExcel(String projectId, String migrationFilePath) throws Exception {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId+".xls";
+
+        try {
+            FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+            HSSFWorkbook wb=new HSSFWorkbook(inputStream);
+
+            HSSFSheet sheet=wb.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
+
+            Object[][] bookData = {
+                    {projectId, "", "-1"},
+            };
+
+            int rowCount = sheet.getLastRowNum();
+
+            for (Object[] aBook : bookData) {
+                Row row = sheet.createRow(++rowCount);
+
+                int columnCount = 0;
+
+                Cell cell = row.createCell(columnCount);
+                //cell.setCellValue(rowCount);
+
+                for (Object field : aBook) {
+                    cell = row.createCell(columnCount);
+                    if (field instanceof String) {
+                        cell.setCellValue((String) field);
+                    } else if (field instanceof Integer) {
+                        cell.setCellValue((Integer) field);
+                    }
+                    ++columnCount;
+                }
+
+            }
+
+            inputStream.close();
+
+            FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+            wb.write(outputStream);
+            wb.close();
+            outputStream.close();
+
+        } catch (IOException | EncryptedDocumentException ex) {
+            ex.printStackTrace();
+        }
     }
 
 }

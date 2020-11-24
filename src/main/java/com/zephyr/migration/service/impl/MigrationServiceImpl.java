@@ -61,19 +61,16 @@ public class MigrationServiceImpl implements MigrationService {
         if(Files.exists(path)){
             //TODO: Add logic to read the mapping file & validate whether corresponding cloud section exists.
             List mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
-            if (mappedCloudVersionList != null && mappedCloudVersionList.size() > 0) {
-                versionsFromZephyrServer.forEach(version -> {
-                    if (!mappedCloudVersionList.contains(version.getId())) {
-                        return;
-                    }
-                });
+            if (mappedCloudVersionList != null && !mappedCloudVersionList.contains("-1")) {
+                versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
+                migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
             JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
             if(Objects.nonNull(versionsFromZephyrCloud)) {
                 //TODO: Trigger project meta data
-                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer, versionsFromZephyrCloud);
             }else {
                 log.warn("Version list from cloud is empty");
             }
