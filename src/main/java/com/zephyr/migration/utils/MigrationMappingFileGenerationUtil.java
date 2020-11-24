@@ -19,7 +19,7 @@ public class MigrationMappingFileGenerationUtil {
         List<List<String>> sampleList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
         try {
             ExcelUtils excelUtils = new ExcelUtils();
-            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, "version-mapping", sampleList);
+            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, sampleList);
         }catch (Exception e){
             e.printStackTrace();
         }

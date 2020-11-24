@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -93,16 +94,17 @@ public class TestController {
         testService.createUnscheduledVersion(projectId);
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
-    /*@GetMapping("migrationMappingFile")
+
+    @GetMapping("migrationMappingFile")
     public String versionMigrationFile(@RequestParam(value = "projectId", defaultValue = "World") String projectId,
                                        HttpServletResponse response) throws Exception {
         log.info("migration file path is : " + migrationFilePath);
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId+".xls");
         if(Files.exists(path)){
-            FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId+".xls");
+            List vList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
             return "false";
         }
-        migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, projectId, response);
+        //migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, projectId, response);
         return "true";
-    }*/
+    }
 }

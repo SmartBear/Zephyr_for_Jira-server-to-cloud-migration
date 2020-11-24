@@ -3,9 +3,7 @@ package com.zephyr.migration.utils;
 import com.zephyr.migration.exception.NDataException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +11,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Himanshu Singhal on 18-11-2020.
@@ -47,32 +47,32 @@ public class FileUtils {
         return filename;
     }
 
-    public static void readFile(String nDataDir, String filename) throws IOException {
+    public static List readFile(String nDataDir, String filename) throws IOException {
         //obtaining input bytes from a file
         FileInputStream fis=new FileInputStream(new File(nDataDir+"/"+filename));
         //creating workbook instance that refers to .xls file
         HSSFWorkbook wb=new HSSFWorkbook(fis);
         //creating a Sheet object to retrieve the object
-        HSSFSheet sheet=wb.getSheetAt(0);
-        //evaluating cell type
-        FormulaEvaluator formulaEvaluator=wb.getCreationHelper().createFormulaEvaluator();
-        for(Row row: sheet)     //iteration over row using for each loop
-        {
-            for(Cell cell: row)    //iteration over cell using for each loop
-            {
-                switch(formulaEvaluator.evaluateInCell(cell).getCellType())
-                {
-                    case Cell.CELL_TYPE_NUMERIC:   //field that represents numeric cell type
-        //getting the value of the cell as a number
-                        System.out.print(cell.getNumericCellValue()+ "\t\t");
-                        break;
-                    case Cell.CELL_TYPE_STRING:    //field that represents string cell type
-        //getting the value of the cell as a string
-                        System.out.print(cell.getStringCellValue()+ "\t\t");
-                        break;
-                }
+        HSSFSheet sheet=wb.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
+
+        int column_index_1 = 0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            switch (cell.getStringCellValue()) {
+                case "Cloud Version Id":
+                    column_index_1 = cell.getColumnIndex();
+                    break;
             }
-            System.out.println();
         }
+        List<String> cloudVersionList = new ArrayList<>();
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//hearders
+            Cell c_1 = r.getCell(column_index_1);
+            if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK) {
+                cloudVersionList.add(c_1.getStringCellValue());
+            }
+        }
+        return cloudVersionList;
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -59,6 +60,14 @@ public class MigrationServiceImpl implements MigrationService {
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
         if(Files.exists(path)){
             //TODO: Add logic to read the mapping file & validate whether corresponding cloud section exists.
+            List mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+            if (mappedCloudVersionList != null && mappedCloudVersionList.size() > 0) {
+                versionsFromZephyrServer.forEach(version -> {
+                    if (!mappedCloudVersionList.contains(version.getId())) {
+                        return;
+                    }
+                });
+            }
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
             JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
