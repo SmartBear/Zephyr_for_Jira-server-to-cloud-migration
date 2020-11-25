@@ -52,16 +52,15 @@ public class MigrationServiceImpl implements MigrationService {
 
         if(Objects.nonNull(versionsFromZephyrServer)) {
             /*Just for sample validation*/
-            versionsFromZephyrServer.forEach(version -> {
-                log.info("Version Details : "+ version.getName());
-            });
+            versionsFromZephyrServer.forEach(version -> log.info("Version Details : "+ version.getName()));
         }
 
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
         if(Files.exists(path)){
-            //TODO: Add logic to read the mapping file & validate whether corresponding cloud section exists.
-            List mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
-            if (mappedCloudVersionList != null && !mappedCloudVersionList.contains("-1")) {
+            //Logic to read the mapping file & validate whether corresponding cloud section exists.
+            List<String> mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+            if (!mappedCloudVersionList.contains("-1")) {
+                log.info("Unscheduled version is not created for this project. Going to create it now !!");
                 versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
@@ -71,11 +70,10 @@ public class MigrationServiceImpl implements MigrationService {
             if(Objects.nonNull(versionsFromZephyrCloud)) {
                 //TODO: Trigger project meta data
                 migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
-                log.info("Migration of project completed.");
             }else {
                 log.warn("Version list from cloud is empty");
             }
         }
-
+        log.info("Migration of project [" + projectId+ "] completed.");
     }
 }

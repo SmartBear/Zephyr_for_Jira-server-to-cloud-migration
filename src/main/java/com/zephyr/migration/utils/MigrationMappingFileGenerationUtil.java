@@ -4,6 +4,7 @@ import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.zephyr.migration.service.VersionService;
+import com.zephyr.migration.service.impl.VersionServiceImpl;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -11,6 +12,8 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,17 +28,18 @@ import java.util.*;
 public class MigrationMappingFileGenerationUtil {
 
     private static final Long UNSCHEDULED_VERSION_ID = -1L;
+    private static final Logger log = LoggerFactory.getLogger(MigrationMappingFileGenerationUtil.class);
 
     /*
     * Generate Excel File For Migration Report
     * */
-    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud)  throws Exception{
-        List<List<String>> sampleList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
+    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) {
         try {
+            List<List<String>> responseList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
             ExcelUtils excelUtils = new ExcelUtils();
-            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, sampleList);
+            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, responseList);
         }catch (Exception e){
-            e.printStackTrace();
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
     }
 
@@ -67,7 +71,7 @@ public class MigrationMappingFileGenerationUtil {
             });
         }
 
-        List<> versionMappingList;
+        List versionMappingList;
         int count = -1;
         for (JsonNode jn : versionsFromZephyrCloud) {
             versionMappingList = new ArrayList<>();
