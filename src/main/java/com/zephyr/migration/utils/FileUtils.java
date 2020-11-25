@@ -47,7 +47,7 @@ public class FileUtils {
         return filename;
     }
 
-    public static List readFile(String nDataDir, String filename) throws IOException {
+    public static List<String> readFile(String nDataDir, String filename) throws IOException {
         //obtaining input bytes from a file
         FileInputStream fis=new FileInputStream(new File(nDataDir+"/"+filename));
         //creating workbook instance that refers to .xls file
