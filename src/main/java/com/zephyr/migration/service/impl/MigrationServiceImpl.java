@@ -70,7 +70,8 @@ public class MigrationServiceImpl implements MigrationService {
             JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
             if(Objects.nonNull(versionsFromZephyrCloud)) {
                 //TODO: Trigger project meta data
-                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer, versionsFromZephyrCloud);
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
+                log.info("Migration of project completed.");
             }else {
                 log.warn("Version list from cloud is empty");
             }

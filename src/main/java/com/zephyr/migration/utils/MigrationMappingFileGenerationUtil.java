@@ -24,6 +24,8 @@ import java.util.*;
 @Component
 public class MigrationMappingFileGenerationUtil {
 
+    private static final Long UNSCHEDULED_VERSION_ID = -1L;
+
     /*
     * Generate Excel File For Migration Report
     * */
@@ -65,8 +67,7 @@ public class MigrationMappingFileGenerationUtil {
             });
         }
 
-
-        List versionMappingList;
+        List<> versionMappingList;
         int count = -1;
         for (JsonNode jn : versionsFromZephyrCloud) {
             versionMappingList = new ArrayList<>();
@@ -78,7 +79,11 @@ public class MigrationMappingFileGenerationUtil {
                 recordToAdd.add(versionMappingList);
             }else {
                 versionMappingList.add(projectId);
-                versionMappingList.add("");
+                if(cloudVersionId.equals(UNSCHEDULED_VERSION_ID)) {
+                    versionMappingList.add("-1");
+                }else {
+                    versionMappingList.add("");
+                }
                 versionMappingList.add(cloudVersionId + "");
                 recordToAdd.add(versionMappingList);
             }
