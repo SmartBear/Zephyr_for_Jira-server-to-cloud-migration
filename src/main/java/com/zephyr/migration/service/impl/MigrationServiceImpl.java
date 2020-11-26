@@ -56,6 +56,7 @@ public class MigrationServiceImpl implements MigrationService {
         }
 
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+        JsonNode createVersionInCloud = versionService.createVersionInZephyrCloud("tata", "birla", projectId);
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud section exists.
             List<String> mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");

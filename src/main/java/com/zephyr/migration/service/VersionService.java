@@ -11,4 +11,6 @@ public interface VersionService {
 
     String createUnscheduledVersionInZephyrCloud(String projectId);
 
+    JsonNode createVersionInZephyrCloud(String name, String description, Long projectId);
+
 }

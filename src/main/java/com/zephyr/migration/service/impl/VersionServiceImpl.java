@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
+import com.zephyr.migration.dto.VersionDTO;
 import com.zephyr.migration.service.VersionService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -79,6 +80,37 @@ public class VersionServiceImpl implements VersionService {
             response = restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
         } catch (Exception e) {
             log.error("Error while creating unscheduled version " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Override
+    public JsonNode createVersionInZephyrCloud(String name, String description, Long projectId) {
+        log.info("Serving --> {}", "createVersionInZephyrCloud()");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+        final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+        final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+
+        JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+        String createCloudVersionsUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_CREATE_VERSION_URL;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createCloudVersionsUrl);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+        VersionDTO versionDTO = new VersionDTO();
+        versionDTO.setDescription(description);
+        versionDTO.setName(name);
+        versionDTO.setProjectId(projectId);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(versionDTO), headers);
+        JsonNode response = null;
+        String res = null;
+        try {
+            response = restTemplate.postForObject(createCloudVersionsUrl, entity, JsonNode.class);
+        } catch (Exception e) {
+            log.error("Error while creating version in cloud " + e.getMessage());
         }
         return response;
     }
