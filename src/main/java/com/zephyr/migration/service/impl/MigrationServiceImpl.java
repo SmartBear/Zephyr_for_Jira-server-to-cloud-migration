@@ -58,6 +58,7 @@ public class MigrationServiceImpl implements MigrationService {
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud section exists.
+            log.debug("Mapping file exists for the version project mapping.");
             List<String> mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
             if (!mappedCloudVersionList.contains("-1")) {
                 log.info("Unscheduled version is not created for this project. Going to create it now !!");
