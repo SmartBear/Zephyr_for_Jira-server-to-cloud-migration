@@ -62,7 +62,7 @@ public class MigrationMappingFileGenerationUtil {
     public List<List<String>> versionDataToPrintInExcel(String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
-        //List serverVersionIdList = new ArrayList<>();
+
         Map<Long, Version> serverVersionMap = new HashMap<>();
         if(Objects.nonNull(versionsFromZephyrServer)) {
             versionsFromZephyrServer.forEach(version -> {
@@ -82,21 +82,14 @@ public class MigrationMappingFileGenerationUtil {
                 versionMappingList.add(cloudVersionId + "");
                 recordToAdd.add(versionMappingList);
             }else {
-                versionMappingList.add(projectId);
                 if(cloudVersionId.equals(UNSCHEDULED_VERSION_ID)) {
+                    versionMappingList.add(projectId);
                     versionMappingList.add("-1");
-                }else {
-                    versionMappingList.add("");
+                    versionMappingList.add(cloudVersionId + "");
+                    recordToAdd.add(versionMappingList);
                 }
-                versionMappingList.add(cloudVersionId + "");
-                recordToAdd.add(versionMappingList);
             }
-
-               /*versionMappingList.add(projectId);
-                versionMappingList.add(serverVersionIdList.get(++count).toString());
-                versionMappingList.add(jn.findValue("versionId").toString());
-                recordToAdd.add(versionMappingList);*/
-            }
+        }
         return recordToAdd;
     }
 
