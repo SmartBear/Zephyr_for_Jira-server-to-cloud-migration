@@ -18,8 +18,11 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 
 @Service
 public class MigrationServiceImpl implements MigrationService {
@@ -41,6 +44,8 @@ public class MigrationServiceImpl implements MigrationService {
     @Value("${migrationFilePath}")
     private String migrationFilePath;
 
+    private ArrayBlockingQueue<String> progressQueue = new ArrayBlockingQueue<>(10000);
+
     @Override
     public void migrateSingleProject(Long projectId) throws Exception{
 
@@ -48,11 +53,23 @@ public class MigrationServiceImpl implements MigrationService {
         final String SERVER_USER_PASS = configProperties.getConfigValue("zfj.server.password");
         final String SERVER_BASE_URL = configProperties.getConfigValue("zfj.server.baseUrl");
 
+        progressQueue.put("########### ########### ########### ########### ###########  ");
+        progressQueue.put("Started Migration For project : -> project id: " + projectId + ", date/Time -> " + new Date());
+
         Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS);
 
         if(Objects.nonNull(versionsFromZephyrServer)) {
             /*Just for sample validation*/
-            versionsFromZephyrServer.forEach(version -> log.info("Version Details : "+ version.getName()));
+            progressQueue.put("Got the versions from JIRA Server.");
+            //versionsFromZephyrServer.forEach(version -> log.info("Version Details : "+ version.getName()));
+            versionsFromZephyrServer.forEach(version -> {
+                try {
+                    log.info("Version Details : "+ version.getName());
+                    progressQueue.put("Version Details : "+ version.getName());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
         }
 
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
@@ -60,6 +77,7 @@ public class MigrationServiceImpl implements MigrationService {
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud section exists.
             log.debug("Mapping file exists for the version project mapping.");
+            progressQueue.put("Mapping file exists for the version project mapping.");
             List<String> mappedCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
             if (!mappedCloudVersionList.contains("-1")) {
                 log.info("Unscheduled version is not created for this project. Going to create it now !!");
@@ -73,9 +91,18 @@ public class MigrationServiceImpl implements MigrationService {
                 //TODO: Trigger project meta data
                 migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
             }else {
+                progressQueue.put("Version list from cloud is empty");
                 log.warn("Version list from cloud is empty");
             }
         }
+        progressQueue.put("Migration of project [" + projectId+ "] completed.");
         log.info("Migration of project [" + projectId+ "] completed.");
+    }
+
+    @Override
+    public List<String> getProgressDetails() {
+        List<String> progressDetails = new ArrayList<>();
+        progressQueue.drainTo(progressDetails);
+        return progressDetails;
     }
 }
