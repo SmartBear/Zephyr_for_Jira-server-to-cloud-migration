@@ -98,3 +98,7 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
+.DS_Store
+.idea/inspectionProfiles/
+src/.DS_Store
+src/main/.DS_Store
