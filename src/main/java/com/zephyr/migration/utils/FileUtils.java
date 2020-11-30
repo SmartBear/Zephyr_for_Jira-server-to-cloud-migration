@@ -59,10 +59,9 @@ public class FileUtils {
         Row row = sheet.getRow(0);
         for (Cell cell : row) {
             // Column header names.
-            switch (cell.getStringCellValue()) {
-                case "Cloud Version Id":
-                    column_index_1 = cell.getColumnIndex();
-                    break;
+            if ("Server Version Id".equalsIgnoreCase(cell.getStringCellValue())) {
+                column_index_1 = cell.getColumnIndex();
+                break;
             }
         }
         List<String> cloudVersionList = new ArrayList<>();

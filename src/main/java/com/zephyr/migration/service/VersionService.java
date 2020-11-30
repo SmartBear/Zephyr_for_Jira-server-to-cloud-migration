@@ -9,8 +9,7 @@ public interface VersionService {
 
     Iterable<Version> getVersionsFromZephyrServer(Long projectId, String serverBaseUrl, String serverUserName, String serverUserPass);
 
-    String createUnscheduledVersionInZephyrCloud(String projectId);
+    void createUnscheduledVersionInZephyrCloud(String projectId);
 
-    JsonNode createVersionInZephyrCloud(String name, String description, Long projectId);
-
+    JsonNode createVersionInZephyrCloud(Version jiraServerVersion, Long projectId);
 }

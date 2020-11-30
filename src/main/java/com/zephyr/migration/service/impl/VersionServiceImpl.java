@@ -39,7 +39,7 @@ public class VersionServiceImpl implements VersionService {
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, getVersionsUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
@@ -59,7 +59,7 @@ public class VersionServiceImpl implements VersionService {
     }
 
     @Override
-    public String createUnscheduledVersionInZephyrCloud(String projectId) {
+    public void createUnscheduledVersionInZephyrCloud(String projectId) {
         log.info("Serving --> {}", "createUnscheduledVersionInZephyrCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -75,17 +75,15 @@ public class VersionServiceImpl implements VersionService {
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
-        String response = null;
         try {
-            response = restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
+            restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
         } catch (Exception e) {
             log.error("Error while creating unscheduled version " + e.getMessage());
         }
-        return response;
     }
 
     @Override
-    public JsonNode createVersionInZephyrCloud(String name, String description, Long projectId) {
+    public JsonNode createVersionInZephyrCloud(Version jiraServerVersion, Long projectId) {
         log.info("Serving --> {}", "createVersionInZephyrCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -97,12 +95,14 @@ public class VersionServiceImpl implements VersionService {
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createCloudVersionsUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         VersionDTO versionDTO = new VersionDTO();
-        versionDTO.setDescription(description);
-        versionDTO.setName(name);
+        versionDTO.setDescription(jiraServerVersion.getDescription());
+        versionDTO.setName(jiraServerVersion.getName());
+        versionDTO.setArchived(jiraServerVersion.isArchived());
+        versionDTO.setReleased(jiraServerVersion.isReleased());
         versionDTO.setProjectId(projectId);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(versionDTO), headers);
         JsonNode response = null;
