@@ -101,8 +101,6 @@ public class VersionServiceImpl implements VersionService {
         VersionDTO versionDTO = new VersionDTO();
         versionDTO.setDescription(jiraServerVersion.getDescription());
         versionDTO.setName(jiraServerVersion.getName());
-        versionDTO.setArchived(jiraServerVersion.isArchived());
-        versionDTO.setReleased(jiraServerVersion.isReleased());
         versionDTO.setProjectId(projectId);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(versionDTO), headers);
         JsonNode response = null;

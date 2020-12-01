@@ -10,4 +10,6 @@ public interface TestService {
     JiraIssueDTO createIssueInCloud(Issue issue);
 
     void createUnscheduledVersion(Long projectId)  throws Exception;
+
+    void createVersionInJiraCloud(Long projectId);
 }

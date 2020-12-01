@@ -107,4 +107,10 @@ public class TestController {
         //migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, projectId, response);
         return "true";
     }
+
+    @GetMapping("/create/jira/{projectId}")
+    public String createVersionInJiraCloud(@PathVariable Long projectId) {
+        testService.createVersionInJiraCloud(projectId);
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
+    }
 }

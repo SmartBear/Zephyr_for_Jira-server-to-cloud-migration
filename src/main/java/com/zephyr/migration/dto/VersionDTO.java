@@ -8,8 +8,6 @@ public class VersionDTO {
     public String name;
     public String description;
     public Long projectId;
-    private boolean isArchived;
-    private boolean isReleased;
 
     public String getName() {
         return name;
@@ -33,21 +31,5 @@ public class VersionDTO {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
-    }
-
-    public boolean isArchived() {
-        return isArchived;
-    }
-
-    public void setArchived(boolean archived) {
-        isArchived = archived;
-    }
-
-    public boolean isReleased() {
-        return isReleased;
-    }
-
-    public void setReleased(boolean released) {
-        isReleased = released;
     }
 }

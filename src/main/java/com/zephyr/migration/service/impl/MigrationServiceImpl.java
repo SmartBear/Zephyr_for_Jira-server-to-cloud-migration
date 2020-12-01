@@ -27,10 +27,7 @@ import org.springframework.web.client.RestTemplate;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
 @Service
@@ -79,16 +76,22 @@ public class MigrationServiceImpl implements MigrationService {
                 versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
-
-            createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId);
+            createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
 
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
             JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
             if(Objects.nonNull(versionsFromZephyrCloud)) {
+                /*
+                 * 1. Validate the version from server & cloud. If id matches then it's a like copy.
+                 * 2. If the server has version which doesn't match in cloud then create as part of unmapped version
+                 * call in cloud.
+                 * 3. Update the xls mapping file.
+                 * 4. trigger the project meta data.
+                 */
                 migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
                 List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
-                createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId);
+                createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
             }else {
                 progressQueue.put("Version list from cloud is empty");
@@ -136,23 +139,31 @@ public class MigrationServiceImpl implements MigrationService {
         }
     }
 
-    private void createUnmappedVersionInCloud(Iterable<Version> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId) throws InterruptedException {
+    private void createUnmappedVersionInCloud(Iterable<Version> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId, String migrationFilePath) throws InterruptedException {
         if(Objects.nonNull(versionsFromZephyrServer)) {
             progressQueue.put("Got the versions from JIRA Server.");
+            Map<String, Long> serverCloudVersionMapping = new HashMap<>();
             versionsFromZephyrServer.forEach(jiraServerVersion -> {
                 try {
                     progressQueue.put("Version Details : "+ jiraServerVersion.getName());
                     String versionId = Objects.nonNull(jiraServerVersion.getId()) ? Long.toString(jiraServerVersion.getId()) : null;
                     if(!mappedServerToCloudVersionList.contains(versionId)) {
                         progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());
-                        JsonNode createVersionInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);
-                        progressQueue.put("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(createVersionInCloud));
+                        JsonNode versionCreatedInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);
+                        if(Objects.nonNull(versionCreatedInCloud) && versionCreatedInCloud.has("id")) {
+
+                            Long cloudVersionId = versionCreatedInCloud.findValue("id").asLong();
+                            progressQueue.put("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
+                            serverCloudVersionMapping.put(versionId, cloudVersionId);
+                        }
+
                     }
                 } catch (InterruptedException | JsonProcessingException e) {
                     log.error("", e.fillInStackTrace());
                 }
             });
             //TODO: Update the mapping file.
+            migrationMappingFileGenerationUtil.updateVersionMappingFile(projectId, migrationFilePath, serverCloudVersionMapping);
         }
     }
 }

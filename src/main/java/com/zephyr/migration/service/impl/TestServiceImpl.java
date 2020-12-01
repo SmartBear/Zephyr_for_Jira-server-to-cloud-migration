@@ -1,16 +1,28 @@
 package com.zephyr.migration.service.impl;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.atlassian.jira.rest.client.api.domain.Version;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.service.VersionService;
+import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class TestServiceImpl implements TestService {
@@ -19,6 +31,15 @@ public class TestServiceImpl implements TestService {
 
     @Autowired
     VersionService versionService;
+
+    @Autowired
+    ConfigProperties configProperties;
+
+    @Autowired
+    MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
+
+    @Value("${migrationFilePath}")
+    private String migrationFilePath;
 
     @Override
     public Issue getIssueDetailsFromServer(String issueKey) {
@@ -43,15 +64,42 @@ public class TestServiceImpl implements TestService {
                 "YxWFgOChDt9y3eOxVijVLkYkr32V39Tj6AJ5Pf31U0w",
                 "https://himanshuconnect.ngrok.io");
 
-        JiraIssueDTO issueDTO = jiraCloudClient.createIssue(prepareRequestObject(issue));
-        return issueDTO;
+        return jiraCloudClient.createIssue(prepareRequestObject(issue));
     }
 
 
     @Override
-    public void createUnscheduledVersion(Long projectId) throws Exception {
+    public void createUnscheduledVersion(Long projectId) {
         versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
     }
+
+    @Override
+    public void createVersionInJiraCloud(Long projectId) {
+        final String SERVER_USER_NAME = configProperties.getConfigValue("zfj.server.username");
+        final String SERVER_USER_PASS = configProperties.getConfigValue("zfj.server.password");
+        final String SERVER_BASE_URL = configProperties.getConfigValue("zfj.server.baseUrl");
+        Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS);
+        Map<String, Long> serverCloudVersionMapping = new HashMap<>();
+
+        versionsFromZephyrServer.forEach(version -> {
+            JsonNode versionNode = versionService.createVersionInZephyrCloud(version,projectId);
+            try {
+                log.info("created version in cloud : " + new ObjectMapper().writeValueAsString(versionNode));
+
+                if(Objects.nonNull(versionNode) && versionNode.has("id")) {
+                    String versionId = Objects.nonNull(version.getId()) ? Long.toString(version.getId()) : null;
+                    Long cloudVersionId = versionNode.findValue("id").asLong();
+                    serverCloudVersionMapping.put(versionId, cloudVersionId);
+                }
+
+            } catch (JsonProcessingException e) {
+                log.error("Error occurred while creating version in jira cloud.", e.fillInStackTrace());
+            }
+        });
+
+        migrationMappingFileGenerationUtil.updateVersionMappingFile(projectId, migrationFilePath, serverCloudVersionMapping);
+    }
+
     private JiraIssueDTO prepareRequestObject(Issue issue) {
         log.info("Serving --> {}", "prepareRequestObject()");
         JiraIssueDTO jiraIssue = new JiraIssueDTO();
