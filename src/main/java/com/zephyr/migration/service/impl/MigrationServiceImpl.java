@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.zephyr.migration.client.JiraCloudClient;
+import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.MigrationService;
 import com.zephyr.migration.service.ProjectService;
 import com.zephyr.migration.service.VersionService;
@@ -24,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +47,9 @@ public class MigrationServiceImpl implements MigrationService {
     VersionService versionService;
 
     @Autowired
+    CycleService cycleService;
+
+    @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Value("${migrationFilePath}")
@@ -62,7 +67,32 @@ public class MigrationServiceImpl implements MigrationService {
         progressQueue.put("########### ########### ########### ########### ###########  ");
         progressQueue.put("Started Migration For project : -> project id: " + projectId + ", date/Time -> " + new Date());
 
-        Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS);
+        boolean migrateVersions = beginVersionMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+
+        if(migrateVersions) {
+            boolean migarteCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+        }
+
+        progressQueue.put("Migration of project [" + projectId+ "] completed.");
+        log.info("Migration of project [" + projectId+ "] completed.");
+        progressQueue.put("########### ########### ########### ########### ###########");
+    }
+
+    @Override
+    public List<String> getProgressDetails() {
+        List<String> progressDetails = new ArrayList<>();
+        progressQueue.drainTo(progressDetails);
+        return progressDetails;
+    }
+
+    ///////////////////////////////// Private method goes below ///////////////////////////////////////////////////////
+
+    /**
+     * version migration
+     */
+    private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
+
+        Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
 
         Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
         if(Files.exists(path)){
@@ -77,7 +107,7 @@ public class MigrationServiceImpl implements MigrationService {
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
             createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
-
+            return true;
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
             JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
@@ -93,21 +123,31 @@ public class MigrationServiceImpl implements MigrationService {
                 List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
                 createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
+                return true;
             }else {
                 progressQueue.put("Version list from cloud is empty");
                 log.warn("Version list from cloud is empty");
+                return false;
             }
         }
-        progressQueue.put("Migration of project [" + projectId+ "] completed.");
-        log.info("Migration of project [" + projectId+ "] completed.");
-        progressQueue.put("########### ########### ########### ########### ###########");
     }
 
-    @Override
-    public List<String> getProgressDetails() {
-        List<String> progressDetails = new ArrayList<>();
-        progressQueue.drainTo(progressDetails);
-        return progressDetails;
+    /**
+     * cycle migration
+     */
+    private boolean beginCycleMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) {
+
+        /*
+        1. Read the mapping file & get the server-cloud mapping
+        2. based on the version list, fetch the cycles from server.
+        3. if the mapping file exists, prepare the mapping list. if corresponding server cycle exists in cloud then skip
+        else create the unmapped cycles in cloud instance.
+        4. if the mapping file doesn't exist then create the cycle data in cloud instance & update the mapping file.
+         */
+
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+
+        return false;
     }
 
     /**
@@ -139,6 +179,14 @@ public class MigrationServiceImpl implements MigrationService {
         }
     }
 
+    /**
+     *
+     * @param versionsFromZephyrServer
+     * @param mappedServerToCloudVersionList
+     * @param projectId
+     * @param migrationFilePath
+     * @throws InterruptedException
+     */
     private void createUnmappedVersionInCloud(Iterable<Version> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId, String migrationFilePath) throws InterruptedException {
         if(Objects.nonNull(versionsFromZephyrServer)) {
             progressQueue.put("Got the versions from JIRA Server.");
