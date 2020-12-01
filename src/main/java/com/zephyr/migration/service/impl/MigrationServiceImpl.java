@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.zephyr.migration.client.JiraCloudClient;
+import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.MigrationService;
 import com.zephyr.migration.service.ProjectService;
@@ -94,7 +95,7 @@ public class MigrationServiceImpl implements MigrationService {
 
         Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
 
-        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud & server section exists.
             log.debug("Version Mapping file exists for the given project.");
@@ -135,7 +136,7 @@ public class MigrationServiceImpl implements MigrationService {
     /**
      * cycle migration
      */
-    private boolean beginCycleMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) {
+    private boolean beginCycleMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws InterruptedException, IOException {
 
         /*
         1. Read the mapping file & get the server-cloud mapping
@@ -145,7 +146,29 @@ public class MigrationServiceImpl implements MigrationService {
         4. if the mapping file doesn't exist then create the cycle data in cloud instance & update the mapping file.
          */
 
-        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+
+        if(Files.exists(path)){
+            //Logic to read the mapping file & validate whether corresponding cloud & server section exists.
+            log.debug("Version Mapping file exists for the given project.");
+            progressQueue.put("Version Mapping file exists for the given project.");
+            Map<String, String> mappedServerToCloudVersionMap = FileUtils.readVersionMappingFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+
+            if(mappedServerToCloudVersionMap.size() > 0) {
+                mappedServerToCloudVersionMap.forEach((serverVersionId, cloudVersionId) -> {
+                    try {
+                        progressQueue.put("Fetching cycles from server for version :: "+ serverVersionId);
+
+                        List<CycleDTO> cyclesListFromServer = cycleService.fetchCyclesFromZephyrServer(projectId, serverVersionId, server_base_url, server_user_name,server_user_pass,progressQueue);
+
+                    } catch (Exception ex) {
+                        log.error("", ex.fillInStackTrace());
+                    }
+                });
+            }
+
+            return true;
+        }
 
         return false;
     }

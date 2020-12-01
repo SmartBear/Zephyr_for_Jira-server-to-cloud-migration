@@ -1,11 +1,14 @@
 package com.zephyr.migration.dto;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.util.Date;
 
 /**
  * Created by Himanshu
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CycleDTO implements Serializable {
 
     private static final long serialVersionUID = -7148260302926985424L;
