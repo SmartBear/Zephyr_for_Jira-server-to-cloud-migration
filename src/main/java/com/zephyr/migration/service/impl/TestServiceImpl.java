@@ -6,9 +6,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
+import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
+import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.service.VersionService;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -16,13 +19,11 @@ import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class TestServiceImpl implements TestService {
@@ -37,6 +38,13 @@ public class TestServiceImpl implements TestService {
 
     @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
+
+    @Autowired
+    CycleService cycleService;
+
+    @Autowired
+    @Qualifier(value = "zapiHttpClient")
+    private HttpClient zapiHttpClient;
 
     @Value("${migrationFilePath}")
     private String migrationFilePath;
@@ -98,6 +106,19 @@ public class TestServiceImpl implements TestService {
         });
 
         migrationMappingFileGenerationUtil.updateVersionMappingFile(projectId, migrationFilePath, serverCloudVersionMapping);
+    }
+
+    @Override
+    public void fetchCyclesFromServer(Long projectId, Long versionId) {
+        final String SERVER_USER_NAME = configProperties.getConfigValue("zfj.server.username");
+        final String SERVER_USER_PASS = configProperties.getConfigValue("zfj.server.password");
+        final String SERVER_BASE_URL = configProperties.getConfigValue("zfj.server.baseUrl");
+        List<CycleDTO> cycles = cycleService.fetchCyclesFromZephyrServer(projectId, versionId+"", SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, null);
+    }
+
+    @Override
+    public void initializeHttpClientDetails() {
+        zapiHttpClient.init();
     }
 
     private JiraIssueDTO prepareRequestObject(Issue issue) {

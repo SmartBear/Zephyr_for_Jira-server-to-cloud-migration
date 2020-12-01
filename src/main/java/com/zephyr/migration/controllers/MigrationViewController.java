@@ -29,6 +29,7 @@ public class MigrationViewController {
     @PostMapping("/beginMigration")
     public String processForm(MigrationRequest migrationRequest) {
         try {
+            migrationService.initializeHttpClientDetails();
             migrationService.migrateSingleProject(migrationRequest.getProjectId());
         } catch (Exception e) {
             log.error("Error occurred while migrating the data.", e.fillInStackTrace());

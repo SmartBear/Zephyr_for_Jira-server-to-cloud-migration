@@ -7,4 +7,6 @@ public interface MigrationService {
     void migrateSingleProject(Long projectId)  throws Exception;
 
     List<String> getProgressDetails();
+
+    void initializeHttpClientDetails();
 }

@@ -113,4 +113,11 @@ public class TestController {
         testService.createVersionInJiraCloud(projectId);
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
+
+    @GetMapping("/fetch/server/cycles/{projectId}/{versionId}")
+    public String fetchCyclesFromServer(@PathVariable Long projectId, @PathVariable Long versionId) {
+        testService.initializeHttpClientDetails();
+        testService.fetchCyclesFromServer(projectId,versionId);
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
+    }
 }

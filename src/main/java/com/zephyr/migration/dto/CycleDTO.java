@@ -11,31 +11,25 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CycleDTO implements Serializable {
 
-    private static final long serialVersionUID = -7148260302926985424L;
-    public String id;
-    public String name;
-    public String environment;
-    public String build;
-    public Integer versionId;
-    public Integer projectId;
-    public Long startDate;
-    public Long endDate;
-    public String description;
-    public Date creationDate;
+    private String name;
+    private String id;
+    private String build;
+    private String environment;
+    private String projectId;
+    private String versionId;
+    private String versionName;
+    private String description;
+    private String endDate;
+    private String startDate;
+    private Integer totalExecutions;
+    private Integer totalExecuted;
+    private Integer totalFolders;
 
     public CycleDTO() {
-    }
 
-    public CycleDTO(String name, String environment, String build, Integer versionId, Integer projectId, Long startDate, Long endDate, String description, Integer sprintId, Date creationDate) {
-        this.name = name;
-        this.environment = environment;
-        this.build = build;
-        this.versionId = versionId;
-        this.projectId = projectId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.description = description;
-        this.creationDate = creationDate;
+    }
+    public CycleDTO(Integer number) {
+
     }
 
     public String getName() {
@@ -46,12 +40,12 @@ public class CycleDTO implements Serializable {
         this.name = name;
     }
 
-    public String getEnvironment() {
-        return environment;
+    public String getId() {
+        return id;
     }
 
-    public void setEnvironment(String environment) {
-        this.environment = environment;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getBuild() {
@@ -62,36 +56,36 @@ public class CycleDTO implements Serializable {
         this.build = build;
     }
 
-    public Integer getVersionId() {
-        return versionId;
+    public String getEnvironment() {
+        return environment;
     }
 
-    public void setVersionId(Integer versionId) {
-        this.versionId = versionId;
+    public void setEnvironment(String environment) {
+        this.environment = environment;
     }
 
-    public Integer getProjectId() {
+    public String getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(Integer projectId) {
+    public void setProjectId(String projectId) {
         this.projectId = projectId;
     }
 
-    public Long getStartDate() {
-        return startDate;
+    public String getVersionId() {
+        return versionId;
     }
 
-    public void setStartDate(Long startDate) {
-        this.startDate = startDate;
+    public void setVersionId(String versionId) {
+        this.versionId = versionId;
     }
 
-    public Long getEndDate() {
-        return endDate;
+    public String getVersionName() {
+        return versionName;
     }
 
-    public void setEndDate(Long endDate) {
-        this.endDate = endDate;
+    public void setVersionName(String versionName) {
+        this.versionName = versionName;
     }
 
     public String getDescription() {
@@ -102,35 +96,62 @@ public class CycleDTO implements Serializable {
         this.description = description;
     }
 
-    public Date getCreationDate() {
-        return creationDate;
+    public String getEndDate() {
+        return endDate;
     }
 
-    public void setCreationDate(Date creationDate) {
-        this.creationDate = creationDate;
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
     }
 
-    public String getId() {
-        return id;
+    public String getStartDate() {
+        return startDate;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+
+    public Integer getTotalExecutions() {
+        return totalExecutions;
+    }
+
+    public void setTotalExecutions(Integer totalExecutions) {
+        this.totalExecutions = totalExecutions;
+    }
+
+    public Integer getTotalExecuted() {
+        return totalExecuted;
+    }
+
+    public void setTotalExecuted(Integer totalExecuted) {
+        this.totalExecuted = totalExecuted;
+    }
+
+    public Integer getTotalFolders() {
+        return totalFolders;
+    }
+
+    public void setTotalFolders(Integer totalFolders) {
+        this.totalFolders = totalFolders;
     }
 
     @Override
     public String toString() {
         return "CycleDTO{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", environment='" + environment + '\'' +
+                "name='" + name + '\'' +
+                ", id='" + id + '\'' +
                 ", build='" + build + '\'' +
-                ", versionId=" + versionId +
-                ", projectId=" + projectId +
-                ", startDate=" + startDate +
-                ", endDate=" + endDate +
+                ", environment='" + environment + '\'' +
+                ", projectId='" + projectId + '\'' +
+                ", versionId='" + versionId + '\'' +
+                ", versionName='" + versionName + '\'' +
                 ", description='" + description + '\'' +
-                ", creationDate=" + creationDate +
+                ", endDate='" + endDate + '\'' +
+                ", startDate='" + startDate + '\'' +
+                ", totalExecutions=" + totalExecutions +
+                ", totalExecuted=" + totalExecuted +
+                ", totalFolders=" + totalFolders +
                 '}';
     }
 }

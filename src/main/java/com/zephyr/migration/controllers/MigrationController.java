@@ -26,6 +26,7 @@ public class MigrationController {
     @GetMapping("/migrate/{projectId}")
     public String migrateVersion(@PathVariable Long projectId) throws Exception{
         /*change it to post method*/
+        migrationService.initializeHttpClientDetails();
         migrationService.migrateSingleProject(projectId);
         return String.format("Hello Migration triggered for project %s!", projectId);
     }
@@ -34,9 +35,7 @@ public class MigrationController {
     public String fetchProgressInformation() {
         List<String> progressDetails = migrationService.getProgressDetails();
         StringBuffer progressMessages = new StringBuffer();
-        progressDetails.forEach(progressMessage -> {
-            progressMessages.append(progressMessage).append("<br>");
-        });
+        progressDetails.forEach(progressMessage -> progressMessages.append(progressMessage).append("<br>"));
         return progressMessages.toString();
     }
 }

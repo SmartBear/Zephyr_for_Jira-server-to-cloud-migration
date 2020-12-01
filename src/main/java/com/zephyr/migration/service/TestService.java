@@ -12,4 +12,8 @@ public interface TestService {
     void createUnscheduledVersion(Long projectId)  throws Exception;
 
     void createVersionInJiraCloud(Long projectId);
+
+    void fetchCyclesFromServer(Long projectId, Long versionId);
+
+    void initializeHttpClientDetails();
 }

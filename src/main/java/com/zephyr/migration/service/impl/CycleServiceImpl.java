@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
+import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.CycleDTO;
@@ -18,12 +19,11 @@ import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import sun.misc.BASE64Encoder;
 
 import java.io.IOException;
 import java.util.*;
@@ -36,6 +36,10 @@ public class CycleServiceImpl implements CycleService {
 
     @Autowired
     ConfigProperties configProperties;
+
+    @Autowired
+    @Qualifier(value = "zapiHttpClient")
+    private HttpClient zapiHttpClient;
 
     @Override
     public JsonNode createCycleInZephyrCloud(Long projectId) {
@@ -73,18 +77,14 @@ public class CycleServiceImpl implements CycleService {
         Map<String,CycleDTO> outputResponse = new HashMap<>();
         List<CycleDTO> cycles = new ArrayList<>();
         try {
-            String getCyclesServerUrl = server_base_url + ApplicationConstants.SERVER_GET_CYCLES_URL;
-
+            String getCyclesServerUrl = ApplicationConstants.SERVER_GET_CYCLES_URL;
             getCyclesServerUrl = String.format(getCyclesServerUrl, projectId, serverVersionId);
+            zapiHttpClient.setResourceName(getCyclesServerUrl);
 
-            RestTemplate restTemplate = new RestTemplate();
-            HttpHeaders headers = new HttpHeaders();
-            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-            HTTPBasicAuthFilter filter = new HTTPBasicAuthFilter(server_user_name,server_user_pass);
-
-            String content = restTemplate.getForObject(getCyclesServerUrl, String.class,filter,headers);
+            ClientResponse response = zapiHttpClient.get();
+            String content = response.getEntity(String.class);
             outputResponse = JsonUtil.readValue(content,reference);
+
         } catch (IOException e) {
             log.error("Error while converting cycle json to object -> ", e.fillInStackTrace());
         }
@@ -92,6 +92,14 @@ public class CycleServiceImpl implements CycleService {
             if (Objects.nonNull(cycle.getName())) {
                 cycle.setId(key);
                 cycles.add(cycle);
+                try {
+                    if(Objects.nonNull(progressQueue)) {
+                        progressQueue.put("fetched Cycle from server with data : "+ cycle.toString());
+                    }
+                    log.debug("Cycle DTO:: "+ cycle.toString());
+                } catch (InterruptedException e) {
+                    log.error("",e.fillInStackTrace());
+                }
             }
         });
         return cycles;

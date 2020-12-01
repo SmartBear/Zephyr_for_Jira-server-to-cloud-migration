@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.service.CycleService;
@@ -18,6 +19,7 @@ import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -56,6 +58,10 @@ public class MigrationServiceImpl implements MigrationService {
     @Value("${migrationFilePath}")
     private String migrationFilePath;
 
+    @Autowired
+    @Qualifier(value = "zapiHttpClient")
+    private HttpClient zapiHttpClient;
+
     private final ArrayBlockingQueue<String> progressQueue = new ArrayBlockingQueue<>(10000);
 
     @Override
@@ -84,6 +90,11 @@ public class MigrationServiceImpl implements MigrationService {
         List<String> progressDetails = new ArrayList<>();
         progressQueue.drainTo(progressDetails);
         return progressDetails;
+    }
+
+    @Override
+    public void initializeHttpClientDetails() {
+        zapiHttpClient.init();
     }
 
     ///////////////////////////////// Private method goes below ///////////////////////////////////////////////////////

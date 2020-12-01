@@ -23,5 +23,5 @@ public class ApplicationConstants {
     public static final String VERSION_MAPPING_FILE_NAME ="migration-version-mapping-project-";
 
     /******* SERVER API endpoint URL *********/
-    public static final String SERVER_GET_CYCLES_URL = "/rest/zapi/latest/cycle?projectId=%s&versionId=%s";
+    public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";
 }
