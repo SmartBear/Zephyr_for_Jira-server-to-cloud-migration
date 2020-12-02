@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.MigrationService;
 import com.zephyr.migration.service.ProjectService;
@@ -34,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.stream.Collectors;
 
 @Service
 public class MigrationServiceImpl implements MigrationService {
@@ -77,7 +79,7 @@ public class MigrationServiceImpl implements MigrationService {
         boolean migrateVersions = beginVersionMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
         if(migrateVersions) {
-            boolean migarteCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+            boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
         }
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
@@ -166,11 +168,27 @@ public class MigrationServiceImpl implements MigrationService {
             Map<String, String> mappedServerToCloudVersionMap = FileUtils.readVersionMappingFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
 
             if(mappedServerToCloudVersionMap.size() > 0) {
-                mappedServerToCloudVersionMap.forEach((serverVersionId, cloudVersionId) -> {
+                List<String> listOfServerVersions = new ArrayList<>(mappedServerToCloudVersionMap.keySet());
+                Map<String, List<CycleDTO>> zephyrServerCyclesMap = new HashMap<>();
+                Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new HashMap<>();
+                listOfServerVersions.parallelStream().forEach(serverVersionId -> {
                     try {
                         progressQueue.put("Fetching cycles from server for version :: "+ serverVersionId);
-
                         List<CycleDTO> cyclesListFromServer = cycleService.fetchCyclesFromZephyrServer(projectId, serverVersionId, server_base_url, server_user_name,server_user_pass,progressQueue);
+                        zephyrServerCyclesMap.put(serverVersionId, cyclesListFromServer);
+                    } catch (Exception ex) {
+                        log.error("", ex.fillInStackTrace());
+                    }
+                });
+
+                mappedServerToCloudVersionMap.forEach((serverVersionId, cloudVersionId) -> {
+                    try {
+                        progressQueue.put("Creating cycles in zephyr cloud instance for version :: "+ serverVersionId);
+                        List<CycleDTO> cyclesListFromServer = zephyrServerCyclesMap.get(serverVersionId);
+                        cyclesListFromServer.parallelStream().forEach(cycleDTO -> {
+                            ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
+                            zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                        });
 
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());

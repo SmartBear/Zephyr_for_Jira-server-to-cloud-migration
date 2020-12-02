@@ -1,17 +1,14 @@
 package com.zephyr.migration.service.impl;
 
-import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
-import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.VersionDTO;
+import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.service.CycleService;
-import com.zephyr.migration.service.VersionService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
 import com.zephyr.migration.utils.JsonUtil;
@@ -23,7 +20,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import sun.misc.BASE64Encoder;
 
 import java.io.IOException;
 import java.util.*;
@@ -42,7 +38,7 @@ public class CycleServiceImpl implements CycleService {
     private HttpClient zapiHttpClient;
 
     @Override
-    public JsonNode createCycleInZephyrCloud(Long projectId) {
+    public ZfjCloudCycleBean createCycleInZephyrCloud(CycleDTO cycleDTO) {
         log.info("Serving --> {}", "createCycleInZephyrCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -56,9 +52,8 @@ public class CycleServiceImpl implements CycleService {
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
-        VersionDTO versionDTO = new VersionDTO();
-        versionDTO.setProjectId(projectId);
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(versionDTO), headers);
+
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(""), headers);
         JsonNode response = null;
         String res = null;
         try {
@@ -66,7 +61,9 @@ public class CycleServiceImpl implements CycleService {
         } catch (Exception e) {
             log.error("Error while creating cycle in cloud " + e.getMessage());
         }
-        return response;
+        //read the json node response & prepare cycle bean object.
+        ZfjCloudCycleBean zfjCloudCycleBean = new ZfjCloudCycleBean();
+        return zfjCloudCycleBean;
     }
 
     @Override
