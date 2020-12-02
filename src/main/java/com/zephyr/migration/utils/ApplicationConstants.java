@@ -20,7 +20,8 @@ public class ApplicationConstants {
     public static final String CLOUD_UNSCHEDULED_VERSION_ID = "-1";
     public static final String ZAPI_ACCESS_KEY = "zapiAccessKey";
     public static final String VERSION_MAPPING_SHEET_NAME = "version-mapping";
-    public static final String VERSION_MAPPING_FILE_NAME ="migration-version-mapping-project-";
+    public static final String MAPPING_FILE_NAME ="migration-mapping-project-";
+    public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
 
     /******* SERVER API endpoint URL *********/
     public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";

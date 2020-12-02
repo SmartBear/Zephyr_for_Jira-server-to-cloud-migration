@@ -108,12 +108,12 @@ public class MigrationServiceImpl implements MigrationService {
 
         Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
 
-        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud & server section exists.
             log.debug("Version Mapping file exists for the given project.");
             progressQueue.put("Version Mapping file exists for the given project.");
-            List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+            List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
             if (!mappedServerToCloudVersionList.contains(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID)) {
                 log.info("Unscheduled version is not created for this project. Going to create it now !!");
                 progressQueue.put("Unscheduled version is not created for this project. Going to create it now !!");
@@ -134,7 +134,7 @@ public class MigrationServiceImpl implements MigrationService {
                  * 4. trigger the project meta data.
                  */
                 migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
-                List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+                List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
                 createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
                 return true;
@@ -159,13 +159,13 @@ public class MigrationServiceImpl implements MigrationService {
         4. if the mapping file doesn't exist then create the cycle data in cloud instance & update the mapping file.
          */
 
-        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
 
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud & server section exists.
             log.debug("Version Mapping file exists for the given project.");
             progressQueue.put("Version Mapping file exists for the given project.");
-            Map<String, String> mappedServerToCloudVersionMap = FileUtils.readVersionMappingFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
+            Map<String, String> mappedServerToCloudVersionMap = FileUtils.readVersionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId + ApplicationConstants.XLS);
 
             if(mappedServerToCloudVersionMap.size() > 0) {
                 List<String> listOfServerVersions = new ArrayList<>(mappedServerToCloudVersionMap.keySet());
@@ -186,6 +186,7 @@ public class MigrationServiceImpl implements MigrationService {
                         progressQueue.put("Creating cycles in zephyr cloud instance for version :: "+ serverVersionId);
                         List<CycleDTO> cyclesListFromServer = zephyrServerCyclesMap.get(serverVersionId);
                         cyclesListFromServer.parallelStream().forEach(cycleDTO -> {
+                            cycleDTO.setVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
                             ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
                             zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
                         });
@@ -194,6 +195,9 @@ public class MigrationServiceImpl implements MigrationService {
                         log.error("", ex.fillInStackTrace());
                     }
                 });
+                if (zephyrServerCloudCycleMappingMap != null && !zephyrServerCloudCycleMappingMap.isEmpty()) {
+                    migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap, projectId.toString(), migrationFilePath);
+                }
             }
 
             return true;

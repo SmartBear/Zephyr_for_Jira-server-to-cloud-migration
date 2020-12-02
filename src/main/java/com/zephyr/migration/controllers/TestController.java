@@ -99,9 +99,9 @@ public class TestController {
     public String versionMigrationFile(@RequestParam(value = "projectId", defaultValue = "World") String projectId,
                                        HttpServletResponse response) throws Exception {
         log.info("migration file path is : " + migrationFilePath);
-        Path path = Paths.get(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId+".xls");
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME+projectId+".xls");
         if(Files.exists(path)){
-            List vList = FileUtils.readFile(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME + projectId + ".xls");
+            List vList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId + ".xls");
             return "false";
         }
         //migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, projectId, response);

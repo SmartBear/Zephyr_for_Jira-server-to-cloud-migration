@@ -4,6 +4,7 @@ import com.zephyr.migration.exception.NDataException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +17,7 @@ import java.util.*;
 /**
  * Created by Himanshu Singhal on 18-11-2020.
  */
+@Component
 public class FileUtils {
 
     private static final String SERVER_VERSION_ID_COLUMN_NAME = "Server Version Id";
@@ -105,6 +107,16 @@ public class FileUtils {
             }
         }
         return serverCloudIdsMapping;
+    }
+
+    public static Boolean checkSheetExist(String nDataDir, String filename, String sheetName) throws IOException {
+        FileInputStream fis = new FileInputStream(new File(nDataDir + "/" + filename));
+        HSSFWorkbook wb = new HSSFWorkbook(fis);
+        HSSFSheet sheet = wb.getSheet(sheetName);
+        if (sheet == null){
+            return false;
+        }
+        return true;
     }
 
 }

@@ -2,6 +2,8 @@ package com.zephyr.migration.utils;
 
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.model.ZfjCloudCycleBean;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -31,7 +33,7 @@ public class MigrationMappingFileGenerationUtil {
         try {
             List<List<String>> responseList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
             ExcelUtils excelUtils = new ExcelUtils();
-            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, responseList);
+            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, responseList);
         }catch (Exception e){
             log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
@@ -93,7 +95,7 @@ public class MigrationMappingFileGenerationUtil {
      * @throws Exception
      */
     public void doEntryOfUnscheduledVersionInExcel(String projectId, String migrationFilePath) {
-        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId+".xls";
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_FILE_NAME+projectId+".xls";
         try {
             FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
             HSSFWorkbook wb=new HSSFWorkbook(inputStream);
@@ -131,7 +133,7 @@ public class MigrationMappingFileGenerationUtil {
     }
 
     public void updateVersionMappingFile(Long projectId, String migrationFilePath, Map<String, Long> serverCloudVersionMapping) {
-        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.VERSION_MAPPING_FILE_NAME+projectId+".xls";
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_FILE_NAME+projectId+".xls";
         try {
             if(serverCloudVersionMapping.size() > 0) {
                 FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
@@ -182,5 +184,39 @@ public class MigrationMappingFileGenerationUtil {
             rowDataSet[row.get()][column] = value + ""; //cloud version Id
             row.incrementAndGet();
         });
+    }
+
+    public void generateCycleMappingReportExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId, String migrationFilePath) {
+        try {
+            List<List<String>> responseList = cycleDataToPrintInExcel(zephyrServerCloudCycleMappingMap, projectId);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeCycleDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    public List<List<String>> cycleDataToPrintInExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId) throws Exception {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateCycleHeader());
+        List cycleMappingList;
+        for (Map.Entry<CycleDTO,ZfjCloudCycleBean> entry : zephyrServerCloudCycleMappingMap.entrySet()) {
+            cycleMappingList = new ArrayList<>();
+            cycleMappingList.add(projectId);
+            cycleMappingList.add(entry.getValue().getVersionId().toString());
+            cycleMappingList.add(entry.getKey().getId().toString());
+            cycleMappingList.add(entry.getValue().getId());
+            recordToAdd.add(cycleMappingList);
+        }
+        return recordToAdd;
+    }
+
+    public static List<String> generateCycleHeader()  throws Exception {
+        List<String> header1 = new ArrayList<String>();
+        header1.add("Project Id");
+        header1.add("Cloud Version Id");
+        header1.add("server-cycle-id");
+        header1.add("cloud-cycle-id");
+        return header1;
     }
 }

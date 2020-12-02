@@ -1,6 +1,7 @@
 package com.zephyr.migration.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
@@ -45,24 +46,29 @@ public class CycleServiceImpl implements CycleService {
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
         JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
-        String createCloudVersionsUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_CREATE_CYCLE_URL;
-        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createCloudVersionsUrl);
+        String createCloudCycleUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_CREATE_CYCLE_URL;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createCloudCycleUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
 
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(""), headers);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(cycleDTO), headers);
         JsonNode response = null;
-        String res = null;
+        ZfjCloudCycleBean zfjCloudCycleBean = new ZfjCloudCycleBean();
         try {
-            response = restTemplate.postForObject(createCloudVersionsUrl, entity, JsonNode.class);
+            response = restTemplate.postForObject(createCloudCycleUrl, entity, JsonNode.class);
+            //read the json node response & prepare cycle bean object.
+            if (response != null && !response.isEmpty()) {
+                zfjCloudCycleBean.setName(response.findValue("name").asText());
+                zfjCloudCycleBean.setId(response.findValue("id").asText());
+                zfjCloudCycleBean.setProjectId(response.findValue("projectId").asLong());
+                zfjCloudCycleBean.setVersionId(response.findValue("versionId").asLong());
+            }
         } catch (Exception e) {
             log.error("Error while creating cycle in cloud " + e.getMessage());
         }
-        //read the json node response & prepare cycle bean object.
-        ZfjCloudCycleBean zfjCloudCycleBean = new ZfjCloudCycleBean();
         return zfjCloudCycleBean;
     }
 
