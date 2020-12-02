@@ -186,9 +186,11 @@ public class MigrationServiceImpl implements MigrationService {
                         progressQueue.put("Creating cycles in zephyr cloud instance for version :: "+ serverVersionId);
                         List<CycleDTO> cyclesListFromServer = zephyrServerCyclesMap.get(serverVersionId);
                         cyclesListFromServer.parallelStream().forEach(cycleDTO -> {
-                            cycleDTO.setVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
-                            ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
-                            zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                            if(!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)){
+                                cycleDTO.setVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
+                                zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                            }
                         });
 
                     } catch (Exception ex) {

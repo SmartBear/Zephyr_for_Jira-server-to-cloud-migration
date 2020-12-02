@@ -18,6 +18,7 @@ public class ApplicationConstants {
     /******* General constants *********/
     public static final String XLS = ".xls";
     public static final String CLOUD_UNSCHEDULED_VERSION_ID = "-1";
+    public static final String AD_HOC_CYCLE_ID = "-1";
     public static final String ZAPI_ACCESS_KEY = "zapiAccessKey";
     public static final String VERSION_MAPPING_SHEET_NAME = "version-mapping";
     public static final String MAPPING_FILE_NAME ="migration-mapping-project-";
