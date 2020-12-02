@@ -76,7 +76,7 @@ public class VersionServiceImpl implements VersionService {
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
         try {
-            restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
+            String response = restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
         } catch (Exception e) {
             log.error("Error while creating unscheduled version " + e.getMessage());
         }

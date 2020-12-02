@@ -197,7 +197,7 @@ public class MigrationServiceImpl implements MigrationService {
                         log.error("", ex.fillInStackTrace());
                     }
                 });
-                if (zephyrServerCloudCycleMappingMap != null && !zephyrServerCloudCycleMappingMap.isEmpty()) {
+                if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
                     migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap, projectId.toString(), migrationFilePath);
                 }
             }
@@ -231,7 +231,7 @@ public class MigrationServiceImpl implements MigrationService {
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
         try {
-            restTemplate.postForObject(triggerProjectMetaReindexUrl, entity, String.class);
+            String response = restTemplate.postForObject(triggerProjectMetaReindexUrl, entity, String.class);
         } catch (Exception ex) {
             log.error("Error while calling project meta reindex api call " + ex.fillInStackTrace());
         }

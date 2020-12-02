@@ -16,4 +16,6 @@ public interface TestService {
     void fetchCyclesFromServer(Long projectId, Long versionId);
 
     void initializeHttpClientDetails();
+
+    void triggerProjectMetaData(Long projectId);
 }

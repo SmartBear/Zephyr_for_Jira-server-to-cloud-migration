@@ -120,4 +120,10 @@ public class TestController {
         testService.fetchCyclesFromServer(projectId,versionId);
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
+
+    @GetMapping("/triggerProjectMetaData/{projectId}")
+    public String triggerProjectMetaData(@PathVariable Long projectId) {
+        testService.triggerProjectMetaData(projectId);
+        return String.format("Trigger project meta data for project %s!", projectId);
+    }
 }

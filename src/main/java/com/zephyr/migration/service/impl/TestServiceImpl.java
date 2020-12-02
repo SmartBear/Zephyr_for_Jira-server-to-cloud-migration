@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
@@ -14,6 +15,7 @@ import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.service.VersionService;
+import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.slf4j.Logger;
@@ -21,7 +23,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -119,6 +126,30 @@ public class TestServiceImpl implements TestService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+    }
+
+    @Override
+    public void triggerProjectMetaData(Long projectId) {
+        log.info("Serving --> {}", "triggerProjectMetaReindex()");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+        final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+        final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+
+        JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+        String triggerProjectMetaReindexUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_PROJECT_META_REINDEX_URL;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, triggerProjectMetaReindexUrl);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
+        try {
+            String response = restTemplate.postForObject(triggerProjectMetaReindexUrl, entity, String.class);
+        } catch (Exception ex) {
+            log.error("Error while calling project meta reindex api call " + ex.fillInStackTrace());
+        }
     }
 
     private JiraIssueDTO prepareRequestObject(Issue issue) {
