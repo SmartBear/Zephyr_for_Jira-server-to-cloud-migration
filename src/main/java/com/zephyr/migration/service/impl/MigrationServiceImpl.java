@@ -184,24 +184,29 @@ public class MigrationServiceImpl implements MigrationService {
                     }
                 });
 
+                Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
+
                 mappedServerToCloudVersionMap.forEach((serverVersionId, cloudVersionId) -> {
                     try {
                         progressQueue.put("Creating cycles in zephyr cloud instance for version :: "+ serverVersionId);
                         List<CycleDTO> cyclesListFromServer = zephyrServerCyclesMap.get(serverVersionId);
-                        cyclesListFromServer.forEach(cycleDTO -> {
-                            if (!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
-                                log.info("version info :: " + mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
-                                cycleDTO.setVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
-                                ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
-                                if (Objects.nonNull(cloudCycleBean)) {
-                                    zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                        if (!Files.exists(cycleMappedFile)) {
+                            cyclesListFromServer.forEach(cycleDTO -> {
+                                if (!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                                    log.info("version info :: " + mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                    cycleDTO.setVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                    ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
+                                    if (Objects.nonNull(cloudCycleBean)) {
+                                        zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                    }
+                                } else {
+                                    /*Add adhoc cycle for mapping file*/
+                                    zephyrServerCloudCycleMappingMap.put(cycleDTO, prepareAdhocCycleResponse(projectId,mappedServerToCloudVersionMap.get(cycleDTO.getVersionId())));
                                 }
-                            }else {
-                                /*Add adhoc cycle for mapping file*/
-                                zephyrServerCloudCycleMappingMap.put(cycleDTO, prepareAdhocCycleResponse(projectId,mappedServerToCloudVersionMap.get(cycleDTO.getVersionId())));
-                            }
-                        });
-
+                            });
+                        }else {
+                            createUnmappedCycleInCloud(mappedServerToCloudVersionMap, cyclesListFromServer, projectId, migrationFilePath);
+                        }
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());
                     }
@@ -210,10 +215,8 @@ public class MigrationServiceImpl implements MigrationService {
                     migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap, projectId.toString(), migrationFilePath);
                 }
             }
-
             return true;
         }
-
         return false;
     }
 
@@ -283,6 +286,13 @@ public class MigrationServiceImpl implements MigrationService {
         }
     }
 
+
+    /**
+     *
+     * @param projectId
+     * @param versionId
+     * @return
+     */
     private ZfjCloudCycleBean prepareAdhocCycleResponse(Long projectId, String versionId) {
         ZfjCloudCycleBean adhocCycle = new ZfjCloudCycleBean();
         adhocCycle.setId(ApplicationConstants.AD_HOC_CYCLE_ID);
@@ -291,4 +301,41 @@ public class MigrationServiceImpl implements MigrationService {
         return adhocCycle;
     }
 
+
+    /**
+     *
+     * @param mappedServerToCloudVersionMap
+     * @param cyclesListFromServer
+     * @param projectId
+     * @param migrationFilePath
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    private void createUnmappedCycleInCloud(Map<String, String> mappedServerToCloudVersionMap, List<CycleDTO> cyclesListFromServer, Long projectId, String migrationFilePath) throws IOException, InterruptedException {
+        if(!cyclesListFromServer.isEmpty()) {
+            Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new HashMap<>();
+                cyclesListFromServer.forEach(cycleDTO -> {
+                    if (!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                        String cloudVersionIdFromVersionMappingFile = mappedServerToCloudVersionMap.get(cycleDTO.getVersionId());
+                        try {
+                            Boolean cycleMoved = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS, cloudVersionIdFromVersionMappingFile, cycleDTO.getId());
+                            if (!cycleMoved) {
+                                log.info("version info :: " + mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                cycleDTO.setVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
+                                if (Objects.nonNull(cloudCycleBean)) {
+                                    zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                }
+                            }
+                        }catch (IOException e) {
+
+                        }
+                    }
+                });
+            if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
+                //Update the cycle mapping file.
+                migrationMappingFileGenerationUtil.updateCycleMappingFile(projectId, migrationFilePath, zephyrServerCloudCycleMappingMap);
+            }
+        }
+    }
 }
