@@ -21,7 +21,8 @@ public class ApplicationConstants {
     public static final String AD_HOC_CYCLE_ID = "-1";
     public static final String ZAPI_ACCESS_KEY = "zapiAccessKey";
     public static final String VERSION_MAPPING_SHEET_NAME = "version-mapping";
-    public static final String MAPPING_FILE_NAME ="migration-mapping-project-";
+    public static final String MAPPING_VERSION_FILE_NAME ="migration-version-mapping-project-";
+    public static final String MAPPING_CYCLE_FILE_NAME ="migration-cycle-mapping-project-";
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
 
     /******* SERVER API endpoint URL *********/

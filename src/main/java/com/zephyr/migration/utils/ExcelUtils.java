@@ -4,9 +4,7 @@ import com.zephyr.migration.service.impl.VersionServiceImpl;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -90,26 +88,30 @@ public class ExcelUtils {
         String errorMessage = "Sorry. The file you are looking for does not exist";
         //FileInputStream fis=new FileInputStream(new File(migrationFilePath+"/"+ fileName +".xls"));
         HSSFSheet firstSheet;
+        HSSFSheet secondSheet;
         HSSFWorkbook workbook;
         FileOutputStream fos;
         workbook = new HSSFWorkbook();
+        //firstSheet = workbook.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
         HSSFCellStyle hsfstyle = workbook.createCellStyle();
         hsfstyle.setBorderBottom(BorderStyle.THICK);
         hsfstyle.setFillBackgroundColor((short)245);
-        firstSheet = workbook.createSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
-        Row headerRow = firstSheet.createRow(rowNum);
+        secondSheet = workbook.createSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+        Row headerRow = secondSheet.createRow(rowNum);
         headerRow.setHeightInPoints(40);
         fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        //Sheet cloneSheet = workbook.cloneSheet(0);
         try {
 
             for (List<String> record : recordList) {
-                Row row = firstSheet.createRow(rowNum);
+                Row row = secondSheet.createRow(rowNum);
                 for (int k = 0; k < record.size(); k++) {
                     Cell cell = row.createCell(k);
                     cell.setCellValue(record.get(k));
                 }
                 rowNum++;
             }
+
             workbook.write(fos);
 
             /*response.setContentType("application/vnd.ms-excel");

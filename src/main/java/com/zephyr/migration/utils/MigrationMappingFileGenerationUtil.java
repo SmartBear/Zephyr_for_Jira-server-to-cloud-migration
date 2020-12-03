@@ -33,7 +33,7 @@ public class MigrationMappingFileGenerationUtil {
         try {
             List<List<String>> responseList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
             ExcelUtils excelUtils = new ExcelUtils();
-            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, responseList);
+            excelUtils.writeToExcelFileMethod(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME+projectId, ApplicationConstants.VERSION_MAPPING_SHEET_NAME, responseList);
         }catch (Exception e){
             log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
@@ -95,7 +95,7 @@ public class MigrationMappingFileGenerationUtil {
      * @throws Exception
      */
     public void doEntryOfUnscheduledVersionInExcel(String projectId, String migrationFilePath) {
-        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_FILE_NAME+projectId+".xls";
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_VERSION_FILE_NAME+projectId+".xls";
         try {
             FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
             HSSFWorkbook wb=new HSSFWorkbook(inputStream);
@@ -133,7 +133,7 @@ public class MigrationMappingFileGenerationUtil {
     }
 
     public void updateVersionMappingFile(Long projectId, String migrationFilePath, Map<String, Long> serverCloudVersionMapping) {
-        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_FILE_NAME+projectId+".xls";
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_VERSION_FILE_NAME+projectId+".xls";
         try {
             if(serverCloudVersionMapping.size() > 0) {
                 FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
@@ -190,7 +190,7 @@ public class MigrationMappingFileGenerationUtil {
         try {
             List<List<String>> responseList = cycleDataToPrintInExcel(zephyrServerCloudCycleMappingMap, projectId);
             ExcelUtils excelUtils = new ExcelUtils();
-            excelUtils.writeCycleDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_FILE_NAME + projectId, responseList);
+            excelUtils.writeCycleDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId, responseList);
         }catch (Exception e){
             log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
