@@ -173,6 +173,47 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
+    public void updateCycleMappingFile(Long projectId, String migrationFilePath, Map<CycleDTO, ZfjCloudCycleBean> serverCloudCycleMapping) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_CYCLE_FILE_NAME+projectId+".xls";
+        try {
+            if(serverCloudCycleMapping.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+                HSSFWorkbook wb=new HSSFWorkbook(inputStream);
+                HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][3];
+                int rowCount = sheet.getLastRowNum();
+
+                populateCycleRowDataSet(rowDataSet, projectId, serverCloudCycleMapping);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+
+        } catch (IOException | EncryptedDocumentException ex) {
+            log.error("Error occurred while closing the file.", ex.fillInStackTrace());
+        }
+    }
+
     private void populateRowDataSet(Object[][] rowDataSet, Long projectId, Map<String, Long> serverCloudVersionMapping) {
         AtomicInteger row = new AtomicInteger();
         serverCloudVersionMapping.forEach((key, value) -> {
@@ -182,6 +223,19 @@ public class MigrationMappingFileGenerationUtil {
             rowDataSet[row.get()][column] = key + ""; //server version Id
             ++column;
             rowDataSet[row.get()][column] = value + ""; //cloud version Id
+            row.incrementAndGet();
+        });
+    }
+
+    private void populateCycleRowDataSet(Object[][] rowDataSet, Long projectId, Map<CycleDTO, ZfjCloudCycleBean> serverCloudVersionMapping) {
+        AtomicInteger row = new AtomicInteger();
+        serverCloudVersionMapping.forEach((key, value) -> {
+            int column = 0;
+            rowDataSet[row.get()][column] = projectId + "";
+            ++column;
+            rowDataSet[row.get()][column] = key.getId() + ""; //server version Id
+            ++column;
+            rowDataSet[row.get()][column] = value.getId() + ""; //cloud version Id
             row.incrementAndGet();
         });
     }

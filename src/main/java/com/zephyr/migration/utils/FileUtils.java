@@ -22,6 +22,7 @@ public class FileUtils {
 
     private static final String SERVER_VERSION_ID_COLUMN_NAME = "Server Version Id";
     private static final String CLOUD_VERSION_ID_COLUMN_NAME = "Cloud Version Id";
+    private static final String SERVER_CYCLE_ID_COLUMN_NAME = "server-cycle-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -78,6 +79,38 @@ public class FileUtils {
         }
         return cloudVersionList;
     }
+
+    public static Boolean readCycleMappingFile(String nDataDir, String filename, String cloudVersionId, String serverCycleId) throws IOException {
+        //obtaining input bytes from a file
+        FileInputStream fis=new FileInputStream(new File(nDataDir+"/"+filename));
+        //creating workbook instance that refers to .xls file
+        HSSFWorkbook wb=new HSSFWorkbook(fis);
+        //creating a Sheet object to retrieve the object
+        HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+
+        int column_index_1 = 0;
+        int column_index_2 = 0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            if (CLOUD_VERSION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                column_index_1 = cell.getColumnIndex();
+            }else if (SERVER_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                column_index_2 = cell.getColumnIndex();
+            }
+        }
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//headers
+            Cell c_1 = r.getCell(column_index_1);
+            Cell c_2 = r.getCell(column_index_2);
+            if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                if (cloudVersionId.equalsIgnoreCase(c_1.getStringCellValue()) && serverCycleId.equalsIgnoreCase(c_2.getStringCellValue()))
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static Map<String, String> readVersionMappingFile(String directory, String filename) throws IOException {
         //obtaining input bytes from a file
         FileInputStream fis=new FileInputStream(new File(directory+"/"+filename));
