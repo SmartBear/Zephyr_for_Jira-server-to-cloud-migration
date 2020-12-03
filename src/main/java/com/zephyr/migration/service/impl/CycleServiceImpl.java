@@ -54,7 +54,7 @@ public class CycleServiceImpl implements CycleService {
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
 
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(cycleDTO), headers);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(prepareRequestToCreateCycle(cycleDTO)), headers);
         JsonNode response = null;
         ZfjCloudCycleBean zfjCloudCycleBean = new ZfjCloudCycleBean();
         try {
@@ -68,6 +68,7 @@ public class CycleServiceImpl implements CycleService {
             }
         } catch (Exception e) {
             log.error("Error while creating cycle in cloud " + e.getMessage());
+            return null;
         }
         return zfjCloudCycleBean;
     }
@@ -106,6 +107,20 @@ public class CycleServiceImpl implements CycleService {
             }
         });
         return cycles;
+    }
+
+
+    private ZfjCloudCycleBean prepareRequestToCreateCycle(CycleDTO cycleDTO) {
+        ZfjCloudCycleBean cloudCycleBean = new ZfjCloudCycleBean();
+        cloudCycleBean.setName(cycleDTO.getName());
+        cloudCycleBean.setProjectId(Long.parseLong(cycleDTO.getProjectId()));
+        cloudCycleBean.setVersionId(Long.parseLong(cycleDTO.getVersionId()));
+        cloudCycleBean.setBuild(cycleDTO.getBuild());
+        cloudCycleBean.setDescription(cycleDTO.getDescription());
+        cloudCycleBean.setEnvironment(cycleDTO.getEnvironment());
+        //cloudCycleBean.setStartDate(new Date());
+        //cloudCycleBean.setEndDate(new Date());
+        return cloudCycleBean;
     }
 
 }

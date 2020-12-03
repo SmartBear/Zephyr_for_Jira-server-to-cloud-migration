@@ -1,11 +1,18 @@
 package com.zephyr.migration.model;
 
+import java.util.Date;
+
 public class ZfjCloudCycleBean {
 
     private String id;
     private String name;
     private Long projectId;
     private Long versionId;
+    public String environment;
+    public String build;
+    public Date startDate;
+    public Date endDate;
+    public String description;
 
     public String getId() {
         return id;
@@ -37,5 +44,45 @@ public class ZfjCloudCycleBean {
 
     public void setVersionId(Long versionId) {
         this.versionId = versionId;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
+    public String getBuild() {
+        return build;
+    }
+
+    public void setBuild(String build) {
+        this.build = build;
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
