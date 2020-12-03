@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class TestServiceImpl implements TestService {
@@ -120,7 +121,26 @@ public class TestServiceImpl implements TestService {
         final String SERVER_USER_NAME = configProperties.getConfigValue("zfj.server.username");
         final String SERVER_USER_PASS = configProperties.getConfigValue("zfj.server.password");
         final String SERVER_BASE_URL = configProperties.getConfigValue("zfj.server.baseUrl");
-        List<CycleDTO> cycles = cycleService.fetchCyclesFromZephyrServer(projectId, versionId+"", SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, null);
+        //List<CycleDTO> cycles = cycleService.fetchCyclesFromZephyrServer(projectId, versionId+"", SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, null);
+
+        List<String> listOfServerVersions = new ArrayList<>();
+        listOfServerVersions.add("-1");
+        listOfServerVersions.add("10000");
+        listOfServerVersions.add("10001");
+        listOfServerVersions.add("10002");
+        listOfServerVersions.add("10100");
+
+        CopyOnWriteArrayList<String> list = new CopyOnWriteArrayList<>();
+        Map<String, List<CycleDTO>> zephyrServerCyclesMap1 = new HashMap<>();
+        listOfServerVersions.parallelStream().forEachOrdered(version -> {
+            log.info("List of cycles for version :: "+version);
+            List<CycleDTO> cycles = cycleService.fetchCyclesFromZephyrServer(projectId, version, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, null);
+            zephyrServerCyclesMap1.put(version, cycles);
+            log.info("Size of cycles for version :: "+cycles.size());
+        });
+
+
+        log.info("Size of map1 of cycles per version :: "+zephyrServerCyclesMap1.size());
     }
 
     @Override

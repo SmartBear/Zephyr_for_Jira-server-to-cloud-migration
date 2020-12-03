@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -171,11 +172,13 @@ public class MigrationServiceImpl implements MigrationService {
                 List<String> listOfServerVersions = new ArrayList<>(mappedServerToCloudVersionMap.keySet());
                 Map<String, List<CycleDTO>> zephyrServerCyclesMap = new HashMap<>();
                 Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new HashMap<>();
-                listOfServerVersions.parallelStream().forEach(serverVersionId -> {
+                listOfServerVersions.parallelStream().forEachOrdered(serverVersionId -> {
                     try {
                         progressQueue.put("Fetching cycles from server for version :: "+ serverVersionId);
+                        log.info("Fetching cycles from server for version :: "+ serverVersionId);
                         List<CycleDTO> cyclesListFromServer = cycleService.fetchCyclesFromZephyrServer(projectId, serverVersionId, server_base_url, server_user_name,server_user_pass,progressQueue);
                         zephyrServerCyclesMap.put(serverVersionId, cyclesListFromServer);
+                        log.info("Fetched cycles from server for version :: "+ serverVersionId);
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());
                     }
@@ -193,6 +196,9 @@ public class MigrationServiceImpl implements MigrationService {
                                 if (Objects.nonNull(cloudCycleBean)) {
                                     zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
                                 }
+                            }else {
+                                /*Add adhoc cycle for mapping file*/
+                                zephyrServerCloudCycleMappingMap.put(cycleDTO, prepareAdhocCycleResponse(projectId,mappedServerToCloudVersionMap.get(cycleDTO.getVersionId())));
                             }
                         });
 
@@ -210,6 +216,7 @@ public class MigrationServiceImpl implements MigrationService {
 
         return false;
     }
+
 
     /**
      *
@@ -271,8 +278,17 @@ public class MigrationServiceImpl implements MigrationService {
                     log.error("", e.fillInStackTrace());
                 }
             });
-            //TODO: Update the mapping file.
+            //Update the mapping file.
             migrationMappingFileGenerationUtil.updateVersionMappingFile(projectId, migrationFilePath, serverCloudVersionMapping);
         }
     }
+
+    private ZfjCloudCycleBean prepareAdhocCycleResponse(Long projectId, String versionId) {
+        ZfjCloudCycleBean adhocCycle = new ZfjCloudCycleBean();
+        adhocCycle.setId(ApplicationConstants.AD_HOC_CYCLE_ID);
+        adhocCycle.setProjectId(projectId);
+        adhocCycle.setVersionId(Long.parseLong(versionId));
+        return adhocCycle;
+    }
+
 }
