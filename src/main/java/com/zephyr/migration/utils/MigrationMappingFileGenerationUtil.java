@@ -181,7 +181,7 @@ public class MigrationMappingFileGenerationUtil {
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][3];
+                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][4];
                 int rowCount = sheet.getLastRowNum();
 
                 populateCycleRowDataSet(rowDataSet, projectId, serverCloudCycleMapping);
@@ -232,6 +232,8 @@ public class MigrationMappingFileGenerationUtil {
         serverCloudVersionMapping.forEach((key, value) -> {
             int column = 0;
             rowDataSet[row.get()][column] = projectId + "";
+            ++column;
+            rowDataSet[row.get()][column] = value.getVersionId() + "";
             ++column;
             rowDataSet[row.get()][column] = key.getId() + ""; //server version Id
             ++column;
