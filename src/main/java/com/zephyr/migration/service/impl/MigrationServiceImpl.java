@@ -327,8 +327,8 @@ public class MigrationServiceImpl implements MigrationService {
                                     zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
                                 }
                             }
-                        }catch (IOException e) {
-
+                        }catch (Exception ex) {
+                            log.error("Error occurred while creating cycle.", ex.fillInStackTrace());
                         }
                     }
                 });
