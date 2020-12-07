@@ -8,11 +8,10 @@ import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
-import com.zephyr.migration.service.CycleService;
-import com.zephyr.migration.service.MigrationService;
-import com.zephyr.migration.service.ProjectService;
-import com.zephyr.migration.service.VersionService;
+import com.zephyr.migration.model.ZfjCloudFolderBean;
+import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
 import com.zephyr.migration.utils.FileUtils;
@@ -56,6 +55,9 @@ public class MigrationServiceImpl implements MigrationService {
     CycleService cycleService;
 
     @Autowired
+    FolderService folderService;
+
+    @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Value("${migrationFilePath}")
@@ -81,6 +83,9 @@ public class MigrationServiceImpl implements MigrationService {
 
         if(migrateVersions) {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+            if(migrateCycles) {
+                boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+            }
         }
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
@@ -220,6 +225,48 @@ public class MigrationServiceImpl implements MigrationService {
         return false;
     }
 
+    /**
+     * cycle migration
+     */
+    private boolean beginFolderMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws InterruptedException, IOException {
+        Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
+        if (Files.exists(cycleMappedFile)) {
+            //Todo fetch folder details from the server
+            List<FolderDTO> foldersListFromServer = new ArrayList<FolderDTO>();
+            Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap = new HashMap<>();
+            Path folderMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS);
+            Map<String, String> mappedServerToCloudCycleMap = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
+            if (!Files.exists(folderMappedFile)) {
+                mappedServerToCloudCycleMap.forEach((serverCycleId, cloudCycleId) -> {
+                    try {
+                        progressQueue.put("Creating folders in zephyr cloud instance for cycle :: "+ serverCycleId);
+                        FolderDTO folderDTO1 = new FolderDTO();
+                        folderDTO1.setVersionId(-1);
+                        folderDTO1.setProjectId(10000);
+                        folderDTO1.setCycleId("0b619922-e085-4173-bf81-6c3e7f33bf97");
+                        folderDTO1.setName("folder1");
+                        folderDTO1.setId("1");
+                        foldersListFromServer.add(folderDTO1);
+                        foldersListFromServer.forEach(folderDTO -> {
+                            ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO);
+                            if (Objects.nonNull(cloudFolderBean)) {
+                                zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
+                            }
+                        });
+                    } catch (Exception ex) {
+                        log.error("", ex.fillInStackTrace());
+                    }
+                });
+            }else {
+                createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, migrationFilePath);
+            }
+            if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
+                migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), migrationFilePath);
+            }
+        }
+        return false;
+    }
+
 
     /**
      *
@@ -335,6 +382,30 @@ public class MigrationServiceImpl implements MigrationService {
             if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
                 //Update the cycle mapping file.
                 migrationMappingFileGenerationUtil.updateCycleMappingFile(projectId, migrationFilePath, zephyrServerCloudCycleMappingMap);
+            }
+        }
+    }
+
+    private void createUnmappedFolderInCloud(Map<String, String> mappedServerToCloudCycleMap, List<FolderDTO> foldersListFromServer, Long projectId, String migrationFilePath) throws IOException, InterruptedException {
+        if(!foldersListFromServer.isEmpty()) {
+            Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap = new HashMap<>();
+            foldersListFromServer.forEach(folderDTO -> {
+                String cloudCycleIdFromCycleMappingFile = mappedServerToCloudCycleMap.get(folderDTO.getCycleId());
+                try {
+                    Boolean folderMoved = FileUtils.readFolderMappingFile(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS, cloudCycleIdFromCycleMappingFile, folderDTO.getId());
+                    if (!folderMoved) {
+                        ZfjCloudFolderBean zfjCloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO);
+                        if (Objects.nonNull(zfjCloudFolderBean)) {
+                            zephyrServerCloudFolderMappingMap.put(folderDTO, zfjCloudFolderBean);
+                        }
+                    }
+                }catch (Exception ex) {
+                    log.error("Error occurred while creating folder.", ex.fillInStackTrace());
+                }
+            });
+            if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
+                //Update the cycle mapping file.
+                migrationMappingFileGenerationUtil.updateFolderMappingFile(projectId, migrationFilePath, zephyrServerCloudFolderMappingMap);
             }
         }
     }

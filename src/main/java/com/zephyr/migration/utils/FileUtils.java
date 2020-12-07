@@ -23,6 +23,8 @@ public class FileUtils {
     private static final String SERVER_VERSION_ID_COLUMN_NAME = "Server Version Id";
     private static final String CLOUD_VERSION_ID_COLUMN_NAME = "Cloud Version Id";
     private static final String SERVER_CYCLE_ID_COLUMN_NAME = "server-cycle-id";
+    private static final String CLOUD_CYCLE_ID_COLUMN_NAME = "cloud-cycle-id";
+    private static final String SERVER_FOLDER_ID_COLUMN_NAME = "server-folder-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -111,6 +113,37 @@ public class FileUtils {
         return false;
     }
 
+    public static Boolean readFolderMappingFile(String nDataDir, String filename, String cloudCycleId, String serverFolderId) throws IOException {
+        //obtaining input bytes from a file
+        FileInputStream fis=new FileInputStream(new File(nDataDir+"/"+filename));
+        //creating workbook instance that refers to .xls file
+        HSSFWorkbook wb=new HSSFWorkbook(fis);
+        //creating a Sheet object to retrieve the object
+        HSSFSheet sheet=wb.getSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
+
+        int column_index_1 = 0;
+        int column_index_2 = 0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                column_index_1 = cell.getColumnIndex();
+            }else if (SERVER_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                column_index_2 = cell.getColumnIndex();
+            }
+        }
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//headers
+            Cell c_1 = r.getCell(column_index_1);
+            Cell c_2 = r.getCell(column_index_2);
+            if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                if (cloudCycleId.equalsIgnoreCase(c_1.getStringCellValue()) && serverFolderId.equalsIgnoreCase(c_2.getStringCellValue()))
+                    return true;
+            }
+        }
+        return false;
+    }
+
     public static Map<String, String> readVersionMappingFile(String directory, String filename) throws IOException {
         //obtaining input bytes from a file
         FileInputStream fis=new FileInputStream(new File(directory+"/"+filename));
@@ -126,6 +159,37 @@ public class FileUtils {
             if (SERVER_VERSION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                 serverIdColIndex = cell.getColumnIndex();
             }else if(CLOUD_VERSION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                cloudIdColIndex = cell.getColumnIndex();
+            }
+        }
+        Map<String,String> serverCloudIdsMapping = new HashMap<>();
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//headers
+
+            Cell serverIdCellVal = r.getCell(serverIdColIndex);
+            Cell cloudIdCellVal = r.getCell(cloudIdColIndex);
+            if (Objects.nonNull(cloudIdCellVal) && Objects.nonNull(serverIdCellVal)) {
+                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), cloudIdCellVal.getStringCellValue());
+            }
+        }
+        return serverCloudIdsMapping;
+    }
+
+    public static Map<String, String> readCycleMappingFile(String directory, String filename) throws IOException {
+        //obtaining input bytes from a file
+        FileInputStream fis=new FileInputStream(new File(directory+"/"+filename));
+        //creating workbook instance that refers to .xls file
+        HSSFWorkbook wb=new HSSFWorkbook(fis);
+        //creating a Sheet object to retrieve the object
+        HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+
+        int serverIdColIndex = 0, cloudIdColIndex=0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            if (SERVER_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                serverIdColIndex = cell.getColumnIndex();
+            }else if(CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                 cloudIdColIndex = cell.getColumnIndex();
             }
         }
