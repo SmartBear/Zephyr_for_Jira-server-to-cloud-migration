@@ -143,7 +143,7 @@ public class MigrationMappingFileGenerationUtil {
                 Object[][] rowDataSet = new Object[serverCloudVersionMapping.size()][3];
                 int rowCount = sheet.getLastRowNum();
 
-                populateRowDataSet(rowDataSet,projectId, serverCloudVersionMapping);
+                populateVersionRowDataSet(rowDataSet,projectId, serverCloudVersionMapping);
 
                 for (Object[] rowData : rowDataSet) {
                     Row row = sheet.createRow(++rowCount);
@@ -173,7 +173,7 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void updateCycleMappingFile(Long projectId, String migrationFilePath, Map<CycleDTO, ZfjCloudCycleBean> serverCloudCycleMapping) {
+    public void updateCycleMappingFile(Long projectId, String projectName, String migrationFilePath, Map<CycleDTO, ZfjCloudCycleBean> serverCloudCycleMapping) {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_CYCLE_FILE_NAME+projectId+".xls";
         try {
             if(serverCloudCycleMapping.size() > 0) {
@@ -181,10 +181,10 @@ public class MigrationMappingFileGenerationUtil {
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][4];
+                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][6];
                 int rowCount = sheet.getLastRowNum();
 
-                populateCycleRowDataSet(rowDataSet, projectId, serverCloudCycleMapping);
+                populateCycleRowDataSet(rowDataSet, projectId, projectName, serverCloudCycleMapping);
 
                 for (Object[] rowData : rowDataSet) {
                     Row row = sheet.createRow(++rowCount);
@@ -214,7 +214,7 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    private void populateRowDataSet(Object[][] rowDataSet, Long projectId, Map<String, Long> serverCloudVersionMapping) {
+    private void populateVersionRowDataSet(Object[][] rowDataSet, Long projectId, Map<String, Long> serverCloudVersionMapping) {
         AtomicInteger row = new AtomicInteger();
         serverCloudVersionMapping.forEach((key, value) -> {
             int column = 0;
@@ -227,24 +227,28 @@ public class MigrationMappingFileGenerationUtil {
         });
     }
 
-    private void populateCycleRowDataSet(Object[][] rowDataSet, Long projectId, Map<CycleDTO, ZfjCloudCycleBean> serverCloudVersionMapping) {
+    private void populateCycleRowDataSet(Object[][] rowDataSet, Long projectId, String projectName, Map<CycleDTO, ZfjCloudCycleBean> serverCloudVersionMapping) {
         AtomicInteger row = new AtomicInteger();
         serverCloudVersionMapping.forEach((key, value) -> {
             int column = 0;
             rowDataSet[row.get()][column] = projectId + "";
             ++column;
+            rowDataSet[row.get()][column] = projectName;
+            ++column;
             rowDataSet[row.get()][column] = value.getVersionId() + "";
             ++column;
-            rowDataSet[row.get()][column] = key.getId() + ""; //server version Id
+            rowDataSet[row.get()][column] = key.getId() + ""; //server cycle Id
             ++column;
-            rowDataSet[row.get()][column] = value.getId() + ""; //cloud version Id
+            rowDataSet[row.get()][column] = value.getId() + ""; //cloud cycle Id
+            ++column;
+            rowDataSet[row.get()][column] = value.getName() + ""; //cycle name
             row.incrementAndGet();
         });
     }
 
-    public void generateCycleMappingReportExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId, String migrationFilePath) {
+    public void generateCycleMappingReportExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId, String projectName, String migrationFilePath) {
         try {
-            List<List<String>> responseList = cycleDataToPrintInExcel(zephyrServerCloudCycleMappingMap, projectId);
+            List<List<String>> responseList = cycleDataToPrintInExcel(zephyrServerCloudCycleMappingMap, projectId, projectName);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeCycleDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId, responseList);
         }catch (Exception e){
@@ -252,27 +256,32 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public List<List<String>> cycleDataToPrintInExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId) throws Exception {
+    public List<List<String>> cycleDataToPrintInExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId, String projectName) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateCycleHeader());
         List cycleMappingList;
         for (Map.Entry<CycleDTO,ZfjCloudCycleBean> entry : zephyrServerCloudCycleMappingMap.entrySet()) {
+            ZfjCloudCycleBean cloudCycleBean = entry.getValue();
             cycleMappingList = new ArrayList<>();
             cycleMappingList.add(projectId);
-            cycleMappingList.add(entry.getValue().getVersionId().toString());
-            cycleMappingList.add(entry.getKey().getId().toString());
-            cycleMappingList.add(entry.getValue().getId());
+            cycleMappingList.add(projectName);
+            cycleMappingList.add(cloudCycleBean.getVersionId()+"");
+            cycleMappingList.add(entry.getKey().getId());
+            cycleMappingList.add(cloudCycleBean.getId());
+            cycleMappingList.add(cloudCycleBean.getName());
             recordToAdd.add(cycleMappingList);
         }
         return recordToAdd;
     }
 
     public static List<String> generateCycleHeader()  throws Exception {
-        List<String> header1 = new ArrayList<String>();
-        header1.add("Project Id");
-        header1.add("Cloud Version Id");
-        header1.add("server-cycle-id");
-        header1.add("cloud-cycle-id");
-        return header1;
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project Id");
+        excelHeader.add("Project Name");
+        excelHeader.add("Cloud Version Id");
+        excelHeader.add("server-cycle-id");
+        excelHeader.add("cloud-cycle-id");
+        excelHeader.add("Cycle-Name");
+        return excelHeader;
     }
 }
