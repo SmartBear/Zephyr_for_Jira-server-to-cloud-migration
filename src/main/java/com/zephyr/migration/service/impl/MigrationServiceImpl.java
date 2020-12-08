@@ -1,5 +1,6 @@
 package com.zephyr.migration.service.impl;
 
+import com.atlassian.jira.rest.client.api.domain.Project;
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,8 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+
 
 @Service
 public class MigrationServiceImpl implements MigrationService {
@@ -165,6 +165,12 @@ public class MigrationServiceImpl implements MigrationService {
         4. if the mapping file doesn't exist then create the cycle data in cloud instance & update the mapping file.
          */
 
+        Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
+        String projectName = null;
+        if (project != null) {
+            projectName = project.getName();
+        }
+
         Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
 
         if(Files.exists(path)){
@@ -191,6 +197,7 @@ public class MigrationServiceImpl implements MigrationService {
 
                 Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
 
+                String finalProjectName = projectName;
                 mappedServerToCloudVersionMap.forEach((serverVersionId, cloudVersionId) -> {
                     try {
                         progressQueue.put("Creating cycles in zephyr cloud instance for version :: "+ serverVersionId);
@@ -210,14 +217,15 @@ public class MigrationServiceImpl implements MigrationService {
                                 }
                             });
                         }else {
-                            createUnmappedCycleInCloud(mappedServerToCloudVersionMap, cyclesListFromServer, projectId, migrationFilePath);
+                            createUnmappedCycleInCloud(mappedServerToCloudVersionMap, cyclesListFromServer, projectId, finalProjectName, migrationFilePath);
                         }
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());
                     }
                 });
                 if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
-                    migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap, projectId.toString(), migrationFilePath);
+                    migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap,
+                            projectId.toString(), projectName, migrationFilePath);
                     return true;
                 }
             }
@@ -347,6 +355,7 @@ public class MigrationServiceImpl implements MigrationService {
         adhocCycle.setId(ApplicationConstants.AD_HOC_CYCLE_ID);
         adhocCycle.setProjectId(projectId);
         adhocCycle.setVersionId(Long.parseLong(versionId));
+        adhocCycle.setName(ApplicationConstants.AD_HOC_CYCLE_NAME);
         return adhocCycle;
     }
 
@@ -360,7 +369,7 @@ public class MigrationServiceImpl implements MigrationService {
      * @throws IOException
      * @throws InterruptedException
      */
-    private void createUnmappedCycleInCloud(Map<String, String> mappedServerToCloudVersionMap, List<CycleDTO> cyclesListFromServer, Long projectId, String migrationFilePath) throws IOException, InterruptedException {
+    private void createUnmappedCycleInCloud(Map<String, String> mappedServerToCloudVersionMap, List<CycleDTO> cyclesListFromServer, Long projectId, String projectName, String migrationFilePath)  {
         if(!cyclesListFromServer.isEmpty()) {
             Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new HashMap<>();
                 cyclesListFromServer.forEach(cycleDTO -> {
@@ -383,7 +392,7 @@ public class MigrationServiceImpl implements MigrationService {
                 });
             if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
                 //Update the cycle mapping file.
-                migrationMappingFileGenerationUtil.updateCycleMappingFile(projectId, migrationFilePath, zephyrServerCloudCycleMappingMap);
+                migrationMappingFileGenerationUtil.updateCycleMappingFile(projectId, projectName, migrationFilePath, zephyrServerCloudCycleMappingMap);
             }
         }
     }
