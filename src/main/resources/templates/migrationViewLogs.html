@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Migration Logs</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script th:src="@{/script/script.js}" type="text/javascript"></script>
+    <script th:src="@{/script/log.js}" type="text/javascript"></script>
+    <link th:href="@{/css/zephyr.css}" rel="stylesheet" />
+</head>
+<body>
+<h3>Zephyr Server-Cloud Migration Logs.</h3>
+<div>
+    <p>
+        <input type="submit" value="Show Logs" id="ShowLogs" th:onclick="showLogs()"/>
+    </p>
+</div>
+<div id="log" style="display: none;">
+    <div>##### ##### ##### ##### Starting ZFJ Server - Zephyr Cloud Migration ##### #### ##### ##### </div>
+</div>
+</body>
+</html>

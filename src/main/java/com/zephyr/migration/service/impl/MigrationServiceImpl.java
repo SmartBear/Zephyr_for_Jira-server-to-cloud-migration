@@ -218,6 +218,7 @@ public class MigrationServiceImpl implements MigrationService {
                 });
                 if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
                     migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap, projectId.toString(), migrationFilePath);
+                    return true;
                 }
             }
             return true;
@@ -262,6 +263,7 @@ public class MigrationServiceImpl implements MigrationService {
             }
             if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
                 migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), migrationFilePath);
+                return true;
             }
         }
         return false;

@@ -36,4 +36,9 @@ public class MigrationViewController {
         }
         return "migrationSuccess";
     }
+
+    @GetMapping("/viewLogs")
+    public String viewLogs() {
+        return "migrationViewLogs";
+    }
 }
