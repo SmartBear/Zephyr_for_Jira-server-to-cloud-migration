@@ -99,7 +99,7 @@ public class MigrationMappingFileGenerationUtil {
     public void doEntryOfUnscheduledVersionInExcel(String projectId, String migrationFilePath) {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_VERSION_FILE_NAME+projectId+".xls";
         try {
-            FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+            FileInputStream inputStream = new FileInputStream(excelFilePath);
             HSSFWorkbook wb=new HSSFWorkbook(inputStream);
             HSSFSheet sheet=wb.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
 
@@ -138,7 +138,7 @@ public class MigrationMappingFileGenerationUtil {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_VERSION_FILE_NAME+projectId+".xls";
         try {
             if(serverCloudVersionMapping.size() > 0) {
-                FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
 
@@ -179,11 +179,11 @@ public class MigrationMappingFileGenerationUtil {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_CYCLE_FILE_NAME+projectId+".xls";
         try {
             if(serverCloudCycleMapping.size() > 0) {
-                FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][6];
+                Object[][] rowDataSet = new Object[serverCloudCycleMapping.size()][7];
                 int rowCount = sheet.getLastRowNum();
 
                 populateCycleRowDataSet(rowDataSet, projectId, projectName, serverCloudCycleMapping);
@@ -216,18 +216,18 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void updateFolderMappingFile(Long projectId, String migrationFilePath, Map<FolderDTO, ZfjCloudFolderBean> serverCloudFolderMapping) {
+    public void updateFolderMappingFile(Long projectId, String projectName, String migrationFilePath, Map<FolderDTO, ZfjCloudFolderBean> serverCloudFolderMapping) {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_FOLDER_FILE_NAME+projectId+".xls";
         try {
             if(serverCloudFolderMapping.size() > 0) {
-                FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[serverCloudFolderMapping.size()][5];
+                Object[][] rowDataSet = new Object[serverCloudFolderMapping.size()][7];
                 int rowCount = sheet.getLastRowNum();
 
-                populateFolderRowDataSet(rowDataSet, projectId, serverCloudFolderMapping);
+                populateFolderRowDataSet(rowDataSet, projectId, projectName, serverCloudFolderMapping);
 
                 for (Object[] rowData : rowDataSet) {
                     Row row = sheet.createRow(++rowCount);
@@ -277,7 +277,9 @@ public class MigrationMappingFileGenerationUtil {
             ++column;
             rowDataSet[row.get()][column] = projectName;
             ++column;
-            rowDataSet[row.get()][column] = value.getVersionId() + "";
+            rowDataSet[row.get()][column] = key.getVersionId(); // server version Id
+            ++column;
+            rowDataSet[row.get()][column] = value.getVersionId() + ""; // cloud version Id
             ++column;
             rowDataSet[row.get()][column] = key.getId() + ""; //server cycle Id
             ++column;
@@ -288,19 +290,24 @@ public class MigrationMappingFileGenerationUtil {
         });
     }
 
-    private void populateFolderRowDataSet(Object[][] rowDataSet, Long projectId, Map<FolderDTO, ZfjCloudFolderBean> serverCloudFolderMapping) {
+    private void populateFolderRowDataSet(Object[][] rowDataSet, Long projectId, String projectName,
+                                          Map<FolderDTO, ZfjCloudFolderBean> serverCloudFolderMapping) {
         AtomicInteger row = new AtomicInteger();
         serverCloudFolderMapping.forEach((key, value) -> {
             int column = 0;
             rowDataSet[row.get()][column] = projectId + "";
             ++column;
+            rowDataSet[row.get()][column] = projectName + "";
+            ++column;
             rowDataSet[row.get()][column] = value.getVersionId() + "";
             ++column;
             rowDataSet[row.get()][column] = value.getCycleId() + "";
             ++column;
-            rowDataSet[row.get()][column] = key.getId() + ""; //server version Id
+            rowDataSet[row.get()][column] = key.getFolderId() + ""; //server folder Id
             ++column;
-            rowDataSet[row.get()][column] = value.getId() + ""; //cloud version Id
+            rowDataSet[row.get()][column] = value.getId() + ""; //cloud folder Id
+            ++column;
+            rowDataSet[row.get()][column] = value.getName() + ""; //folder name
             row.incrementAndGet();
         });
     }
@@ -315,9 +322,9 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void generateFolderMappingReportExcel(Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap, String projectId, String migrationFilePath) {
+    public void generateFolderMappingReportExcel(Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap, String projectId, String projectName, String migrationFilePath) {
         try {
-            List<List<String>> responseList = folderDataToPrintInExcel(zephyrServerCloudFolderMappingMap, projectId);
+            List<List<String>> responseList = folderDataToPrintInExcel(zephyrServerCloudFolderMappingMap, projectId, projectName);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeFolderDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId, responseList);
         }catch (Exception e){
@@ -334,6 +341,7 @@ public class MigrationMappingFileGenerationUtil {
             cycleMappingList = new ArrayList<>();
             cycleMappingList.add(projectId);
             cycleMappingList.add(projectName);
+            cycleMappingList.add(entry.getKey().getVersionId());
             cycleMappingList.add(cloudCycleBean.getVersionId()+"");
             cycleMappingList.add(entry.getKey().getId());
             cycleMappingList.add(cloudCycleBean.getId());
@@ -343,26 +351,30 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
-    public List<List<String>> folderDataToPrintInExcel(Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap, String projectId) throws Exception {
+    public List<List<String>> folderDataToPrintInExcel(Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap, String projectId, String projectName) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateFolderHeader());
         List folderMappingList;
         for (Map.Entry<FolderDTO, ZfjCloudFolderBean> entry : zephyrServerCloudFolderMappingMap.entrySet()) {
+            ZfjCloudFolderBean folderBean = entry.getValue();
             folderMappingList = new ArrayList<>();
             folderMappingList.add(projectId);
-            folderMappingList.add(entry.getValue().getVersionId().toString());
-            folderMappingList.add(entry.getValue().getCycleId().toString());
-            folderMappingList.add(entry.getKey().getId().toString());
-            folderMappingList.add(entry.getValue().getId());
+            folderMappingList.add(projectName);
+            folderMappingList.add(folderBean.getVersionId()+"");
+            folderMappingList.add(folderBean.getCycleId());
+            folderMappingList.add(entry.getKey().getFolderId());
+            folderMappingList.add(folderBean.getId());
+            folderMappingList.add(folderBean.getName());
             recordToAdd.add(folderMappingList);
         }
         return recordToAdd;
     }
 
-    public static List<String> generateCycleHeader()  throws Exception {
+    public static List<String> generateCycleHeader() {
         List<String> excelHeader = new ArrayList<String>();
         excelHeader.add("Project Id");
         excelHeader.add("Project Name");
+        excelHeader.add("Server Version Id");
         excelHeader.add("Cloud Version Id");
         excelHeader.add("server-cycle-id");
         excelHeader.add("cloud-cycle-id");
@@ -370,13 +382,15 @@ public class MigrationMappingFileGenerationUtil {
         return excelHeader;
     }
 
-    public static List<String> generateFolderHeader()  throws Exception {
-        List<String> header1 = new ArrayList<String>();
-        header1.add("Project Id");
-        header1.add("Cloud Version Id");
-        header1.add("cloud-cycle-id");
-        header1.add("server-folder-id");
-        header1.add("cloud-folder-id");
-        return header1;
+    public static List<String> generateFolderHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project Id");
+        excelHeader.add("Project Name");
+        excelHeader.add("Cloud Version Id");
+        excelHeader.add("cloud-cycle-id");
+        excelHeader.add("server-folder-id");
+        excelHeader.add("cloud-folder-id");
+        excelHeader.add("Folder-Name");
+        return excelHeader;
     }
 }

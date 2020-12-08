@@ -1,75 +1,78 @@
 package com.zephyr.migration.dto;
 
-import java.io.Serializable;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 
 /**
  * Created by Himanshu
  */
-public class FolderDTO implements Serializable {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class FolderDTO {
 
-    private static final long serialVersionUID = -2279079416199904926L;
-    public String id;
-    public String name;
-    public String description;
-    public Integer versionId;
-    public Integer projectId;
-    public String cycleId;
-    public String createdBy;
-    public String createdByAccountId;
-    public String modifiedBy;
-    public String modifiedByAccountId;
-    public Integer createdTime;
-    public Integer modifiedTime;
-    public Integer sprintId;
+    private String folderId;
+    private String folderName;
+    private String folderDescription;
+    private String projectId;
+    private String projectKey;
+    private String versionId;
+    private String versionName;
+    private String cycleId;
+    private String cycleName;
 
-    public FolderDTO() {
+    public String getFolderId() {
+        return folderId;
     }
 
-    public FolderDTO(String name, String description, Integer versionId, Integer projectId, String cycleId, String createdBy, String createdByAccountId, String modifiedBy, String modifiedByAccountId, Integer createdTime, Integer modifiedTime, Integer sprintId) {
-        this.name = name;
-        this.description = description;
-        this.versionId = versionId;
-        this.projectId = projectId;
-        this.cycleId = cycleId;
-        this.createdBy = createdBy;
-        this.createdByAccountId = createdByAccountId;
-        this.modifiedBy = modifiedBy;
-        this.modifiedByAccountId = modifiedByAccountId;
-        this.createdTime = createdTime;
-        this.modifiedTime = modifiedTime;
-        this.sprintId = sprintId;
+    public void setFolderId(String folderId) {
+        this.folderId = folderId;
     }
 
-    public String getName() {
-        return name;
+    public String getFolderName() {
+        return folderName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
     }
 
-    public String getDescription() {
-        return description;
+    public String getFolderDescription() {
+        return folderDescription;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setFolderDescription(String folderDescription) {
+        this.folderDescription = folderDescription;
     }
 
-    public Integer getVersionId() {
-        return versionId;
-    }
-
-    public void setVersionId(Integer versionId) {
-        this.versionId = versionId;
-    }
-
-    public Integer getProjectId() {
+    public String getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(Integer projectId) {
+    public void setProjectId(String projectId) {
         this.projectId = projectId;
+    }
+
+    public String getProjectKey() {
+        return projectKey;
+    }
+
+    public void setProjectKey(String projectKey) {
+        this.projectKey = projectKey;
+    }
+
+    public String getVersionId() {
+        return versionId;
+    }
+
+    public void setVersionId(String versionId) {
+        this.versionId = versionId;
+    }
+
+    public String getVersionName() {
+        return versionName;
+    }
+
+    public void setVersionName(String versionName) {
+        this.versionName = versionName;
     }
 
     public String getCycleId() {
@@ -80,68 +83,11 @@ public class FolderDTO implements Serializable {
         this.cycleId = cycleId;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
+    public String getCycleName() {
+        return cycleName;
     }
 
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
+    public void setCycleName(String cycleName) {
+        this.cycleName = cycleName;
     }
-
-    public String getCreatedByAccountId() {
-        return createdByAccountId;
-    }
-
-    public void setCreatedByAccountId(String createdByAccountId) {
-        this.createdByAccountId = createdByAccountId;
-    }
-
-    public String getModifiedBy() {
-        return modifiedBy;
-    }
-
-    public void setModifiedBy(String modifiedBy) {
-        this.modifiedBy = modifiedBy;
-    }
-
-    public String getModifiedByAccountId() {
-        return modifiedByAccountId;
-    }
-
-    public void setModifiedByAccountId(String modifiedByAccountId) {
-        this.modifiedByAccountId = modifiedByAccountId;
-    }
-
-    public Integer getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(Integer createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public Integer getModifiedTime() {
-        return modifiedTime;
-    }
-
-    public void setModifiedTime(Integer modifiedTime) {
-        this.modifiedTime = modifiedTime;
-    }
-
-    public Integer getSprintId() {
-        return sprintId;
-    }
-
-    public void setSprintId(Integer sprintId) {
-        this.sprintId = sprintId;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
 }

@@ -55,7 +55,7 @@ public class CycleServiceImpl implements CycleService {
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
 
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(prepareRequestToCreateCycle(cycleDTO)), headers);
-        JsonNode response = null;
+        JsonNode response;
         ZfjCloudCycleBean zfjCloudCycleBean = new ZfjCloudCycleBean();
         try {
             response = restTemplate.postForObject(createCloudCycleUrl, entity, JsonNode.class);
@@ -74,8 +74,7 @@ public class CycleServiceImpl implements CycleService {
     }
 
     @Override
-    public List<CycleDTO> fetchCyclesFromZephyrServer(Long projectId, String serverVersionId, String server_base_url,
-                                                      String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) {
+    public List<CycleDTO> fetchCyclesFromZephyrServer(Long projectId, String serverVersionId, ArrayBlockingQueue<String> progressQueue) {
 
         TypeReference<Map<String,CycleDTO>> reference = new TypeReference<Map<String,CycleDTO>>() {};
         Map<String,CycleDTO> outputResponse = new HashMap<>();
@@ -114,7 +113,7 @@ public class CycleServiceImpl implements CycleService {
         ZfjCloudCycleBean cloudCycleBean = new ZfjCloudCycleBean();
         cloudCycleBean.setName(cycleDTO.getName());
         cloudCycleBean.setProjectId(Long.parseLong(cycleDTO.getProjectId()));
-        cloudCycleBean.setVersionId(Long.parseLong(cycleDTO.getVersionId()));
+        cloudCycleBean.setVersionId(Long.parseLong(cycleDTO.getCloudVersionId()));
         cloudCycleBean.setBuild(cycleDTO.getBuild());
         cloudCycleBean.setDescription(cycleDTO.getDescription());
         cloudCycleBean.setEnvironment(cycleDTO.getEnvironment());

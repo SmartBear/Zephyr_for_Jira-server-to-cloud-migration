@@ -24,6 +24,7 @@ public class CycleDTO implements Serializable {
     private Integer totalExecutions;
     private Integer totalExecuted;
     private Integer totalFolders;
+    private String cloudVersionId;
 
     public CycleDTO() {
 
@@ -134,6 +135,14 @@ public class CycleDTO implements Serializable {
 
     public void setTotalFolders(Integer totalFolders) {
         this.totalFolders = totalFolders;
+    }
+
+    public String getCloudVersionId() {
+        return cloudVersionId;
+    }
+
+    public void setCloudVersionId(String cloudVersionId) {
+        this.cloudVersionId = cloudVersionId;
     }
 
     @Override

@@ -5,11 +5,9 @@ import com.google.gson.Gson;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
-import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.model.ZfjCloudCycleBean;
+import com.zephyr.migration.model.SearchFolderRequest;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
-import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -43,7 +41,7 @@ public class FolderServiceImpl implements FolderService {
     private HttpClient zapiHttpClient;
 
     @Override
-    public ZfjCloudFolderBean createFolderInZephyrCloud(FolderDTO folderDTO) {
+    public ZfjCloudFolderBean createFolderInZephyrCloud(FolderDTO folderDTO, SearchFolderRequest searchFolderRequest) {
         log.info("Serving --> {}", "createFolderInZephyrCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -58,12 +56,12 @@ public class FolderServiceImpl implements FolderService {
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
 
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(prepareRequestToCreateFolder(folderDTO)), headers);
-        JsonNode response = null;
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(prepareRequestToCreateFolder(folderDTO, searchFolderRequest)), headers);
+        JsonNode response;
         ZfjCloudFolderBean zfjCloudFolderBean = new ZfjCloudFolderBean();
         try {
             response = restTemplate.postForObject(createCloudFolderUrl, entity, JsonNode.class);
-            //read the json node response & prepare cycle bean object.
+            //read the json node response & prepare folder bean object.
             if (response != null && !response.isEmpty()) {
                 zfjCloudFolderBean.setName(response.findValue("name").asText());
                 zfjCloudFolderBean.setId(response.findValue("id").asText());
@@ -78,54 +76,30 @@ public class FolderServiceImpl implements FolderService {
         return zfjCloudFolderBean;
     }
 
-    private ZfjCloudFolderBean prepareRequestToCreateFolder(FolderDTO folderDTO) {
-        ZfjCloudFolderBean folderCycleBean = new ZfjCloudFolderBean();
-        folderCycleBean.setName(folderDTO.getName());
-        folderCycleBean.setDescription(folderDTO.getDescription());
-        folderCycleBean.setCycleId(folderDTO.getCycleId());
-        folderCycleBean.setVersionId(Long.valueOf(folderDTO.getVersionId()));
-        folderCycleBean.setProjectId(Long.valueOf(folderDTO.getProjectId()));
-        //cloudCycleBean.setStartDate(new Date());
-        //cloudCycleBean.setEndDate(new Date());
-        return folderCycleBean;
-    }
-
     @Override
-    public List<FolderDTO> fetchFoldersFromZephyrServer(Long cycleId, String server_base_url,
-                                                      String server_user_name, String server_user_pass) {
+    public List<FolderDTO> fetchFoldersFromZephyrServer(Long cycleId, String projectId, String versionId, ArrayBlockingQueue<String> progressQueue) {
 
-        TypeReference<Map<String,CycleDTO>> reference = new TypeReference<Map<String,CycleDTO>>() {};
-        Map<String,CycleDTO> outputResponse = new HashMap<>();
-        List<CycleDTO> cycles = new ArrayList<>();
-        List<FolderDTO> folderDTOs = new ArrayList<>();
+        zapiHttpClient.setResourceName(String.format(ApplicationConstants.SERVER_GET_FOLDERS_URL,cycleId,projectId,versionId,0,3000));
+        TypeReference<List<FolderDTO>> reference = new TypeReference<List<FolderDTO>>() {};
+        List<FolderDTO> folders = new ArrayList<>();
         try {
-            String getCyclesServerUrl = ApplicationConstants.SERVER_GET_FOLDERS_URL;
-            getCyclesServerUrl = String.format(getCyclesServerUrl, cycleId);
-            zapiHttpClient.setResourceName(getCyclesServerUrl);
-
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
-            outputResponse = JsonUtil.readValue(content,reference);
-
+            folders = JsonUtil.readValue(content,reference);
         } catch (IOException e) {
-            log.error("Error while converting cycle json to object -> ", e.fillInStackTrace());
+            log.error("Error while converting folder json to object -> ", e.fillInStackTrace());
         }
-        outputResponse.forEach((key, cycle) -> {
-            if (Objects.nonNull(cycle.getName())) {
-                cycle.setId(key);
-                cycles.add(cycle);
-                /*try {
-                    *//*if(Objects.nonNull(progressQueue)) {
-                        progressQueue.put("fetched Cycle from server with data : "+ cycle.toString());
-                    }*//*
-                    return folderDTOs;
-                    log.debug("Cycle DTO:: "+ cycle.toString());
-                } catch (InterruptedException e) {
-                    log.error("",e.fillInStackTrace());
-                }*/
-            }
-        });
-        return folderDTOs;
+        return folders;
+    }
+
+    private ZfjCloudFolderBean prepareRequestToCreateFolder(FolderDTO folderDTO, SearchFolderRequest searchFolderRequest) {
+        ZfjCloudFolderBean folderCycleBean = new ZfjCloudFolderBean();
+        folderCycleBean.setName(folderDTO.getFolderName());
+        folderCycleBean.setDescription(folderDTO.getFolderDescription());
+        folderCycleBean.setCycleId(searchFolderRequest.getCloudCycleId());
+        folderCycleBean.setVersionId(Long.parseLong(searchFolderRequest.getVersionId()));
+        folderCycleBean.setProjectId(Long.parseLong(searchFolderRequest.getProjectId()));
+        return folderCycleBean;
     }
 
 }

@@ -3,6 +3,7 @@ package com.zephyr.migration.controllers;
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
+import com.zephyr.migration.model.SearchFolderRequest;
 import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.utils.ApplicationConstants;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This controller is for testing a specific flow.
@@ -136,10 +138,10 @@ public class TestController {
     public String createFolderInJiraCloud(@PathVariable Long projectId) {
         FolderDTO folderDTO = new FolderDTO();
         folderDTO.setCycleId("0b619922-e085-4173-bf81-6c3e7f33bf97");
-        folderDTO.setName("tata");
-        folderDTO.setProjectId(10000);
-        folderDTO.setVersionId(-1);
-        folderService.createFolderInZephyrCloud(folderDTO);
+        folderDTO.setFolderName("tata");
+        folderDTO.setProjectId("10000");
+        folderDTO.setVersionId("-1");
+        folderService.createFolderInZephyrCloud(folderDTO, new SearchFolderRequest());
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 
@@ -148,7 +150,7 @@ public class TestController {
         final String SERVER_USER_NAME = configProp.getConfigValue("zfj.server.username");
         final String SERVER_USER_PASS = configProp.getConfigValue("zfj.server.password");
         final String SERVER_BASE_URL = configProp.getConfigValue("zfj.server.baseUrl");
-        folderService.fetchFoldersFromZephyrServer(39L, SERVER_BASE_URL, SERVER_USER_NAME,SERVER_USER_PASS);
+        folderService.fetchFoldersFromZephyrServer(39L, "SERVER_BASE_URL", "SERVER_USER_NAME",new ArrayBlockingQueue<>(10000));
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 }

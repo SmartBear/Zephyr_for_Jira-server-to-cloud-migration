@@ -31,5 +31,5 @@ public class ApplicationConstants {
 
     /******* SERVER API endpoint URL *********/
     public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";
-    public static final String SERVER_GET_FOLDERS_URL = "folders?cycleId=%s";
+    public static final String SERVER_GET_FOLDERS_URL = "cycle/%s/folders?projectId=%s&versionId=%s&offset=%s&limit=%s";
 }
