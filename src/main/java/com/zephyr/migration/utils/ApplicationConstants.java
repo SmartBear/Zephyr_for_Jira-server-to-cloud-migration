@@ -14,6 +14,7 @@ public class ApplicationConstants {
     public static final String CLOUD_CREATE_VERSION_URL ="/public/rest/api/1.0/create/version";
     public static final String CLOUD_PROJECT_META_REINDEX_URL = "/public/rest/api/1.0/migration/reindexProjectMetaData";
     public static final String CLOUD_CREATE_CYCLE_URL = "/public/rest/api/1.0/migration/create/cycle";
+    public static final String CLOUD_CREATE_FOLDER_URL = "/public/rest/api/1.0/migration/create/folder";
 
     /******* General constants *********/
     public static final String XLS = ".xls";
@@ -24,8 +25,11 @@ public class ApplicationConstants {
     public static final String VERSION_MAPPING_SHEET_NAME = "version-mapping";
     public static final String MAPPING_VERSION_FILE_NAME ="migration-version-mapping-project-";
     public static final String MAPPING_CYCLE_FILE_NAME ="migration-cycle-mapping-project-";
+    public static final String MAPPING_FOLDER_FILE_NAME ="migration-folder-mapping-project-";
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
+    public static final String FOLDER_MAPPING_SHEET_NAME = "folder-mapping";
 
     /******* SERVER API endpoint URL *********/
     public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";
+    public static final String SERVER_GET_FOLDERS_URL = "cycle/%s/folders?projectId=%s&versionId=%s&offset=%s&limit=%s";
 }

@@ -1,7 +1,10 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
+import com.zephyr.migration.model.SearchFolderRequest;
+import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.FileUtils;
@@ -22,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This controller is for testing a specific flow.
@@ -42,6 +46,9 @@ public class TestController {
 
     @Autowired
     ConfigProperties configProp;
+
+    @Autowired
+    FolderService folderService;
 
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
@@ -125,5 +132,25 @@ public class TestController {
     public String triggerProjectMetaData(@PathVariable Long projectId) {
         testService.triggerProjectMetaData(projectId);
         return String.format("Trigger project meta data for project %s!", projectId);
+    }
+
+    @GetMapping("/create/folder/{projectId}")
+    public String createFolderInJiraCloud(@PathVariable Long projectId) {
+        FolderDTO folderDTO = new FolderDTO();
+        folderDTO.setCycleId("0b619922-e085-4173-bf81-6c3e7f33bf97");
+        folderDTO.setFolderName("tata");
+        folderDTO.setProjectId("10000");
+        folderDTO.setVersionId("-1");
+        folderService.createFolderInZephyrCloud(folderDTO, new SearchFolderRequest());
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
+    }
+
+    @GetMapping("/fetch/server-folder/{projectId}")
+    public String fetchFolderFromJiraServer(@PathVariable Long projectId) {
+        final String SERVER_USER_NAME = configProp.getConfigValue("zfj.server.username");
+        final String SERVER_USER_PASS = configProp.getConfigValue("zfj.server.password");
+        final String SERVER_BASE_URL = configProp.getConfigValue("zfj.server.baseUrl");
+        folderService.fetchFoldersFromZephyrServer(39L, "SERVER_BASE_URL", "SERVER_USER_NAME",new ArrayBlockingQueue<>(10000));
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 }

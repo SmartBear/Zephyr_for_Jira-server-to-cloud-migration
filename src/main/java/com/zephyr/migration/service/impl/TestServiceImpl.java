@@ -134,7 +134,7 @@ public class TestServiceImpl implements TestService {
         Map<String, List<CycleDTO>> zephyrServerCyclesMap1 = new HashMap<>();
         listOfServerVersions.parallelStream().forEachOrdered(version -> {
             log.info("List of cycles for version :: "+version);
-            List<CycleDTO> cycles = cycleService.fetchCyclesFromZephyrServer(projectId, version, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, null);
+            List<CycleDTO> cycles = cycleService.fetchCyclesFromZephyrServer(projectId, version, null);
             zephyrServerCyclesMap1.put(version, cycles);
             log.info("Size of cycles for version :: "+cycles.size());
         });

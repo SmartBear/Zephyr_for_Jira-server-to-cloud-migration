@@ -11,5 +11,5 @@ public interface CycleService {
 
     ZfjCloudCycleBean createCycleInZephyrCloud(CycleDTO cycleDTO);
 
-    List<CycleDTO> fetchCyclesFromZephyrServer(Long projectId, String serverVersionId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue);
+    List<CycleDTO> fetchCyclesFromZephyrServer(Long projectId, String serverVersionId, ArrayBlockingQueue<String> progressQueue);
 }
