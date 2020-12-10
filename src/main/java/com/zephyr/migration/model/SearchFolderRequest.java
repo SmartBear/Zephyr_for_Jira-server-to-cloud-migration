@@ -6,6 +6,7 @@ public class SearchFolderRequest {
     private String versionId;
     private String cloudCycleId;
     private String serverCycleId;
+    private String cloudVersionId;
 
     public String getProjectId() {
         return projectId;
@@ -37,5 +38,24 @@ public class SearchFolderRequest {
 
     public void setServerCycleId(String serverCycleId) {
         this.serverCycleId = serverCycleId;
+    }
+
+    public String getCloudVersionId() {
+        return cloudVersionId;
+    }
+
+    public void setCloudVersionId(String cloudVersionId) {
+        this.cloudVersionId = cloudVersionId;
+    }
+
+    @Override
+    public String toString() {
+        return "SearchFolderRequest{" +
+                "projectId='" + projectId + '\'' +
+                ", versionId='" + versionId + '\'' +
+                ", cloudCycleId='" + cloudCycleId + '\'' +
+                ", serverCycleId='" + serverCycleId + '\'' +
+                ", cloudVersionId='" + cloudVersionId + '\'' +
+                '}';
     }
 }

@@ -198,7 +198,7 @@ public class FileUtils {
         //creating a Sheet object to retrieve the object
         HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
 
-        int serverIdColIndex = 0, cloudIdColIndex=0, serverVersionColIndex =0, projectIdIndex =0;
+        int serverIdColIndex = 0, cloudIdColIndex=0, serverVersionColIndex =0, projectIdIndex =0, cloudVersionIdColIndex=0;
         Row row = sheet.getRow(0);
         for (Cell cell : row) {
             // Column header names.
@@ -208,6 +208,8 @@ public class FileUtils {
                 cloudIdColIndex = cell.getColumnIndex();
             }else if(SERVER_VERSION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                 serverVersionColIndex = cell.getColumnIndex();
+            }else if(CLOUD_VERSION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                cloudVersionIdColIndex = cell.getColumnIndex();
             }else if(PROJECT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                 projectIdIndex = cell.getColumnIndex();
             }
@@ -220,6 +222,7 @@ public class FileUtils {
             Cell cloudIdCellVal = r.getCell(cloudIdColIndex);
             Cell serverVersionCellVal = r.getCell(serverVersionColIndex);
             Cell projectIdCellVal = r.getCell(projectIdIndex);
+            Cell cloudVersionIdCellVal = r.getCell(cloudVersionIdColIndex);
 
             if (Objects.nonNull(cloudIdCellVal) && Objects.nonNull(serverIdCellVal)) {
                 SearchFolderRequest searchFolderRequest = new SearchFolderRequest();
@@ -227,6 +230,7 @@ public class FileUtils {
                 searchFolderRequest.setVersionId(serverVersionCellVal.getStringCellValue());
                 searchFolderRequest.setServerCycleId(serverIdCellVal.getStringCellValue());
                 searchFolderRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
+                searchFolderRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
                 serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchFolderRequest);
             }
         }

@@ -97,7 +97,7 @@ public class FolderServiceImpl implements FolderService {
         folderCycleBean.setName(folderDTO.getFolderName());
         folderCycleBean.setDescription(folderDTO.getFolderDescription());
         folderCycleBean.setCycleId(searchFolderRequest.getCloudCycleId());
-        folderCycleBean.setVersionId(Long.parseLong(searchFolderRequest.getVersionId()));
+        folderCycleBean.setVersionId(Long.parseLong(searchFolderRequest.getCloudVersionId()));
         folderCycleBean.setProjectId(Long.parseLong(searchFolderRequest.getProjectId()));
         return folderCycleBean;
     }

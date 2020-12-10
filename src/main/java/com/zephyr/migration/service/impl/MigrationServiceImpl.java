@@ -257,9 +257,10 @@ public class MigrationServiceImpl implements MigrationService {
                     listOfServerCycles.parallelStream().forEachOrdered(serverCycleId -> {
                         try {
                             progressQueue.put("fetching folders from zephyr server instance for cycle :: "+ serverCycleId);
-                            log.info("Fetching folders from server for version :: "+ serverCycleId);
+                            log.info("Fetching folders from server for cycleId :: "+ serverCycleId);
                             SearchFolderRequest searchFolderRequest = mappedServerToCloudCycleMap.get(serverCycleId);
                             if(null != searchFolderRequest) {
+                                log.info("Fetching cycles from server with details :: "+ searchFolderRequest.toString());
                                 List<FolderDTO> foldersListFromServer = folderService.fetchFoldersFromZephyrServer(Long.parseLong(serverCycleId),
                                         searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
                                 zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
@@ -273,10 +274,18 @@ public class MigrationServiceImpl implements MigrationService {
                 String finalProjectName = projectName;
                 mappedServerToCloudCycleMap.forEach((serverCycleId, searchFolderRequest) -> {
                         try {
-                            progressQueue.put("fetching folders from zephyr server instance for cycle :: "+ serverCycleId);
+                            progressQueue.put("creating folders from zephyr server instance for cycle :: "+ serverCycleId);
                             List<FolderDTO> foldersListFromServer = zephyrServerCycleFolderMap.get(serverCycleId);
                             if (!Files.exists(folderMappedFile)) {
                                 foldersListFromServer.parallelStream().forEachOrdered(folderDTO -> {
+                                    try{
+                                        progressQueue.put("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
+                                        progressQueue.put("creating folder in zephyr cloud instance for cycle :: "+ searchFolderRequest.getCloudCycleId());
+                                        log.info("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
+                                        log.info("creating folder in zephyr cloud instance for cycle :: "+ searchFolderRequest.getCloudCycleId());
+                                    }catch (InterruptedException ex) {
+                                        log.error("",ex.fillInStackTrace());
+                                    }
                                     ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO, searchFolderRequest);
                                     if (Objects.nonNull(cloudFolderBean)) {
                                         zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
