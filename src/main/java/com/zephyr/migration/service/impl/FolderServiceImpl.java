@@ -68,6 +68,7 @@ public class FolderServiceImpl implements FolderService {
                 zfjCloudFolderBean.setProjectId(response.findValue("projectId").asLong());
                 zfjCloudFolderBean.setVersionId(response.findValue("versionId").asLong());
                 zfjCloudFolderBean.setCycleId(response.findValue("cycleId").asText());
+                zfjCloudFolderBean.setCycleName(searchFolderRequest.getCycleName());
             }
         } catch (Exception e) {
             log.error("Error while creating folder in cloud " + e.getMessage());

@@ -7,6 +7,7 @@ public class SearchFolderRequest {
     private String cloudCycleId;
     private String serverCycleId;
     private String cloudVersionId;
+    private String cycleName;
 
     public String getProjectId() {
         return projectId;
@@ -40,13 +41,13 @@ public class SearchFolderRequest {
         this.serverCycleId = serverCycleId;
     }
 
-    public String getCloudVersionId() {
-        return cloudVersionId;
-    }
+    public String getCloudVersionId() { return cloudVersionId; }
 
-    public void setCloudVersionId(String cloudVersionId) {
-        this.cloudVersionId = cloudVersionId;
-    }
+    public void setCloudVersionId(String cloudVersionId) { this.cloudVersionId = cloudVersionId; }
+
+    public String getCycleName() { return cycleName; }
+
+    public void setCycleName(String cycleName) { this.cycleName = cycleName; }
 
     @Override
     public String toString() {
@@ -56,6 +57,7 @@ public class SearchFolderRequest {
                 ", cloudCycleId='" + cloudCycleId + '\'' +
                 ", serverCycleId='" + serverCycleId + '\'' +
                 ", cloudVersionId='" + cloudVersionId + '\'' +
+                ", cycleName='" + cycleName + '\'' +
                 '}';
     }
 }

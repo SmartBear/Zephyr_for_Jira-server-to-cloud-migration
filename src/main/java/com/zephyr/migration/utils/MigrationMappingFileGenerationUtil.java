@@ -224,7 +224,7 @@ public class MigrationMappingFileGenerationUtil {
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[serverCloudFolderMapping.size()][7];
+                Object[][] rowDataSet = new Object[serverCloudFolderMapping.size()][8];
                 int rowCount = sheet.getLastRowNum();
 
                 populateFolderRowDataSet(rowDataSet, projectId, projectName, serverCloudFolderMapping);
@@ -250,8 +250,8 @@ public class MigrationMappingFileGenerationUtil {
                 wb.close();
                 outputStream.close();
             }
-        } catch (IOException | EncryptedDocumentException ex) {
-            log.error("Error occurred while closing the file.", ex.fillInStackTrace());
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for folder mapping file.", ex.fillInStackTrace());
         }
     }
 
@@ -302,6 +302,8 @@ public class MigrationMappingFileGenerationUtil {
             rowDataSet[row.get()][column] = value.getVersionId() + "";
             ++column;
             rowDataSet[row.get()][column] = value.getCycleId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = value.getCycleName() + ""; //cycle name.
             ++column;
             rowDataSet[row.get()][column] = key.getFolderId() + ""; //server folder Id
             ++column;
@@ -362,6 +364,7 @@ public class MigrationMappingFileGenerationUtil {
             folderMappingList.add(projectName);
             folderMappingList.add(folderBean.getVersionId()+"");
             folderMappingList.add(folderBean.getCycleId());
+            folderMappingList.add(folderBean.getCycleName());
             folderMappingList.add(entry.getKey().getFolderId());
             folderMappingList.add(folderBean.getId());
             folderMappingList.add(folderBean.getName());
@@ -388,6 +391,7 @@ public class MigrationMappingFileGenerationUtil {
         excelHeader.add("Project Name");
         excelHeader.add("Cloud Version Id");
         excelHeader.add("cloud-cycle-id");
+        excelHeader.add("Cycle-Name");
         excelHeader.add("server-folder-id");
         excelHeader.add("cloud-folder-id");
         excelHeader.add("Folder-Name");

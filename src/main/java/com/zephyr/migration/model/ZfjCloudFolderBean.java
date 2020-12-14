@@ -14,6 +14,7 @@ public class ZfjCloudFolderBean {
     public Date endDate;
     public String description;
     private String cycleId;
+    private String cycleName;
 
     public String getCycleId() {
         return cycleId;
@@ -94,4 +95,8 @@ public class ZfjCloudFolderBean {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public String getCycleName() { return cycleName; }
+
+    public void setCycleName(String cycleName) { this.cycleName = cycleName; }
 }

@@ -32,6 +32,7 @@ public class FileUtils {
     private static final String CLOUD_CYCLE_ID_COLUMN_NAME = "cloud-cycle-id";
     private static final String SERVER_FOLDER_ID_COLUMN_NAME = "server-folder-id";
     private static final String PROJECT_ID_COLUMN_NAME = "Project Id";
+    private static final String CYCLE_NAME_COLUMN_NAME = "Cycle-Name";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -198,7 +199,8 @@ public class FileUtils {
         //creating a Sheet object to retrieve the object
         HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
 
-        int serverIdColIndex = 0, cloudIdColIndex=0, serverVersionColIndex =0, projectIdIndex =0, cloudVersionIdColIndex=0;
+        int serverIdColIndex = 0, cloudIdColIndex=0, serverVersionColIndex =0, projectIdIndex =0, cloudVersionIdColIndex=0,
+            cycleNameIndex=0;
         Row row = sheet.getRow(0);
         for (Cell cell : row) {
             // Column header names.
@@ -212,6 +214,8 @@ public class FileUtils {
                 cloudVersionIdColIndex = cell.getColumnIndex();
             }else if(PROJECT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                 projectIdIndex = cell.getColumnIndex();
+            }else if(CYCLE_NAME_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                cycleNameIndex = cell.getColumnIndex();
             }
         }
         Map<String,SearchFolderRequest> serverCloudIdsMapping = new HashMap<>();
@@ -223,6 +227,7 @@ public class FileUtils {
             Cell serverVersionCellVal = r.getCell(serverVersionColIndex);
             Cell projectIdCellVal = r.getCell(projectIdIndex);
             Cell cloudVersionIdCellVal = r.getCell(cloudVersionIdColIndex);
+            Cell cycleNameCellVal = r.getCell(cycleNameIndex);
 
             if (Objects.nonNull(cloudIdCellVal) && Objects.nonNull(serverIdCellVal)) {
                 SearchFolderRequest searchFolderRequest = new SearchFolderRequest();
@@ -231,6 +236,7 @@ public class FileUtils {
                 searchFolderRequest.setServerCycleId(serverIdCellVal.getStringCellValue());
                 searchFolderRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
                 searchFolderRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
+                searchFolderRequest.setCycleName(cycleNameCellVal.getStringCellValue());
                 serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchFolderRequest);
             }
         }
