@@ -32,4 +32,6 @@ public class ApplicationConstants {
     /******* SERVER API endpoint URL *********/
     public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";
     public static final String SERVER_GET_FOLDERS_URL = "cycle/%s/folders?projectId=%s&versionId=%s&offset=%s&limit=%s";
+    public static final String ZAPI_RESOURCE_GET_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&offset=%s&limit=%s";
+    public static final String ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&folderId=%s&offset=%s&limit=%s";
 }
