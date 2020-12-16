@@ -324,6 +324,16 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
+    public void generateExecutionMappingReportExcel(String projectId, String projectName, String migrationFilePath) {
+        try {
+            List<List<String>> responseList = executionDataToPrintInExcel(projectId, projectName);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeExecutionDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
     public void generateFolderMappingReportExcel(Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap, String projectId, String projectName, String migrationFilePath) {
         try {
             List<List<String>> responseList = folderDataToPrintInExcel(zephyrServerCloudFolderMappingMap, projectId, projectName);
@@ -350,6 +360,17 @@ public class MigrationMappingFileGenerationUtil {
             cycleMappingList.add(cloudCycleBean.getName());
             recordToAdd.add(cycleMappingList);
         }
+        return recordToAdd;
+    }
+
+    public List<List<String>> executionDataToPrintInExcel(String projectId, String projectName) throws Exception {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateExecutionHeader());
+        List executionMappingList;
+        executionMappingList = new ArrayList<>();
+        executionMappingList.add(projectId);
+        executionMappingList.add(projectName);
+        recordToAdd.add(executionMappingList);
         return recordToAdd;
     }
 
@@ -382,6 +403,13 @@ public class MigrationMappingFileGenerationUtil {
         excelHeader.add("server-cycle-id");
         excelHeader.add("cloud-cycle-id");
         excelHeader.add("Cycle-Name");
+        return excelHeader;
+    }
+
+    public static List<String> generateExecutionHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project Id");
+        excelHeader.add("Project Name");
         return excelHeader;
     }
 

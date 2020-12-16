@@ -87,6 +87,9 @@ public class MigrationServiceImpl implements MigrationService {
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
             }
+            if (migrateCycles) {
+
+            }
         }
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
@@ -454,5 +457,23 @@ public class MigrationServiceImpl implements MigrationService {
                 migrationMappingFileGenerationUtil.updateFolderMappingFile(projectId, finalProjectName, migrationFilePath, zephyrServerCloudFolderMappingMap);
             }
         }
+    }
+
+    /**
+     * cycle migration
+     */
+    private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws InterruptedException, IOException {
+        Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
+        Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
+        String projectName = null;
+        if (project != null) {
+            projectName = project.getName();
+        }
+        if(Files.exists(path)){
+
+        }else {
+            migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId.toString(), projectName, migrationFilePath);
+        }
+        return true;
     }
 }

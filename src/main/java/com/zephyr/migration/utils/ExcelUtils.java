@@ -133,6 +133,57 @@ public class ExcelUtils {
 
     }
 
+    public void writeExecutionDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
+        int rowNum = 0;
+        int noOfRecords = (recordList.size()-3);
+        String errorMessage = "Sorry. The file you are looking for does not exist";
+        //FileInputStream fis=new FileInputStream(new File(migrationFilePath+"/"+ fileName +".xls"));
+        HSSFSheet firstSheet;
+        HSSFSheet secondSheet;
+        HSSFWorkbook workbook;
+        FileOutputStream fos;
+        workbook = new HSSFWorkbook();
+        //firstSheet = workbook.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
+        HSSFCellStyle hsfstyle = workbook.createCellStyle();
+        hsfstyle.setBorderBottom(BorderStyle.THICK);
+        hsfstyle.setFillBackgroundColor((short)245);
+        secondSheet = workbook.createSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+        Row headerRow = secondSheet.createRow(rowNum);
+        headerRow.setHeightInPoints(40);
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        //Sheet cloneSheet = workbook.cloneSheet(0);
+        try {
+
+            for (List<String> record : recordList) {
+                Row row = secondSheet.createRow(rowNum);
+                for (int k = 0; k < record.size(); k++) {
+                    Cell cell = row.createCell(k);
+                    cell.setCellValue(record.get(k));
+                }
+                rowNum++;
+            }
+
+            workbook.write(fos);
+
+            /*response.setContentType("application/vnd.ms-excel");
+            String headerKey = "Content-Disposition";
+            String headerValue = String.format("attachment; filename="+fileName+".xls");
+            response.setHeader(headerKey, headerValue);
+            response.setContentLength((int)excelFile.length());
+            InputStream inputStream = new BufferedInputStream(new FileInputStream(excelFile));
+            FileCopyUtils.copy(inputStream, response.getOutputStream());*/
+            //excelFile.delete();
+
+        } catch (Exception e) {
+            log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+        } finally {
+            //fis.close();
+            fos.close();
+            workbook.close();
+        }
+
+    }
+
     public void writeFolderDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
         int rowNum = 0;
         int noOfRecords = (recordList.size()-3);
