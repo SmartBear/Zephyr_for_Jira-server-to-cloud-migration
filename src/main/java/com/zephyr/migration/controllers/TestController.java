@@ -2,10 +2,9 @@ package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.zephyr.migration.dto.ExecutionCloudDTO;
-import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
-import com.zephyr.migration.model.SearchFolderRequest;
+import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.service.ExecutionService;
 import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.service.TestService;
@@ -147,7 +146,7 @@ public class TestController {
         folderDTO.setFolderName("tata");
         folderDTO.setProjectId("10000");
         folderDTO.setVersionId("-1");
-        folderService.createFolderInZephyrCloud(folderDTO, new SearchFolderRequest());
+        folderService.createFolderInZephyrCloud(folderDTO, new SearchRequest());
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 
