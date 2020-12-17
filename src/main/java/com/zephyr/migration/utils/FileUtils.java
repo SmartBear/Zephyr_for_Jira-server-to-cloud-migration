@@ -1,8 +1,7 @@
 package com.zephyr.migration.utils;
 
 import com.zephyr.migration.exception.NDataException;
-import com.zephyr.migration.model.SearchFolderRequest;
-import com.zephyr.migration.service.impl.MigrationServiceImpl;
+import com.zephyr.migration.model.SearchRequest;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -162,9 +161,11 @@ public class FileUtils {
 
     public static Map<String, String> readVersionMappingFile(String directory, String filename) throws IOException {
         //obtaining input bytes from a file
-        FileInputStream fis=new FileInputStream(new File(directory+"/"+filename));
-        //creating workbook instance that refers to .xls file
-        HSSFWorkbook wb=new HSSFWorkbook(fis);
+        HSSFWorkbook wb;
+        try (FileInputStream fis = new FileInputStream(directory + "/" + filename)) {
+            //creating workbook instance that refers to .xls file
+            wb = new HSSFWorkbook(fis);
+        }
         //creating a Sheet object to retrieve the object
         HSSFSheet sheet=wb.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
 
@@ -191,13 +192,16 @@ public class FileUtils {
         return serverCloudIdsMapping;
     }
 
-    public static Map<String, SearchFolderRequest> readCycleMappingFile(String directory, String filename) throws IOException {
+    public static Map<String, SearchRequest> readCycleMappingFile(String directory, String filename) throws IOException {
         //obtaining input bytes from a file
-        FileInputStream fis=new FileInputStream(new File(directory+"/"+filename));
-        //creating workbook instance that refers to .xls file
-        HSSFWorkbook wb=new HSSFWorkbook(fis);
-        //creating a Sheet object to retrieve the object
-        HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+        HSSFSheet sheet;
+        try (FileInputStream fis = new FileInputStream(directory + "/" + filename)) {
+            //creating workbook instance that refers to .xls file
+            try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+                //creating a Sheet object to retrieve the object
+                sheet = wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+            }
+        }
 
         int serverIdColIndex = 0, cloudIdColIndex=0, serverVersionColIndex =0, projectIdIndex =0, cloudVersionIdColIndex=0,
             cycleNameIndex=0;
@@ -218,7 +222,7 @@ public class FileUtils {
                 cycleNameIndex = cell.getColumnIndex();
             }
         }
-        Map<String,SearchFolderRequest> serverCloudIdsMapping = new HashMap<>();
+        Map<String, SearchRequest> serverCloudIdsMapping = new HashMap<>();
         for (Row r : sheet) {
             if (r.getRowNum()==0) continue;//headers
 
@@ -230,27 +234,50 @@ public class FileUtils {
             Cell cycleNameCellVal = r.getCell(cycleNameIndex);
 
             if (Objects.nonNull(cloudIdCellVal) && Objects.nonNull(serverIdCellVal)) {
-                SearchFolderRequest searchFolderRequest = new SearchFolderRequest();
-                searchFolderRequest.setProjectId(projectIdCellVal.getStringCellValue());
-                searchFolderRequest.setVersionId(serverVersionCellVal.getStringCellValue());
-                searchFolderRequest.setServerCycleId(serverIdCellVal.getStringCellValue());
-                searchFolderRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
-                searchFolderRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
-                searchFolderRequest.setCycleName(cycleNameCellVal.getStringCellValue());
-                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchFolderRequest);
+                SearchRequest searchRequest = new SearchRequest();
+                searchRequest.setProjectId(projectIdCellVal.getStringCellValue());
+                searchRequest.setVersionId(serverVersionCellVal.getStringCellValue());
+                searchRequest.setServerCycleId(serverIdCellVal.getStringCellValue());
+                searchRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
+                searchRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
+                searchRequest.setCycleName(cycleNameCellVal.getStringCellValue());
+                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchRequest);
             }
         }
         return serverCloudIdsMapping;
     }
 
-    public static Boolean checkSheetExist(String nDataDir, String filename, String sheetName) throws IOException {
-        FileInputStream fis = new FileInputStream(new File(nDataDir + "/" + filename));
-        HSSFWorkbook wb = new HSSFWorkbook(fis);
-        HSSFSheet sheet = wb.getSheet(sheetName);
-        if (sheet == null){
-            return false;
-        }
-        return true;
-    }
+    public static Map<String, String> getServerCloudFolderMapping(String migrationFilePath, String fileName) {
+        try (FileInputStream fis=new FileInputStream(migrationFilePath+"/"+fileName)) {
+            //creating workbook instance that refers to .xls file
+            HSSFWorkbook wb=new HSSFWorkbook(fis);
+            //creating a Sheet object to retrieve the object
+            HSSFSheet sheet=wb.getSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
 
+            int cloudCycleIdIdx = 0, serverCycleIdIdx = 0, serverFolderIdIdx = 0 , cloudFolderIdIdx = 0;
+
+            Row row = sheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudCycleIdIdx = cell.getColumnIndex();
+                }else if (SERVER_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverFolderIdIdx = cell.getColumnIndex();
+                }
+            }
+            for (Row r : sheet) {
+                if (r.getRowNum()==0) continue;//headers
+                Cell c_1 = r.getCell(cloudCycleIdIdx);
+                Cell c_2 = r.getCell(serverFolderIdIdx);
+                if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                        return null;
+                }
+            }
+
+        } catch(IOException e) {
+            log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
+        }
+
+        return null;
+    }
 }

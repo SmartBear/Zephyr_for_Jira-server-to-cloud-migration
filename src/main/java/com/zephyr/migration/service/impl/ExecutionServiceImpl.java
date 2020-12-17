@@ -38,12 +38,12 @@ public class ExecutionServiceImpl implements ExecutionService {
     private HttpClient zapiHttpClient;
 
     @Override
-    public List<ExecutionDTO> getExecutionsFromZFJByVersionAndCycleName(CycleDTO cycle, int offset, int maxRecords) {
+    public List<ExecutionDTO> getExecutionsFromZFJByVersionAndCycleName(String projectId, String versionId, String cycleId, int offset, int maxRecords) {
         JsonParser parser = new JsonParser();
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS, cycle.getProjectId(), cycle.getVersionId(), cycle.getId(), offset, maxRecords));
+            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS, projectId, versionId, cycleId, offset, maxRecords));
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);

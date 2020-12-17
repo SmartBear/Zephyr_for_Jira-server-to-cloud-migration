@@ -1,6 +1,6 @@
 package com.zephyr.migration.model;
 
-public class SearchFolderRequest {
+public class SearchRequest {
 
     private String projectId;
     private String versionId;

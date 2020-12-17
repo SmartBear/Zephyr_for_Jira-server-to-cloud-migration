@@ -6,7 +6,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.model.SearchFolderRequest;
+import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
 import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.utils.ApplicationConstants;
@@ -41,7 +41,7 @@ public class FolderServiceImpl implements FolderService {
     private HttpClient zapiHttpClient;
 
     @Override
-    public ZfjCloudFolderBean createFolderInZephyrCloud(FolderDTO folderDTO, SearchFolderRequest searchFolderRequest) {
+    public ZfjCloudFolderBean createFolderInZephyrCloud(FolderDTO folderDTO, SearchRequest searchFolderRequest) {
         log.info("Serving --> {}", "createFolderInZephyrCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -93,7 +93,7 @@ public class FolderServiceImpl implements FolderService {
         return folders;
     }
 
-    private ZfjCloudFolderBean prepareRequestToCreateFolder(FolderDTO folderDTO, SearchFolderRequest searchFolderRequest) {
+    private ZfjCloudFolderBean prepareRequestToCreateFolder(FolderDTO folderDTO, SearchRequest searchFolderRequest) {
         ZfjCloudFolderBean folderCycleBean = new ZfjCloudFolderBean();
         folderCycleBean.setName(folderDTO.getFolderName());
         folderCycleBean.setDescription(folderDTO.getFolderDescription());
