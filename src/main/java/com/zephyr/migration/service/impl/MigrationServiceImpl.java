@@ -11,8 +11,10 @@ import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
+import com.zephyr.migration.executors.ExecutionCreationTask;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
 import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.ApplicationConstants;
@@ -36,7 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.*;
 
 
 @Service
@@ -472,6 +474,11 @@ public class MigrationServiceImpl implements MigrationService {
         if (project != null) {
             projectName = project.getName();
         }
+
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        List<Future<Map<ExecutionDTO, ZfjCloudExecutionBean>>> futures = new ArrayList<>();
+        Map<ExecutionDTO, ZfjCloudExecutionBean> finalResponse = new HashMap<>();
+
         Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
 
         if (Files.exists(cycleMappedFile)) {
@@ -484,10 +491,17 @@ public class MigrationServiceImpl implements MigrationService {
             mappedServerToCloudCycleMap.forEach((serverCycleId,searchRequest)-> {
 
                 List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 500);
-
+                // submit this list to executor service
+                futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest)));
             });
 
-
+            futures.forEach(mapFuture -> {
+                try {
+                    finalResponse.putAll(mapFuture.get());
+                } catch (InterruptedException | ExecutionException e) {
+                   log.error("error :: ", e.fillInStackTrace());
+                }
+            });
             //create folder level executions
             listOfServerCycles.parallelStream().forEachOrdered(cycleId -> {
                 if(Files.exists(folderMappedFile)) {

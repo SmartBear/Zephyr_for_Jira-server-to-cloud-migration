@@ -1,7 +1,7 @@
 package com.zephyr.migration.service;
 
 import com.zephyr.migration.dto.CycleDTO;
-import com.zephyr.migration.dto.ExecutionCloudDTO;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
 
@@ -13,5 +13,5 @@ public interface ExecutionService {
 
     List<ExecutionDTO> getExecutionsFromZFJByVersionCycleAndFolderName(CycleDTO cycle, FolderDTO folder, int offset, int maxRecords);
 
-    void createExecutionInJiraCloud(ExecutionCloudDTO executionDTO);
+    ZfjCloudExecutionBean createExecutionInJiraCloud(ZfjCloudExecutionBean zfjCloudExecutionBean);
 }

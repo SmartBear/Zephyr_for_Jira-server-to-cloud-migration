@@ -1,6 +1,5 @@
-package com.zephyr.migration.dto;
+package com.zephyr.migration.model;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
@@ -8,7 +7,7 @@ import java.util.Date;
 /**
  * Created by Himanshu
  */
-public class ExecutionCloudDTO implements Serializable {
+public class ZfjCloudExecutionBean implements Serializable {
 
     private static final long serialVersionUID = -7879745396141089901L;
 
@@ -41,10 +40,10 @@ public class ExecutionCloudDTO implements Serializable {
     public Integer actualExecutionTime;
     private String currentStatus;
 
-    public ExecutionCloudDTO() {
+    public ZfjCloudExecutionBean() {
     }
 
-    public ExecutionCloudDTO(Integer issueId, Integer versionId, Integer projectId, String cycleId, Integer orderId, String comment, String executedByAccountId, Date executedOn, String modifiedByAccountId, String createdByAccountId, ExecutionStatus status, String cycleName, String assignedToAccountId, Collection<String> defects, Collection<String> stepDefects, Integer executionDefectCount, Integer stepDefectCount, Integer totalDefectCount, String tenantKey, String ztId, Boolean executedByZapi, Date assignedOn, String folderId, String folderName, Integer plannedExecutionTime, Integer actualExecutionTime) {
+    public ZfjCloudExecutionBean(Integer issueId, Integer versionId, Integer projectId, String cycleId, Integer orderId, String comment, String executedByAccountId, Date executedOn, String modifiedByAccountId, String createdByAccountId, ExecutionStatus status, String cycleName, String assignedToAccountId, Collection<String> defects, Collection<String> stepDefects, Integer executionDefectCount, Integer stepDefectCount, Integer totalDefectCount, String tenantKey, String ztId, Boolean executedByZapi, Date assignedOn, String folderId, String folderName, Integer plannedExecutionTime, Integer actualExecutionTime) {
         this.issueId = issueId;
         this.versionId = versionId;
         this.projectId = projectId;

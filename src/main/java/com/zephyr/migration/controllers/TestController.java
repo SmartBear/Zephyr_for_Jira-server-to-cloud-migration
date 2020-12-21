@@ -1,7 +1,7 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
-import com.zephyr.migration.dto.ExecutionCloudDTO;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.model.SearchRequest;
@@ -161,7 +161,7 @@ public class TestController {
 
     @GetMapping("/create/execution")
     public String createExecutionInJiraCloud() {
-        ExecutionCloudDTO executionDTO = new ExecutionCloudDTO();
+        ZfjCloudExecutionBean executionDTO = new ZfjCloudExecutionBean();
         executionDTO.setProjectId(10000);
         executionDTO.setVersionId(-1);
         executionDTO.setComment("testing comment");

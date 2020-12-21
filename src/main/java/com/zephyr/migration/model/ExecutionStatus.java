@@ -1,10 +1,8 @@
-package com.zephyr.migration.dto;
+package com.zephyr.migration.model;
 
 import java.io.Serializable;
 
-/**
- * Created by Masud on 3/21/19.
- */
+
 public class ExecutionStatus implements Serializable {
 
     private static final long serialVersionUID = -659066232549849610L;

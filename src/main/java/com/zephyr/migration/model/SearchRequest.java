@@ -8,6 +8,8 @@ public class SearchRequest {
     private String serverCycleId;
     private String cloudVersionId;
     private String cycleName;
+    private String serverFolderId;
+    private String cloudFolderId;
 
     public String getProjectId() {
         return projectId;
@@ -48,6 +50,22 @@ public class SearchRequest {
     public String getCycleName() { return cycleName; }
 
     public void setCycleName(String cycleName) { this.cycleName = cycleName; }
+
+    public String getServerFolderId() {
+        return serverFolderId;
+    }
+
+    public void setServerFolderId(String serverFolderId) {
+        this.serverFolderId = serverFolderId;
+    }
+
+    public String getCloudFolderId() {
+        return cloudFolderId;
+    }
+
+    public void setCloudFolderId(String cloudFolderId) {
+        this.cloudFolderId = cloudFolderId;
+    }
 
     @Override
     public String toString() {

@@ -6,7 +6,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
-import com.zephyr.migration.dto.ExecutionCloudDTO;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
@@ -91,7 +91,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
 
     @Override
-    public void createExecutionInJiraCloud(ExecutionCloudDTO executionDTO) {
+    public ZfjCloudExecutionBean createExecutionInJiraCloud(ZfjCloudExecutionBean zfjCloudExecutionBean) {
         log.info("Serving --> {}", "createExecutionInJiraCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -106,20 +106,17 @@ public class ExecutionServiceImpl implements ExecutionService {
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
 
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(executionDTO), headers);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(zfjCloudExecutionBean), headers);
         JsonNode response;
-        ZfjCloudCycleBean zfjCloudCycleBean = new ZfjCloudCycleBean();
         try {
             response = restTemplate.postForObject(createCloudExecutionUrl, entity, JsonNode.class);
             //read the json node response & prepare cycle bean object.
             if (response != null && !response.isEmpty()) {
-                zfjCloudCycleBean.setName(response.findValue("name").asText());
-                zfjCloudCycleBean.setId(response.findValue("id").asText());
-                zfjCloudCycleBean.setProjectId(response.findValue("projectId").asLong());
-                zfjCloudCycleBean.setVersionId(response.findValue("versionId").asLong());
+                zfjCloudExecutionBean.setId(response.findValue("id").asText());
             }
         } catch (Exception e) {
-            log.error("Error while creating cycle in cloud " + e.getMessage());
+            log.error("Error while creating execution in cloud " + e.fillInStackTrace());
         }
+        return zfjCloudExecutionBean;
     }
 }
