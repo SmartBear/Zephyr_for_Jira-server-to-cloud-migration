@@ -247,7 +247,7 @@ public class FileUtils {
         return serverCloudIdsMapping;
     }
 
-    public static Map<String, String> getServerCloudFolderMapping(String migrationFilePath, String fileName) {
+    public static List<String> getServerCloudFolderMapping(String migrationFilePath, String fileName, String cloudCycleId, String serverCycleId) {
         try (FileInputStream fis=new FileInputStream(migrationFilePath+"/"+fileName)) {
             //creating workbook instance that refers to .xls file
             HSSFWorkbook wb=new HSSFWorkbook(fis);
@@ -265,19 +265,23 @@ public class FileUtils {
                     serverFolderIdIdx = cell.getColumnIndex();
                 }
             }
+            List<String> serverFolderIds = new ArrayList<>();
+            String folderId;
             for (Row r : sheet) {
                 if (r.getRowNum()==0) continue;//headers
                 Cell c_1 = r.getCell(cloudCycleIdIdx);
                 Cell c_2 = r.getCell(serverFolderIdIdx);
                 if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
-                        return null;
+                    if (cloudCycleId.equalsIgnoreCase(c_1.getStringCellValue())) {
+                        folderId = c_2.getStringCellValue();
+                        serverFolderIds.add(folderId);
+                    }
                 }
             }
-
+            return serverFolderIds;
         } catch(IOException e) {
             log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
+            return null;
         }
-
-        return null;
     }
 }
