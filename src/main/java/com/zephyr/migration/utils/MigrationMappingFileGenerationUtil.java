@@ -3,8 +3,10 @@ package com.zephyr.migration.utils;
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -324,9 +326,9 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void generateExecutionMappingReportExcel(String projectId, String projectName, String migrationFilePath) {
+    public void generateExecutionMappingReportExcel(String projectId, String projectName, String migrationFilePath, Map<ExecutionDTO, ZfjCloudExecutionBean> executionMap) {
         try {
-            List<List<String>> responseList = executionDataToPrintInExcel(projectId, projectName);
+            List<List<String>> responseList = executionDataToPrintInExcel(projectId, projectName, executionMap);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeExecutionDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId, responseList);
         }catch (Exception e){
@@ -363,14 +365,25 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
-    public List<List<String>> executionDataToPrintInExcel(String projectId, String projectName) throws Exception {
+    public List<List<String>> executionDataToPrintInExcel(String projectId, String projectName, Map<ExecutionDTO, ZfjCloudExecutionBean> executionMap) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateExecutionHeader());
         List executionMappingList;
-        executionMappingList = new ArrayList<>();
-        executionMappingList.add(projectId);
-        executionMappingList.add(projectName);
-        recordToAdd.add(executionMappingList);
+        for (Map.Entry<ExecutionDTO,ZfjCloudExecutionBean> entry : executionMap.entrySet()) {
+            ZfjCloudExecutionBean cloudExecutionBean = entry.getValue();
+            executionMappingList = new ArrayList<>();
+            executionMappingList.add(projectId);
+            executionMappingList.add(projectName);
+            executionMappingList.add(entry.getValue().getIssueId().toString());
+            //TODO - Needs to change it to issue key
+            executionMappingList.add(entry.getValue().getIssueId().toString());
+            executionMappingList.add(entry.getKey().getCycleName());
+            executionMappingList.add(entry.getValue().getCycleName());
+            //TODO - Needs to change it to server folder name
+            executionMappingList.add(entry.getKey().getCycleName());
+            executionMappingList.add(entry.getValue().getFolderName());
+            recordToAdd.add(executionMappingList);
+        }
         return recordToAdd;
     }
 
@@ -410,6 +423,12 @@ public class MigrationMappingFileGenerationUtil {
         List<String> excelHeader = new ArrayList<String>();
         excelHeader.add("Project Id");
         excelHeader.add("Project Name");
+        excelHeader.add("Issue Id");
+        excelHeader.add("Issue Key");
+        excelHeader.add("Server Cycle Name");
+        excelHeader.add("Cloud Cycle Name");
+        excelHeader.add("Server Folder Name");
+        excelHeader.add("Cloud Folder Name");
         return excelHeader;
     }
 
