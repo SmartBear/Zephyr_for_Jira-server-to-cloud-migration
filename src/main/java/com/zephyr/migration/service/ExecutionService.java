@@ -11,7 +11,7 @@ public interface ExecutionService {
 
     List<ExecutionDTO> getExecutionsFromZFJByVersionAndCycleName(String projectId, String versionId, String cycleId, int offset, int maxRecords);
 
-    List<ExecutionDTO> getExecutionsFromZFJByVersionCycleAndFolderName(CycleDTO cycle, FolderDTO folder, int offset, int maxRecords);
+    List<ExecutionDTO> getExecutionsFromZFJByVersionCycleAndFolderName(String projectId, String versionId, String cycleId, String folderId, int offset, int maxRecords);
 
     ZfjCloudExecutionBean createExecutionInJiraCloud(ZfjCloudExecutionBean zfjCloudExecutionBean);
 }
