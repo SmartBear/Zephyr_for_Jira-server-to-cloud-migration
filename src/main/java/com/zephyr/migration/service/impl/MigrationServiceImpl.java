@@ -486,12 +486,12 @@ public class MigrationServiceImpl implements MigrationService {
             Path folderMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS);
 
             Map<String, SearchRequest> mappedServerToCloudCycleMap = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
-
+            final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
             //create cycle level executions
             mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
                 List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 500);
                 // submit this list to executor service
-                futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest)));
+                futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest, cloudAccountId, executionService)));
 
                 if (!Files.exists(folderMappedFile)) return;
 
@@ -502,7 +502,7 @@ public class MigrationServiceImpl implements MigrationService {
 
                 // submit this list to executor service
                 mappedServerFolderIds.stream().map(serverFolderId -> executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
-                        serverCycleId, serverFolderId, 0, 500)).map(folderExecutionList -> executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest))).forEach(futures::add);
+                        serverCycleId, serverFolderId, 0, 500)).map(folderExecutionList -> executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService))).forEach(futures::add);
             });
 
             futures.forEach(mapFuture -> {

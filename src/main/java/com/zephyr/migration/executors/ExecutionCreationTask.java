@@ -4,6 +4,7 @@ import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.service.ExecutionService;
+import com.zephyr.migration.utils.ConfigProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
@@ -16,13 +17,14 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
 
     private final List<ExecutionDTO> executionDTOList;
     private final SearchRequest searchRequest;
+    private final String assignedAccountId;
+    private final ExecutionService executionService;
 
-    @Autowired
-    ExecutionService executionService;
-
-    public ExecutionCreationTask(List<ExecutionDTO> executionDTOList, SearchRequest searchRequest) {
+    public ExecutionCreationTask(List<ExecutionDTO> executionDTOList, SearchRequest searchRequest, String assignedAccountId, ExecutionService executionService) {
         this.executionDTOList = executionDTOList;
         this.searchRequest = searchRequest;
+        this.assignedAccountId = assignedAccountId;
+        this.executionService = executionService;
     }
 
 
@@ -48,6 +50,7 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
         zfjCloudExecutionBean.setCycleId(searchRequest.getCloudCycleId());
         zfjCloudExecutionBean.setIssueId(serverExecution.getIssueId());
         zfjCloudExecutionBean.setExecutedByZapi(Boolean.TRUE);
+        zfjCloudExecutionBean.setAssignedToAccountId(this.assignedAccountId);
         if(Objects.nonNull(searchRequest.getCloudFolderId())) {
             zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());
         }
