@@ -370,18 +370,15 @@ public class MigrationMappingFileGenerationUtil {
         recordToAdd.add(generateExecutionHeader());
         List executionMappingList;
         for (Map.Entry<ExecutionDTO,ZfjCloudExecutionBean> entry : executionMap.entrySet()) {
-            ZfjCloudExecutionBean cloudExecutionBean = entry.getValue();
+            ExecutionDTO executionDTO = entry.getKey();
             executionMappingList = new ArrayList<>();
             executionMappingList.add(projectId);
             executionMappingList.add(projectName);
-            executionMappingList.add(entry.getValue().getIssueId().toString());
-            //TODO - Needs to change it to issue key
-            executionMappingList.add(entry.getValue().getIssueId().toString());
-            executionMappingList.add(entry.getKey().getCycleName());
-            executionMappingList.add(entry.getValue().getCycleName());
-            //TODO - Needs to change it to server folder name
-            executionMappingList.add(entry.getKey().getCycleName());
-            executionMappingList.add(entry.getValue().getFolderName());
+            executionMappingList.add(executionDTO.getVersionName());
+            executionMappingList.add(executionDTO.getIssueId()+"");
+            executionMappingList.add(executionDTO.getIssueKey());
+            executionMappingList.add(executionDTO.getCycleName());
+            executionMappingList.add(null != executionDTO.getFolderName() ? executionDTO.getFolderName() : "");
             recordToAdd.add(executionMappingList);
         }
         return recordToAdd;
@@ -423,12 +420,11 @@ public class MigrationMappingFileGenerationUtil {
         List<String> excelHeader = new ArrayList<String>();
         excelHeader.add("Project Id");
         excelHeader.add("Project Name");
+        excelHeader.add("Version Name");
         excelHeader.add("Issue Id");
         excelHeader.add("Issue Key");
-        excelHeader.add("Server Cycle Name");
-        excelHeader.add("Cloud Cycle Name");
-        excelHeader.add("Server Folder Name");
-        excelHeader.add("Cloud Folder Name");
+        excelHeader.add("Cycle Name");
+        excelHeader.add("Folder Name");
         return excelHeader;
     }
 

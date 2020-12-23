@@ -489,7 +489,7 @@ public class MigrationServiceImpl implements MigrationService {
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
             //create cycle level executions
             mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
-                List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 500);
+                List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 3000);
                 // submit this list to executor service
                 futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest, cloudAccountId, executionService)));
 
@@ -502,7 +502,7 @@ public class MigrationServiceImpl implements MigrationService {
 
                 // submit this list to executor service
                 mappedServerFolderIds.stream().map(serverFolderId -> executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
-                        serverCycleId, serverFolderId, 0, 500)).map(folderExecutionList -> executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService))).forEach(futures::add);
+                        serverCycleId, serverFolderId, 0, 3000)).map(folderExecutionList -> executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService))).forEach(futures::add);
             });
 
             futures.forEach(mapFuture -> {
@@ -513,6 +513,10 @@ public class MigrationServiceImpl implements MigrationService {
                 }
             });
 
+            if(finalResponse.size() > 0) {
+                migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
+                return true;
+            }
         }
         return true;
     }

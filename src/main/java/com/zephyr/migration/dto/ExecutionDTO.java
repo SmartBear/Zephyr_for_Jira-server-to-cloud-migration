@@ -23,6 +23,9 @@ public class ExecutionDTO {
     private String assignedToUserName;
     private String executedOn;
     private String executedBy;
+    private String issueKey;
+    private String versionName;
+    private String folderName;
 
 
     public Integer getId() {
@@ -151,5 +154,29 @@ public class ExecutionDTO {
 
     public void setExecutedBy(String executedBy) {
         this.executedBy = executedBy;
+    }
+
+    public String getIssueKey() {
+        return issueKey;
+    }
+
+    public void setIssueKey(String issueKey) {
+        this.issueKey = issueKey;
+    }
+
+    public String getVersionName() {
+        return versionName;
+    }
+
+    public void setVersionName(String versionName) {
+        this.versionName = versionName;
+    }
+
+    public String getFolderName() {
+        return folderName;
+    }
+
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
     }
 }
