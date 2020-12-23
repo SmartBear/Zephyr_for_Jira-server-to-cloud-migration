@@ -30,7 +30,7 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
     public Map<ExecutionDTO, ZfjCloudExecutionBean> call() throws Exception {
         Map<ExecutionDTO, ZfjCloudExecutionBean> serverCloudExecutionMapping = new HashMap<>();
         if(executionDTOList.size() > 0) {
-            executionDTOList.parallelStream().forEachOrdered(serverExecution -> {
+            executionDTOList.forEach(serverExecution -> {
                 ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest));
                 if(Objects.nonNull(zfjCloudExecutionBean)) {
                     serverCloudExecutionMapping.put(serverExecution,zfjCloudExecutionBean);

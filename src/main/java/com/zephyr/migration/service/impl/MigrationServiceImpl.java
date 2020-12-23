@@ -92,9 +92,10 @@ public class MigrationServiceImpl implements MigrationService {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
-            }
-            if (migrateCycles) {
 
+                if (migrateFolders) {
+                    beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                }
             }
         }
 
@@ -467,7 +468,7 @@ public class MigrationServiceImpl implements MigrationService {
     /**
      * execution migration
      */
-    private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws InterruptedException, IOException {
+    private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException {
         Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
         Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
         String projectName = null;
