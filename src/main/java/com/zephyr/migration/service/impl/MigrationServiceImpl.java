@@ -93,9 +93,9 @@ public class MigrationServiceImpl implements MigrationService {
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
-                if (migrateFolders) {
+                //if (migrateFolders) {
                     beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
-                }
+                //}
             }
         }
 
@@ -263,7 +263,7 @@ public class MigrationServiceImpl implements MigrationService {
             if(mappedServerToCloudCycleMap.size() > 0) {
                     List<String> listOfServerCycles = new ArrayList<>(mappedServerToCloudCycleMap.keySet());
                     Map<String, List<FolderDTO>> zephyrServerCycleFolderMap = new HashMap<>();
-                    listOfServerCycles.parallelStream().forEachOrdered(serverCycleId -> {
+                    listOfServerCycles.forEach(serverCycleId -> {
                         try {
                             progressQueue.put("fetching folders from zephyr server instance for cycle :: "+ serverCycleId);
                             log.info("Fetching folders from server for cycleId :: "+ serverCycleId);
@@ -439,7 +439,7 @@ public class MigrationServiceImpl implements MigrationService {
     }
 
     private void createUnmappedFolderInCloud(Map<String, SearchRequest> mappedServerToCloudCycleMap, List<FolderDTO> foldersListFromServer, Long projectId, String finalProjectName, String migrationFilePath) {
-        if(!foldersListFromServer.isEmpty()) {
+        if(foldersListFromServer != null && !foldersListFromServer.isEmpty()) {
             Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap = new HashMap<>();
             foldersListFromServer.forEach(folderDTO -> {
                 SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(folderDTO.getCycleId());
