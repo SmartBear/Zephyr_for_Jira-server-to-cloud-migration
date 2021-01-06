@@ -307,7 +307,7 @@ public class ZfjCloudExecutionBean implements Serializable {
 
     @Override
     public String toString() {
-        return "ExecutionDTO{" +
+        return "ZfjCloudExecutionBean{" +
                 "id='" + id + '\'' +
                 ", issueId=" + issueId +
                 ", versionId=" + versionId +
@@ -336,6 +336,7 @@ public class ZfjCloudExecutionBean implements Serializable {
                 ", plannedExecutionTime=" + plannedExecutionTime +
                 ", actualExecutionTime=" + actualExecutionTime +
                 ", currentStatus='" + currentStatus + '\'' +
+                ", statusId=" + statusId +
                 '}';
     }
 }

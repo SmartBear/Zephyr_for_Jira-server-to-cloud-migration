@@ -58,7 +58,6 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
             zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());
         }
         zfjCloudExecutionBean.setComment("created using zephyr server - cloud migration.");
-
         return zfjCloudExecutionBean;
     }
 }

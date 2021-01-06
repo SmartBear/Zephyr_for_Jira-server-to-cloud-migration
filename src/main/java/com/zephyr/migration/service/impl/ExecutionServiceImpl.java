@@ -108,6 +108,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(zfjCloudExecutionBean), headers);
         JsonNode response;
         try {
+            log.info("request to cloud for create execution ::: "+ zfjCloudExecutionBean.toString());
             response = restTemplate.postForObject(createCloudExecutionUrl, entity, JsonNode.class);
             //read the json node response & prepare cycle bean object.
             if (response != null && !response.isEmpty()) {

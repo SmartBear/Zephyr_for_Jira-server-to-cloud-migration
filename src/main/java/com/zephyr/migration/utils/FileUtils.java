@@ -30,6 +30,7 @@ public class FileUtils {
     private static final String SERVER_CYCLE_ID_COLUMN_NAME = "server-cycle-id";
     private static final String CLOUD_CYCLE_ID_COLUMN_NAME = "cloud-cycle-id";
     private static final String SERVER_FOLDER_ID_COLUMN_NAME = "server-folder-id";
+    private static final String CLOUD_FOLDER_ID_COLUMN_NAME = "cloud-folder-id";
     private static final String PROJECT_ID_COLUMN_NAME = "Project Id";
     private static final String CYCLE_NAME_COLUMN_NAME = "Cycle-Name";
 
@@ -249,14 +250,14 @@ public class FileUtils {
         return serverCloudIdsMapping;
     }
 
-    public static List<String> getServerCloudFolderMapping(String migrationFilePath, String fileName, String cloudCycleId, String serverCycleId) {
+    public static Map<String,String> getServerCloudFolderMapping(String migrationFilePath, String fileName, String cloudCycleId, String serverCycleId) {
         try (FileInputStream fis=new FileInputStream(migrationFilePath+"/"+fileName)) {
             //creating workbook instance that refers to .xls file
             HSSFWorkbook wb=new HSSFWorkbook(fis);
             //creating a Sheet object to retrieve the object
             HSSFSheet sheet=wb.getSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
 
-            int cloudCycleIdIdx = 0, serverCycleIdIdx = 0, serverFolderIdIdx = 0 , cloudFolderIdIdx = 0;
+            int cloudCycleIdIdx = 0, serverFolderIdIdx = 0 , cloudFolderIdIdx = 0;
 
             Row row = sheet.getRow(0);
             for (Cell cell : row) {
@@ -265,22 +266,28 @@ public class FileUtils {
                     cloudCycleIdIdx = cell.getColumnIndex();
                 }else if (SERVER_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                     serverFolderIdIdx = cell.getColumnIndex();
+                }else if(CLOUD_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudFolderIdIdx = cell.getColumnIndex();
                 }
             }
-            List<String> serverFolderIds = new ArrayList<>();
-            String folderId;
+
+            Map<String,String> serverCloudFolderMapping = new HashMap<>();
+            String folderId, cloudFolderId;
             for (Row r : sheet) {
                 if (r.getRowNum()==0) continue;//headers
                 Cell c_1 = r.getCell(cloudCycleIdIdx);
                 Cell c_2 = r.getCell(serverFolderIdIdx);
+                Cell c_3 = r.getCell(cloudFolderIdIdx);
+
                 if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
                     if (cloudCycleId.equalsIgnoreCase(c_1.getStringCellValue())) {
                         folderId = c_2.getStringCellValue();
-                        serverFolderIds.add(folderId);
+                        cloudFolderId = c_3.getStringCellValue();
+                        serverCloudFolderMapping.put(folderId, cloudFolderId);
                     }
                 }
             }
-            return serverFolderIds;
+            return serverCloudFolderMapping;
         } catch(IOException e) {
             log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
             return null;
