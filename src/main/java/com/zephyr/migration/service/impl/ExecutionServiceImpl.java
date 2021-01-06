@@ -78,6 +78,8 @@ public class ExecutionServiceImpl implements ExecutionService {
             JsonArray executionsArray = object.getAsJsonArray("executions");
             if (Objects.nonNull(executionsArray)) {
                 executions = JsonUtil.readValue(executionsArray.toString(), executionReference);
+                log.info("executionsArray string for folder ::" + folderId + "---"+ executionsArray.toString());
+                log.info("size of executions list  for folder ::" + folderId + "---"+ executions.size());
             }
         } catch (UnsupportedEncodingException e) {
             log.error("Error occurred during encoding of executions.",e.fillInStackTrace());

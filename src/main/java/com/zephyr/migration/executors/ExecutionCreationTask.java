@@ -35,7 +35,9 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
             executionDTOList.forEach(serverExecution -> {
                 ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest));
                 if(Objects.nonNull(zfjCloudExecutionBean)) {
-                    serverCloudExecutionMapping.put(serverExecution,zfjCloudExecutionBean);
+                    if(zfjCloudExecutionBean.getId() != null) {
+                        serverCloudExecutionMapping.put(serverExecution,zfjCloudExecutionBean);
+                    }
                 }
             });
         }
@@ -51,6 +53,7 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
         zfjCloudExecutionBean.setIssueId(serverExecution.getIssueId());
         zfjCloudExecutionBean.setExecutedByZapi(Boolean.TRUE);
         zfjCloudExecutionBean.setAssignedToAccountId(this.assignedAccountId);
+        zfjCloudExecutionBean.setStatusId(serverExecution.getExecutionStatus());
         if(Objects.nonNull(searchRequest.getCloudFolderId())) {
             zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());
         }

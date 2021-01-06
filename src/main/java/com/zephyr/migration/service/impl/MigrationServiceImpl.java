@@ -284,22 +284,24 @@ public class MigrationServiceImpl implements MigrationService {
                 mappedServerToCloudCycleMap.forEach((serverCycleId, searchFolderRequest) -> {
                         try {
                             progressQueue.put("creating folders from zephyr server instance for cycle :: "+ serverCycleId);
+                            log.info("fetching folder list from map for cycle id :: "+ serverCycleId);
                             List<FolderDTO> foldersListFromServer = zephyrServerCycleFolderMap.get(serverCycleId);
+                            log.info("fetching folder list from map for cycle id with size :: "+ foldersListFromServer.size());
                             if (!Files.exists(folderMappedFile)) {
-                                foldersListFromServer.forEach(folderDTO -> {
-                                    try{
-                                        progressQueue.put("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
-                                        progressQueue.put("creating folder in zephyr cloud instance for cycle :: "+ searchFolderRequest.getCloudCycleId());
-                                        log.info("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
-                                        log.info("creating folder in zephyr cloud instance for cycle :: "+ searchFolderRequest.getCloudCycleId());
-                                    }catch (InterruptedException ex) {
-                                        log.error("",ex.fillInStackTrace());
-                                    }
-                                    ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO, searchFolderRequest);
-                                    if (Objects.nonNull(cloudFolderBean)) {
-                                        zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
-                                    }
-                                });
+                                    foldersListFromServer.parallelStream().forEachOrdered(folderDTO -> {
+                                        try{
+                                            progressQueue.put("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
+                                            progressQueue.put("creating folder in zephyr cloud instance for cycle :: "+ searchFolderRequest.getCloudCycleId());
+                                            log.info("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
+                                            log.info("creating folder in zephyr cloud instance for cycle :: "+ searchFolderRequest.getCloudCycleId());
+                                        }catch (InterruptedException ex) {
+                                            log.error("InterruptedException ",ex.fillInStackTrace());
+                                        }
+                                        ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO, searchFolderRequest);
+                                        if (Objects.nonNull(cloudFolderBean)) {
+                                            zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
+                                        }
+                                    });
                             }else {
                                 createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath);
                             }
@@ -311,7 +313,7 @@ public class MigrationServiceImpl implements MigrationService {
                     if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
                         migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
                         return true;
-                    }
+                    }else return Files.exists(folderMappedFile);
 
             }
         }
@@ -442,6 +444,7 @@ public class MigrationServiceImpl implements MigrationService {
         if(!foldersListFromServer.isEmpty()) {
             Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap = new HashMap<>();
             foldersListFromServer.forEach(folderDTO -> {
+                log.info("search folder request for folder. [" + folderDTO.getCycleId());
                 SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(folderDTO.getCycleId());
                 try {
                     Boolean folderMoved = FileUtils.readFolderMappingFile(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
@@ -501,8 +504,12 @@ public class MigrationServiceImpl implements MigrationService {
                 if (!((mappedServerFolderIds != null) && (mappedServerFolderIds.size() > 0))) return;
 
                 // submit this list to executor service
-                mappedServerFolderIds.stream().map(serverFolderId -> executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
-                        serverCycleId, serverFolderId, 0, 3000)).map(folderExecutionList -> executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService))).forEach(futures::add);
+                mappedServerFolderIds.forEach(serverFolderId -> {
+                    log.info("Fetching executions from server with folder id:: ["+ serverFolderId + "]");
+                    List<ExecutionDTO> folderExecutionList = executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
+                            serverCycleId, serverFolderId, 0, 3000);
+                    futures.add(executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService)));
+                });
             });
 
             futures.forEach(mapFuture -> {

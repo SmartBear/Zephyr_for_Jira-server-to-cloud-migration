@@ -39,6 +39,7 @@ public class ZfjCloudExecutionBean implements Serializable {
     public Integer plannedExecutionTime;
     public Integer actualExecutionTime;
     private String currentStatus;
+    private Integer statusId;
 
     public ZfjCloudExecutionBean() {
     }
@@ -294,6 +295,14 @@ public class ZfjCloudExecutionBean implements Serializable {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Integer getStatusId() {
+        return statusId;
+    }
+
+    public void setStatusId(Integer statusId) {
+        this.statusId = statusId;
     }
 
     @Override
