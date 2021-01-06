@@ -93,9 +93,9 @@ public class MigrationServiceImpl implements MigrationService {
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
-                //if (migrateFolders) {
+                if (migrateFolders) {
                     beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
-                //}
+                }
             }
         }
 
@@ -263,7 +263,7 @@ public class MigrationServiceImpl implements MigrationService {
             if(mappedServerToCloudCycleMap.size() > 0) {
                     List<String> listOfServerCycles = new ArrayList<>(mappedServerToCloudCycleMap.keySet());
                     Map<String, List<FolderDTO>> zephyrServerCycleFolderMap = new HashMap<>();
-                    listOfServerCycles.forEach(serverCycleId -> {
+                    listOfServerCycles.parallelStream().forEachOrdered(serverCycleId -> {
                         try {
                             progressQueue.put("fetching folders from zephyr server instance for cycle :: "+ serverCycleId);
                             log.info("Fetching folders from server for cycleId :: "+ serverCycleId);
@@ -313,7 +313,7 @@ public class MigrationServiceImpl implements MigrationService {
                     if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
                         migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
                         return true;
-                    }else return Files.exists(folderMappedFile);
+                    }else { return Files.exists(folderMappedFile); }
 
             }
         }
