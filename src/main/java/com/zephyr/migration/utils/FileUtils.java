@@ -237,7 +237,9 @@ public class FileUtils {
                 searchFolderRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
                 searchFolderRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
                 searchFolderRequest.setCycleName(cycleNameCellVal.getStringCellValue());
-                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchFolderRequest);
+                if(!serverIdCellVal.getStringCellValue().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                    serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchFolderRequest);
+                }
             }
         }
         return serverCloudIdsMapping;
