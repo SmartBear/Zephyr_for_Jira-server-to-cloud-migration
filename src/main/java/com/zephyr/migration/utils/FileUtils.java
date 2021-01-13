@@ -1,8 +1,10 @@
 package com.zephyr.migration.utils;
 
+import com.google.common.collect.Lists;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.exception.NDataException;
 import com.zephyr.migration.model.SearchRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -17,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Himanshu Singhal on 18-11-2020.
@@ -162,76 +165,92 @@ public class FileUtils {
         return false;
     }
 
-    public static void readExecutionMappingFile(String nDataDir, String filename, String cloudCycleId, String cloudFolderId, List<ExecutionDTO> executionList, String executionLevel)  {
+    public static List<ExecutionDTO> readExecutionMappingFile(String nDataDir, String filename, String cloudCycleId, String cloudFolderId, List<ExecutionDTO> executionList, String executionLevel)  {
         try (FileInputStream fis=new FileInputStream(nDataDir+"/"+filename)) {
             //creating workbook instance that refers to .xls file
             HSSFWorkbook wb=new HSSFWorkbook(fis);
             //creating a Sheet object to retrieve the object
             HSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
 
-            int column_index_1 = 0;
-            int column_index_2 = 0;
+            int cloudCycleIdIdx = 0;
+            int cloudFolderIdIdx = 0;
+            int issueIdIdx = 0;
             Row row = sheet.getRow(0);
+
+            for (Cell cell : row) {
+                // Column header names.
+                if (CLOUD_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudFolderIdIdx = cell.getColumnIndex();
+                } else if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    issueIdIdx = cell.getColumnIndex();
+                } else if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudCycleIdIdx = cell.getColumnIndex();
+                }
+            }
+
             if (ApplicationConstants.CYCLE_LEVEL_EXECUTION.equalsIgnoreCase(executionLevel)) {
-                for (Cell cell : row) {
-                    // Column header names.
-                    if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
-                        column_index_1 = cell.getColumnIndex();
-                    }else if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
-                        column_index_2 = cell.getColumnIndex();
-                    }
-                }
-                for (Row r : sheet) {
-                    if (executionList.isEmpty()) {
-                        break;
-                    }
-                    if (r.getRowNum()==0) continue;//headers
-                    Cell c_1 = r.getCell(column_index_1);
-                    Cell c_2 = r.getCell(column_index_2);
-                    if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
-                        if (cloudCycleId.equalsIgnoreCase(c_1.getStringCellValue())) {
-                            for (ExecutionDTO execution : executionList) {
-                                String issueId = execution.getIssueId().toString();
-                                if (issueId.equalsIgnoreCase(c_2.getStringCellValue())) {
-                                    executionList.remove(execution);
-                                    break;
-                                }
+                List<ExecutionDTO> finalProcessedList = new ArrayList<>();
+
+                if(null != executionList && executionList.size() > 0 ) {
+                    List<Integer> issueIdsAlreadyCreated = new ArrayList<>();
+                    for (Row r : sheet) {
+
+                        if (r.getRowNum()==0) continue;//headers
+
+                        Cell cloudCycle_Cell = r.getCell(cloudCycleIdIdx);
+                        Cell cloudFolder_Cell = r.getCell(cloudFolderIdIdx);
+                        Cell issueId_Cell = r.getCell(issueIdIdx);
+
+                        if (cloudCycle_Cell != null && cloudCycle_Cell.getCellType() != Cell.CELL_TYPE_BLANK && issueId_Cell != null && issueId_Cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+                            String cloudFolderCellValue = cloudFolder_Cell.getStringCellValue();
+                            if (cloudCycleId.equalsIgnoreCase(cloudCycle_Cell.getStringCellValue()) && StringUtils.isEmpty(cloudFolderCellValue)) {
+                                issueIdsAlreadyCreated.add(Integer.parseInt(issueId_Cell.getStringCellValue()));
                             }
                         }
                     }
+
+                    executionList.forEach(executionDTO -> {
+                        if(!issueIdsAlreadyCreated.contains(executionDTO.getIssueId())) {
+                            finalProcessedList.add(executionDTO);
+                        }
+                    });
                 }
+
+                return finalProcessedList;
             }else if (ApplicationConstants.FOLDER_LEVEL_EXECUTION.equalsIgnoreCase(executionLevel)) {
-                for (Cell cell : row) {
-                    // Column header names.
-                    if (CLOUD_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
-                        column_index_1 = cell.getColumnIndex();
-                    }else if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
-                        column_index_2 = cell.getColumnIndex();
-                    }
-                }
-                for (Row r : sheet) {
-                    if (executionList.isEmpty()) {
-                        break;
-                    }
-                    if (r.getRowNum()==0) continue;//headers
-                    Cell c_1 = r.getCell(column_index_1);
-                    Cell c_2 = r.getCell(column_index_2);
-                    if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
-                        if (cloudFolderId.equalsIgnoreCase(c_1.getStringCellValue())) {
-                            for (ExecutionDTO execution : executionList) {
-                                String issueId = execution.getIssueId().toString();
-                                if (issueId.equalsIgnoreCase(c_2.getStringCellValue())) {
-                                    executionList.remove(execution);
-                                    break;
-                                }
+
+                List<ExecutionDTO> finalProcessedList = new ArrayList<>();
+
+                if(null != executionList && executionList.size() > 0 ) {
+                    List<Integer> issueIdsAlreadyCreated = new ArrayList<>();
+                    for (Row r : sheet) {
+
+                        if (r.getRowNum()==0) continue;//headers
+
+                        Cell cloudCycle_Cell = r.getCell(cloudCycleIdIdx);
+                        Cell cloudFolder_Cell = r.getCell(cloudFolderIdIdx);
+                        Cell issueId_Cell = r.getCell(issueIdIdx);
+
+                        if (cloudCycle_Cell != null && cloudCycle_Cell.getCellType() != Cell.CELL_TYPE_BLANK && issueId_Cell != null && issueId_Cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+                            String cloudFolderCellValue = cloudFolder_Cell.getStringCellValue();
+                            if (cloudFolderId.equalsIgnoreCase(cloudFolder_Cell.getStringCellValue()) && StringUtils.isNotEmpty(cloudCycle_Cell.getStringCellValue())) {
+                                issueIdsAlreadyCreated.add(Integer.parseInt(issueId_Cell.getStringCellValue()));
                             }
                         }
                     }
+
+                    executionList.forEach(executionDTO -> {
+                        if(!issueIdsAlreadyCreated.contains(executionDTO.getIssueId())) {
+                            finalProcessedList.add(executionDTO);
+                        }
+                    });
                 }
+                return finalProcessedList;
             }
         } catch(IOException e) {
             log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
         }
+        return Lists.newArrayList();
     }
 
     public static Map<String, String> readVersionMappingFile(String directory, String filename) throws IOException {
@@ -316,9 +335,7 @@ public class FileUtils {
                 searchRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
                 searchRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
                 searchRequest.setCycleName(cycleNameCellVal.getStringCellValue());
-                if(!serverIdCellVal.getStringCellValue().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
-                    serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchRequest);
-                }
+                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchRequest);
             }
         }
         return serverCloudIdsMapping;
