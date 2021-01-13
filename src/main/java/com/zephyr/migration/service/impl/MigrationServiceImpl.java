@@ -497,25 +497,38 @@ public class MigrationServiceImpl implements MigrationService {
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
             //create cycle level executions
             mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
+                log.info("Fetching executions for cycle with id:: "+serverCycleId + " for version ::"+searchRequest.getVersionId());
                 List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 3000);
                 // submit this list to executor service
                 //futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest, cloudAccountId, executionService)));
 
                 if (Files.exists(executionMappedFile)) {
                     if (executionList != null && !executionList.isEmpty()) {
-                        FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
+                        List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
                                 searchRequest.getCloudCycleId(), null, executionList, ApplicationConstants.CYCLE_LEVEL_EXECUTION);
-                    }
-                }
-                if(null != executionList && executionList.size() >0 ) {
-                    executionList.forEach(serverExecution -> {
-                        ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
-                        if(Objects.nonNull(zfjCloudExecutionBean)) {
-                            if(zfjCloudExecutionBean.getId() != null) {
-                                finalResponse.put(serverExecution,zfjCloudExecutionBean);
-                            }
+
+                        if(finalExecutionsListToBeProcessed.size() >0) {
+                            finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+                                ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                                if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                    if(zfjCloudExecutionBean.getId() != null) {
+                                        finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                    }
+                                }
+                            });
                         }
-                    });
+                    }
+                }else {
+                    if(null != executionList && executionList.size() >0) {
+                        executionList.forEach(serverExecution -> {
+                            ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                            if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                if(zfjCloudExecutionBean.getId() != null) {
+                                    finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                }
+                            }
+                        });
+                    }
                 }
             });
 
@@ -537,23 +550,34 @@ public class MigrationServiceImpl implements MigrationService {
 
                     if (Files.exists(executionMappedFile)) {
                         if (folderExecutionList != null && !folderExecutionList.isEmpty()) {
-                            FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
+                            List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
                                     null, searchRequest.getCloudFolderId(), folderExecutionList, ApplicationConstants.FOLDER_LEVEL_EXECUTION);
-                        }
-                    }
-                    if(null != folderExecutionList && folderExecutionList.size() >0 ) {
-                        folderExecutionList.forEach(serverExecution -> {
-                            ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
-                            if(Objects.nonNull(zfjCloudExecutionBean)) {
-                                if(zfjCloudExecutionBean.getId() != null) {
-                                    finalResponse.put(serverExecution,zfjCloudExecutionBean);
-                                }
+
+                            if(finalExecutionsListToBeProcessed.size() >0) {
+                                finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+                                    ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                                    if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                        if(zfjCloudExecutionBean.getId() != null) {
+                                            finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                        }
+                                    }
+                                });
                             }
-                        });
+                        }
+                    } else {
+                        if(null != folderExecutionList && folderExecutionList.size() >0) {
+                            folderExecutionList.forEach(serverExecution -> {
+                                ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                                if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                    if(zfjCloudExecutionBean.getId() != null) {
+                                        finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                    }
+                                }
+                            });
+                        }
                     }
                 });
             });
-
 
             /*futures.forEach(mapFuture -> {
                 try {
