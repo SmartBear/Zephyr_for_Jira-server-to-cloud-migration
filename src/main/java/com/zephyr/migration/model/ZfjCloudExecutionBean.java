@@ -40,6 +40,7 @@ public class ZfjCloudExecutionBean implements Serializable {
     public Integer actualExecutionTime;
     private String currentStatus;
     private Integer statusId;
+    private String assigneeType;
 
     public ZfjCloudExecutionBean() {
     }
@@ -303,6 +304,14 @@ public class ZfjCloudExecutionBean implements Serializable {
 
     public void setStatusId(Integer statusId) {
         this.statusId = statusId;
+    }
+
+    public String getAssigneeType() {
+        return assigneeType;
+    }
+
+    public void setAssigneeType(String assigneeType) {
+        this.assigneeType = assigneeType;
     }
 
     @Override

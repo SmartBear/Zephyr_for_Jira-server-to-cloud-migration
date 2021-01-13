@@ -4,6 +4,7 @@ import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.service.ExecutionService;
+import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -53,6 +54,8 @@ public class ExecutionCreationTask implements Callable<Map<ExecutionDTO, ZfjClou
         zfjCloudExecutionBean.setIssueId(serverExecution.getIssueId());
         zfjCloudExecutionBean.setExecutedByZapi(Boolean.TRUE);
         zfjCloudExecutionBean.setAssignedToAccountId(this.assignedAccountId);
+        zfjCloudExecutionBean.setExecutedByAccountId(this.assignedAccountId);
+        zfjCloudExecutionBean.setAssigneeType(ApplicationConstants.ASSIGNEE_TYPE);
         zfjCloudExecutionBean.setStatusId(serverExecution.getExecutionStatus());
         if(Objects.nonNull(searchRequest.getCloudFolderId())) {
             zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());

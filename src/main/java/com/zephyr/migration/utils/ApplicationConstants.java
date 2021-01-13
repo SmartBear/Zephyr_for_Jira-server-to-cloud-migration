@@ -31,6 +31,7 @@ public class ApplicationConstants {
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
     public static final String FOLDER_MAPPING_SHEET_NAME = "folder-mapping";
     public static final String EXECUTION_MAPPING_SHEET_NAME = "execution-mapping";
+    public static final String ASSIGNEE_TYPE = "assignee";
 
     /******* SERVER API endpoint URL *********/
     public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";
