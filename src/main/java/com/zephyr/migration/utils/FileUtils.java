@@ -1,5 +1,6 @@
 package com.zephyr.migration.utils;
 
+import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.exception.NDataException;
 import com.zephyr.migration.model.SearchRequest;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -33,6 +34,7 @@ public class FileUtils {
     private static final String CLOUD_FOLDER_ID_COLUMN_NAME = "cloud-folder-id";
     private static final String PROJECT_ID_COLUMN_NAME = "Project Id";
     private static final String CYCLE_NAME_COLUMN_NAME = "Cycle-Name";
+    private static final String ISSUE_ID_COLUMN_NAME = "Issue Id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -158,6 +160,78 @@ public class FileUtils {
             log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
         }
         return false;
+    }
+
+    public static void readExecutionMappingFile(String nDataDir, String filename, String cloudCycleId, String cloudFolderId, List<ExecutionDTO> executionList, String executionLevel)  {
+        try (FileInputStream fis=new FileInputStream(nDataDir+"/"+filename)) {
+            //creating workbook instance that refers to .xls file
+            HSSFWorkbook wb=new HSSFWorkbook(fis);
+            //creating a Sheet object to retrieve the object
+            HSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+
+            int column_index_1 = 0;
+            int column_index_2 = 0;
+            Row row = sheet.getRow(0);
+            if (ApplicationConstants.CYCLE_LEVEL_EXECUTION.equalsIgnoreCase(executionLevel)) {
+                for (Cell cell : row) {
+                    // Column header names.
+                    if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                        column_index_1 = cell.getColumnIndex();
+                    }else if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                        column_index_2 = cell.getColumnIndex();
+                    }
+                }
+                for (Row r : sheet) {
+                    if (executionList.isEmpty()) {
+                        break;
+                    }
+                    if (r.getRowNum()==0) continue;//headers
+                    Cell c_1 = r.getCell(column_index_1);
+                    Cell c_2 = r.getCell(column_index_2);
+                    if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                        if (cloudCycleId.equalsIgnoreCase(c_1.getStringCellValue())) {
+                            for (ExecutionDTO execution : executionList) {
+                                String issueId = execution.getIssueId().toString();
+                                if (issueId.equalsIgnoreCase(c_2.getStringCellValue())) {
+                                    executionList.remove(execution);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }else if (ApplicationConstants.FOLDER_LEVEL_EXECUTION.equalsIgnoreCase(executionLevel)) {
+                for (Cell cell : row) {
+                    // Column header names.
+                    if (CLOUD_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                        column_index_1 = cell.getColumnIndex();
+                    }else if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                        column_index_2 = cell.getColumnIndex();
+                    }
+                }
+                for (Row r : sheet) {
+                    if (executionList.isEmpty()) {
+                        break;
+                    }
+                    if (r.getRowNum()==0) continue;//headers
+                    Cell c_1 = r.getCell(column_index_1);
+                    Cell c_2 = r.getCell(column_index_2);
+                    if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                        if (cloudFolderId.equalsIgnoreCase(c_1.getStringCellValue())) {
+                            for (ExecutionDTO execution : executionList) {
+                                String issueId = execution.getIssueId().toString();
+                                if (issueId.equalsIgnoreCase(c_2.getStringCellValue())) {
+                                    executionList.remove(execution);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch(IOException e) {
+            log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
+        }
     }
 
     public static Map<String, String> readVersionMappingFile(String directory, String filename) throws IOException {
