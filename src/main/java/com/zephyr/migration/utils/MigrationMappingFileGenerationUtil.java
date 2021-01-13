@@ -371,6 +371,7 @@ public class MigrationMappingFileGenerationUtil {
         List executionMappingList;
         for (Map.Entry<ExecutionDTO,ZfjCloudExecutionBean> entry : executionMap.entrySet()) {
             ExecutionDTO executionDTO = entry.getKey();
+            ZfjCloudExecutionBean zfjCloudExecutionBean = entry.getValue();
             executionMappingList = new ArrayList<>();
             executionMappingList.add(projectId);
             executionMappingList.add(projectName);
@@ -378,7 +379,9 @@ public class MigrationMappingFileGenerationUtil {
             executionMappingList.add(executionDTO.getIssueId()+"");
             executionMappingList.add(executionDTO.getIssueKey());
             executionMappingList.add(executionDTO.getCycleName());
+            executionMappingList.add(zfjCloudExecutionBean.getCycleId());
             executionMappingList.add(null != executionDTO.getFolderName() ? executionDTO.getFolderName() : "");
+            executionMappingList.add(zfjCloudExecutionBean.getFolderId());
             recordToAdd.add(executionMappingList);
         }
         return recordToAdd;
@@ -424,7 +427,9 @@ public class MigrationMappingFileGenerationUtil {
         excelHeader.add("Issue Id");
         excelHeader.add("Issue Key");
         excelHeader.add("Cycle Name");
+        excelHeader.add("cloud-cycle-id");
         excelHeader.add("Folder Name");
+        excelHeader.add("cloud-folder-id");
         return excelHeader;
     }
 
