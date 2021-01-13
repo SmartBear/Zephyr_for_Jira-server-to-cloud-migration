@@ -19,7 +19,7 @@ public class ZfjCloudExecutionBean implements Serializable {
     public Integer orderId;
     public String comment;
     public String executedByAccountId;
-    public Date executedOn;
+    public String executedOn;
     public String modifiedByAccountId;
     public String createdByAccountId;
     public ExecutionStatus status;
@@ -41,11 +41,14 @@ public class ZfjCloudExecutionBean implements Serializable {
     private String currentStatus;
     private Integer statusId;
     private String assigneeType;
+    public String creationDate;
+    public String creationDateStr;
+    public String executedOnStr;
 
     public ZfjCloudExecutionBean() {
     }
 
-    public ZfjCloudExecutionBean(Integer issueId, Integer versionId, Integer projectId, String cycleId, Integer orderId, String comment, String executedByAccountId, Date executedOn, String modifiedByAccountId, String createdByAccountId, ExecutionStatus status, String cycleName, String assignedToAccountId, Collection<String> defects, Collection<String> stepDefects, Integer executionDefectCount, Integer stepDefectCount, Integer totalDefectCount, String tenantKey, String ztId, Boolean executedByZapi, Date assignedOn, String folderId, String folderName, Integer plannedExecutionTime, Integer actualExecutionTime) {
+    public ZfjCloudExecutionBean(Integer issueId, Integer versionId, Integer projectId, String cycleId, Integer orderId, String comment, String executedByAccountId, String executedOn, String modifiedByAccountId, String createdByAccountId, ExecutionStatus status, String cycleName, String assignedToAccountId, Collection<String> defects, Collection<String> stepDefects, Integer executionDefectCount, Integer stepDefectCount, Integer totalDefectCount, String tenantKey, String ztId, Boolean executedByZapi, Date assignedOn, String folderId, String folderName, Integer plannedExecutionTime, Integer actualExecutionTime, String creationDate) {
         this.issueId = issueId;
         this.versionId = versionId;
         this.projectId = projectId;
@@ -54,6 +57,7 @@ public class ZfjCloudExecutionBean implements Serializable {
         this.comment = comment;
         this.executedByAccountId = executedByAccountId;
         this.executedOn = executedOn;
+        this.creationDate = creationDate;
         this.modifiedByAccountId = modifiedByAccountId;
         this.createdByAccountId = createdByAccountId;
         this.status = status;
@@ -72,6 +76,14 @@ public class ZfjCloudExecutionBean implements Serializable {
         this.folderName = folderName;
         this.plannedExecutionTime = plannedExecutionTime;
         this.actualExecutionTime = actualExecutionTime;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
     }
 
     public Integer getIssueId() {
@@ -130,11 +142,11 @@ public class ZfjCloudExecutionBean implements Serializable {
         this.executedByAccountId = executedByAccountId;
     }
 
-    public Date getExecutedOn() {
+    public String getExecutedOn() {
         return executedOn;
     }
 
-    public void setExecutedOn(Date executedOn) {
+    public void setExecutedOn(String executedOn) {
         this.executedOn = executedOn;
     }
 
@@ -312,6 +324,22 @@ public class ZfjCloudExecutionBean implements Serializable {
 
     public void setAssigneeType(String assigneeType) {
         this.assigneeType = assigneeType;
+    }
+
+    public String getCreationDateStr() {
+        return creationDateStr;
+    }
+
+    public void setCreationDateStr(String creationDateStr) {
+        this.creationDateStr = creationDateStr;
+    }
+
+    public String getExecutedOnStr() {
+        return executedOnStr;
+    }
+
+    public void setExecutedOnStr(String executedOnStr) {
+        this.executedOnStr = executedOnStr;
     }
 
     @Override

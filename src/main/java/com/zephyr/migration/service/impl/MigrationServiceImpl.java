@@ -16,10 +16,8 @@ import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
 import com.zephyr.migration.service.*;
-import com.zephyr.migration.utils.ApplicationConstants;
-import com.zephyr.migration.utils.ConfigProperties;
-import com.zephyr.migration.utils.FileUtils;
-import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
+import com.zephyr.migration.utils.*;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +35,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Format;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -584,6 +585,16 @@ public class MigrationServiceImpl implements MigrationService {
             zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());
         }
         zfjCloudExecutionBean.setComment("created using zephyr server - cloud migration.");
+        try {
+            if (StringUtils.isNotEmpty(serverExecution.getExecutedOn())) {
+                zfjCloudExecutionBean.setExecutedOnStr(serverExecution.getExecutedOn());
+            }
+            if (StringUtils.isNotEmpty(serverExecution.getCreatedOn())) {
+                zfjCloudExecutionBean.setCreationDateStr(serverExecution.getCreatedOn());
+            }
+        }catch (Exception ex) {
+            log.info("Error while converting string to date");
+        }
         return zfjCloudExecutionBean;
     }
 }

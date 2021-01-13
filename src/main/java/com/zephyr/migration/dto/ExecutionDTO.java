@@ -3,6 +3,8 @@ package com.zephyr.migration.dto;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import java.util.Date;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class ExecutionDTO {
@@ -22,11 +24,27 @@ public class ExecutionDTO {
     private String createdBy;
     private String assignedToUserName;
     private String executedOn;
+    private String createdOn;
     private String executedBy;
     private String issueKey;
     private String versionName;
     private String folderName;
 
+    public String getExecutedOn() {
+        return executedOn;
+    }
+
+    public void setExecutedOn(String executedOn) {
+        this.executedOn = executedOn;
+    }
+
+    public String getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(String createdOn) {
+        this.createdOn = createdOn;
+    }
 
     public Integer getId() {
         return id;
@@ -140,13 +158,7 @@ public class ExecutionDTO {
         this.assignedToUserName = assignedToUserName;
     }
 
-    public String getExecutedOn() {
-        return executedOn;
-    }
 
-    public void setExecutedOn(String executedOn) {
-        this.executedOn = executedOn;
-    }
 
     public String getExecutedBy() {
         return executedBy;
