@@ -269,10 +269,12 @@ public class MigrationServiceImpl implements MigrationService {
                             SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(serverCycleId);
                             if(null != searchFolderRequest) {
                                 log.info("Fetching cycles from server with details :: "+ searchFolderRequest.toString());
-                                List<FolderDTO> foldersListFromServer = folderService.fetchFoldersFromZephyrServer(Long.parseLong(serverCycleId),
-                                        searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
-                                zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
-                                log.info("Fetched cycles from server for version :: "+ serverCycleId);
+                                if(!serverCycleId.equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                                    List<FolderDTO> foldersListFromServer = folderService.fetchFoldersFromZephyrServer(Long.parseLong(serverCycleId),
+                                            searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
+                                    zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
+                                    log.info("Fetched cycles from server for version :: "+ serverCycleId);
+                                }
                             }
                         } catch (Exception ex) {
                             log.error("", ex.fillInStackTrace());
@@ -284,9 +286,10 @@ public class MigrationServiceImpl implements MigrationService {
                         try {
                             progressQueue.put("creating folders from zephyr server instance for cycle :: "+ serverCycleId);
                             log.info("fetching folder list from map for cycle id :: "+ serverCycleId);
-                            List<FolderDTO> foldersListFromServer = zephyrServerCycleFolderMap.get(serverCycleId);
-                            log.info("fetching folder list from map for cycle id with size :: "+ foldersListFromServer.size());
-                            if (!Files.exists(folderMappedFile)) {
+                            if(!serverCycleId.equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                                List<FolderDTO> foldersListFromServer = zephyrServerCycleFolderMap.get(serverCycleId);
+                                log.info("fetching folder list from map for cycle id with size :: "+ foldersListFromServer.size());
+                                if (!Files.exists(folderMappedFile)) {
                                     foldersListFromServer.parallelStream().forEachOrdered(folderDTO -> {
                                         try{
                                             progressQueue.put("creating folder in zephyr cloud instance with name :: "+ folderDTO.getFolderName());
@@ -301,8 +304,9 @@ public class MigrationServiceImpl implements MigrationService {
                                             zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
                                         }
                                     });
-                            }else {
-                                createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath);
+                                }else {
+                                    createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath);
+                                }
                             }
                         } catch (Exception ex) {
                             log.error("", ex.fillInStackTrace());

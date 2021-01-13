@@ -242,9 +242,7 @@ public class FileUtils {
                 searchRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
                 searchRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
                 searchRequest.setCycleName(cycleNameCellVal.getStringCellValue());
-                if(!serverIdCellVal.getStringCellValue().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
-                    serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchRequest);
-                }
+                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchRequest);
             }
         }
         return serverCloudIdsMapping;
