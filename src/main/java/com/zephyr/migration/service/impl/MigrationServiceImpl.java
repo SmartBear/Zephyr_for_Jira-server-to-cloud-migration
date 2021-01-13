@@ -11,7 +11,6 @@ import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.executors.ExecutionCreationTask;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
@@ -479,7 +478,7 @@ public class MigrationServiceImpl implements MigrationService {
             projectName = project.getName();
         }
 
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         List<Future<Map<ExecutionDTO, ZfjCloudExecutionBean>>> futures = new ArrayList<>();
         Map<ExecutionDTO, ZfjCloudExecutionBean> finalResponse = new HashMap<>();
 
@@ -494,10 +493,23 @@ public class MigrationServiceImpl implements MigrationService {
             mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
                 List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 3000);
                 // submit this list to executor service
-                futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest, cloudAccountId, executionService)));
+                //futures.add(executorService.submit(new ExecutionCreationTask(executionList, searchRequest, cloudAccountId, executionService)));
 
-                if (!Files.exists(folderMappedFile)) return;
+                if(null != executionList && executionList.size() >0 ) {
+                    executionList.forEach(serverExecution -> {
+                        ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                        if(Objects.nonNull(zfjCloudExecutionBean)) {
+                            if(zfjCloudExecutionBean.getId() != null) {
+                                finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                            }
+                        }
+                    });
+                }
+            });
 
+            if (!Files.exists(folderMappedFile)) return true;
+
+            mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
                 Map<String,String> mappedServerCloudFolderIds = FileUtils.getServerCloudFolderMapping(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
                         searchRequest.getCloudCycleId(), serverCycleId);
 
@@ -506,20 +518,32 @@ public class MigrationServiceImpl implements MigrationService {
                 // submit this list to executor service
                 mappedServerCloudFolderIds.forEach((serverFolderId, cloudFolderId) -> {
                     log.info("Fetching executions from server with folder id:: ["+ serverFolderId + "]");
+                    searchRequest.setCloudFolderId(cloudFolderId);
                     List<ExecutionDTO> folderExecutionList = executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
                             serverCycleId, serverFolderId, 0, 3000);
-                    searchRequest.setCloudFolderId(cloudFolderId);
-                    futures.add(executorService.submit(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService)));
+                  // futures.add(scheduledExecutorService.schedule(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService),5,TimeUnit.SECONDS));
+
+                    if(null != folderExecutionList && folderExecutionList.size() >0 ) {
+                        folderExecutionList.forEach(serverExecution -> {
+                            ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                            if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                if(zfjCloudExecutionBean.getId() != null) {
+                                    finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                }
+                            }
+                        });
+                    }
                 });
             });
 
-            futures.forEach(mapFuture -> {
+
+            /*futures.forEach(mapFuture -> {
                 try {
                     finalResponse.putAll(mapFuture.get());
                 } catch (InterruptedException | ExecutionException e) {
                    log.error("error :: ", e.fillInStackTrace());
                 }
-            });
+            });*/
 
             if(finalResponse.size() > 0) {
                 migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
@@ -527,5 +551,24 @@ public class MigrationServiceImpl implements MigrationService {
             }
         }
         return true;
+    }
+
+    private ZfjCloudExecutionBean prepareRequestForCloud(ExecutionDTO serverExecution, SearchRequest searchRequest, String assignedAccountId) {
+        ZfjCloudExecutionBean zfjCloudExecutionBean = new ZfjCloudExecutionBean();
+
+        zfjCloudExecutionBean.setProjectId(Integer.parseInt(searchRequest.getProjectId()));
+        zfjCloudExecutionBean.setVersionId(Integer.parseInt(searchRequest.getCloudVersionId()));
+        zfjCloudExecutionBean.setCycleId(searchRequest.getCloudCycleId());
+        zfjCloudExecutionBean.setIssueId(serverExecution.getIssueId());
+        zfjCloudExecutionBean.setExecutedByZapi(Boolean.TRUE);
+        zfjCloudExecutionBean.setAssignedToAccountId(assignedAccountId);
+        zfjCloudExecutionBean.setExecutedByAccountId(assignedAccountId);
+        zfjCloudExecutionBean.setAssigneeType(ApplicationConstants.ASSIGNEE_TYPE);
+        zfjCloudExecutionBean.setStatusId(serverExecution.getExecutionStatus());
+        if(Objects.nonNull(searchRequest.getCloudFolderId())) {
+            zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());
+        }
+        zfjCloudExecutionBean.setComment("created using zephyr server - cloud migration.");
+        return zfjCloudExecutionBean;
     }
 }
