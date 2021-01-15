@@ -37,7 +37,8 @@ public class FileUtils {
     private static final String CLOUD_FOLDER_ID_COLUMN_NAME = "cloud-folder-id";
     private static final String PROJECT_ID_COLUMN_NAME = "Project Id";
     private static final String CYCLE_NAME_COLUMN_NAME = "Cycle-Name";
-    private static final String ISSUE_ID_COLUMN_NAME = "Issue Id";
+    private static final String ISSUE_ID_COLUMN_NAME = "Issue-Id";
+    private static final String SERVER_EXECUTION_ID_COLUMN_NAME = "server-execution-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -175,6 +176,7 @@ public class FileUtils {
             int cloudCycleIdIdx = 0;
             int cloudFolderIdIdx = 0;
             int issueIdIdx = 0;
+            int serverExecutionId_Idx = 0;
             Row row = sheet.getRow(0);
 
             for (Cell cell : row) {
@@ -185,6 +187,8 @@ public class FileUtils {
                     issueIdIdx = cell.getColumnIndex();
                 } else if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
                     cloudCycleIdIdx = cell.getColumnIndex();
+                } else if (SERVER_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverExecutionId_Idx = cell.getColumnIndex();
                 }
             }
 
@@ -198,19 +202,21 @@ public class FileUtils {
                         if (r.getRowNum()==0) continue;//headers
 
                         Cell cloudCycle_Cell = r.getCell(cloudCycleIdIdx);
-                        Cell cloudFolder_Cell = r.getCell(cloudFolderIdIdx);
-                        Cell issueId_Cell = r.getCell(issueIdIdx);
+                        Cell serverExecutionId_Cell = r.getCell(serverExecutionId_Idx);
 
-                        if (cloudCycle_Cell != null && cloudCycle_Cell.getCellType() != Cell.CELL_TYPE_BLANK && issueId_Cell != null && issueId_Cell.getCellType() != Cell.CELL_TYPE_BLANK) {
-                            String cloudFolderCellValue = cloudFolder_Cell.getStringCellValue();
-                            if (cloudCycleId.equalsIgnoreCase(cloudCycle_Cell.getStringCellValue()) && StringUtils.isEmpty(cloudFolderCellValue)) {
-                                issueIdsAlreadyCreated.add(Integer.parseInt(issueId_Cell.getStringCellValue()));
+                        if (cloudCycle_Cell != null && cloudCycle_Cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+                            String cloudCycleId_Val = cloudCycle_Cell.getStringCellValue();
+                            String serverExecutionId_Val = null != serverExecutionId_Cell ? serverExecutionId_Cell.getStringCellValue() : null;
+                            if (StringUtils.isNotEmpty(cloudCycleId_Val) && cloudCycleId.equalsIgnoreCase(StringUtils.trim(cloudCycleId_Val))
+                                    && StringUtils.isNotEmpty(serverExecutionId_Val)) {
+                                log.debug("serverExecutionId_Val for cycle is ::::: "+ serverExecutionId_Val);
+                                issueIdsAlreadyCreated.add(Integer.parseInt(serverExecutionId_Val));
                             }
                         }
                     }
 
                     executionList.forEach(executionDTO -> {
-                        if(!issueIdsAlreadyCreated.contains(executionDTO.getIssueId())) {
+                        if(!issueIdsAlreadyCreated.contains(executionDTO.getId())) {
                             finalProcessedList.add(executionDTO);
                         }
                     });
@@ -229,18 +235,21 @@ public class FileUtils {
 
                         Cell cloudCycle_Cell = r.getCell(cloudCycleIdIdx);
                         Cell cloudFolder_Cell = r.getCell(cloudFolderIdIdx);
-                        Cell issueId_Cell = r.getCell(issueIdIdx);
+                        Cell serverExecutionId_Cell = r.getCell(serverExecutionId_Idx);
 
-                        if (cloudCycle_Cell != null && cloudCycle_Cell.getCellType() != Cell.CELL_TYPE_BLANK && issueId_Cell != null && issueId_Cell.getCellType() != Cell.CELL_TYPE_BLANK) {
-                            String cloudFolderCellValue = cloudFolder_Cell.getStringCellValue();
-                            if (cloudFolderId.equalsIgnoreCase(cloudFolder_Cell.getStringCellValue()) && StringUtils.isNotEmpty(cloudCycle_Cell.getStringCellValue())) {
-                                issueIdsAlreadyCreated.add(Integer.parseInt(issueId_Cell.getStringCellValue()));
+                        if (cloudCycle_Cell != null && cloudCycle_Cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+                            String serverExecutionId_Val = null != serverExecutionId_Cell ? serverExecutionId_Cell.getStringCellValue() : "";
+                            String cloudFolderId_Val = null != cloudFolder_Cell ? cloudFolder_Cell.getStringCellValue() : "";
+                            if (StringUtils.isNotEmpty(cloudFolderId_Val) && cloudFolderId.equalsIgnoreCase(StringUtils.trim(cloudFolderId_Val))
+                                    && StringUtils.isNotEmpty(serverExecutionId_Val)) {
+                                log.debug("serverExecutionId_Val for folder is ::::: "+ serverExecutionId_Val);
+                                issueIdsAlreadyCreated.add(Integer.parseInt(serverExecutionId_Val));
                             }
                         }
                     }
 
                     executionList.forEach(executionDTO -> {
-                        if(!issueIdsAlreadyCreated.contains(executionDTO.getIssueId())) {
+                        if(!issueIdsAlreadyCreated.contains(executionDTO.getId())) {
                             finalProcessedList.add(executionDTO);
                         }
                     });

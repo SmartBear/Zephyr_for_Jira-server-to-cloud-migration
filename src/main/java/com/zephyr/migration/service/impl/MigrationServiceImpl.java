@@ -507,7 +507,7 @@ public class MigrationServiceImpl implements MigrationService {
                     if (executionList != null && !executionList.isEmpty()) {
                         List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
                                 searchRequest.getCloudCycleId(), null, executionList, ApplicationConstants.CYCLE_LEVEL_EXECUTION);
-
+                        log.info("Final list to be processed for serverCycleId : "+ serverCycleId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
                         if(finalExecutionsListToBeProcessed.size() >0) {
                             finalExecutionsListToBeProcessed.forEach(serverExecution -> {
                                 ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
@@ -553,7 +553,7 @@ public class MigrationServiceImpl implements MigrationService {
                         if (folderExecutionList != null && !folderExecutionList.isEmpty()) {
                             List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
                                     null, searchRequest.getCloudFolderId(), folderExecutionList, ApplicationConstants.FOLDER_LEVEL_EXECUTION);
-
+                            log.info("Final list to be processed for serverFolderId : "+ serverFolderId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
                             if(finalExecutionsListToBeProcessed.size() >0) {
                                 finalExecutionsListToBeProcessed.forEach(serverExecution -> {
                                     ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
@@ -588,7 +588,10 @@ public class MigrationServiceImpl implements MigrationService {
                 }
             });*/
 
-            if(finalResponse.size() > 0) {
+            if (Files.exists(executionMappedFile)) {
+                migrationMappingFileGenerationUtil.updateExecutionMappingFile(projectId+"", projectName, migrationFilePath, finalResponse);
+                return true;
+            }else if(finalResponse.size() > 0) {
                 migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
                 return true;
             }
