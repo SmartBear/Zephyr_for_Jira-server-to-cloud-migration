@@ -34,9 +34,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Format;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -200,6 +197,7 @@ public class MigrationServiceImpl implements MigrationService {
                         log.info("Fetching cycles from server for version :: "+ serverVersionId);
                         List<CycleDTO> cyclesListFromServer = cycleService.fetchCyclesFromZephyrServer(projectId, serverVersionId, progressQueue);
                         zephyrServerCyclesMap.put(serverVersionId, cyclesListFromServer);
+                        progressQueue.put("Fetched cycles from server for version :: "+ serverVersionId);
                         log.info("Fetched cycles from server for version :: "+ serverVersionId);
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());
@@ -228,6 +226,7 @@ public class MigrationServiceImpl implements MigrationService {
                                 }
                             });
                         }else {
+                            progressQueue.put("Cycle mapping file exists, going to create the unmapped cycles.");
                             createUnmappedCycleInCloud(mappedServerToCloudVersionMap, cyclesListFromServer, projectId, finalProjectName, migrationFilePath);
                         }
                     } catch (Exception ex) {
@@ -235,6 +234,7 @@ public class MigrationServiceImpl implements MigrationService {
                     }
                 });
                 if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
+                    progressQueue.put("Creating the mapping file for cycle migration.");
                     migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap,
                             projectId.toString(), projectName, migrationFilePath);
                     return true;
@@ -248,7 +248,7 @@ public class MigrationServiceImpl implements MigrationService {
     /**
      * folder migration
      */
-    private boolean beginFolderMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException {
+    private boolean beginFolderMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
         Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
         String projectName = null;
         if (project != null) {
@@ -274,7 +274,8 @@ public class MigrationServiceImpl implements MigrationService {
                                     List<FolderDTO> foldersListFromServer = folderService.fetchFoldersFromZephyrServer(Long.parseLong(serverCycleId),
                                             searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
                                     zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
-                                    log.info("Fetched cycles from server for version :: "+ serverCycleId);
+                                    log.info("Fetched folders from server for version :: "+ serverCycleId);
+                                    progressQueue.put("Fetched folders from server for version -> "+serverCycleId);
                                 }
                             }
                         } catch (Exception ex) {
@@ -306,6 +307,7 @@ public class MigrationServiceImpl implements MigrationService {
                                         }
                                     });
                                 }else {
+                                    progressQueue.put("Folder mapping file exists for the project, creating unmapped folders in cloud.");
                                     createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath);
                                 }
                             }
@@ -315,6 +317,7 @@ public class MigrationServiceImpl implements MigrationService {
                     });
 
                     if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
+                        progressQueue.put("Creating the mapping file for folder migration.");
                         migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
                         return true;
                     }else { return Files.exists(folderMappedFile); }
@@ -475,7 +478,7 @@ public class MigrationServiceImpl implements MigrationService {
     /**
      * execution migration
      */
-    private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException {
+    private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
         Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
         Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
         String projectName = null;
@@ -580,18 +583,12 @@ public class MigrationServiceImpl implements MigrationService {
                 });
             });
 
-            /*futures.forEach(mapFuture -> {
-                try {
-                    finalResponse.putAll(mapFuture.get());
-                } catch (InterruptedException | ExecutionException e) {
-                   log.error("error :: ", e.fillInStackTrace());
-                }
-            });*/
-
             if (Files.exists(executionMappedFile)) {
+                progressQueue.put("Updating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.updateExecutionMappingFile(projectId+"", projectName, migrationFilePath, finalResponse);
                 return true;
             }else if(finalResponse.size() > 0) {
+                progressQueue.put("Creating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
                 return true;
             }
