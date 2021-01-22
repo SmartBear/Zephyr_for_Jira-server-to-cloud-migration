@@ -2,6 +2,7 @@ package com.zephyr.migration.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
@@ -87,8 +88,8 @@ public class FolderServiceImpl implements FolderService {
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
             folders = JsonUtil.readValue(content,reference);
-        } catch (IOException e) {
-            log.error("Error while converting folder json to object -> ", e.fillInStackTrace());
+        } catch (IOException | ClientHandlerException e) {
+            log.error("Error while getting folder response from server -> ", e.fillInStackTrace());
         }
         return folders;
     }

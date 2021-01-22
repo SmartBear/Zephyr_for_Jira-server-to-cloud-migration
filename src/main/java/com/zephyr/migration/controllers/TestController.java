@@ -1,10 +1,12 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.zephyr.migration.dto.ExecutionAttachmentDTO;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.model.SearchRequest;
+import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.service.ExecutionService;
 import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.service.TestService;
@@ -16,18 +18,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * This controller is for testing a specific flow.
@@ -54,6 +64,9 @@ public class TestController {
 
     @Autowired
     ExecutionService executionService;
+
+    @Autowired
+    AttachmentService attachmentService;
 
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
@@ -169,5 +182,55 @@ public class TestController {
         executionDTO.setIssueId(10005);
         executionService.createExecutionInJiraCloud(executionDTO);
         return String.format("Hello execution has been created for cycle %s!", executionDTO.getCycleId());
+    }
+
+    @GetMapping("/downloadFile")
+    public String downloadFile(@RequestParam("executionId") Integer executionId, HttpServletRequest request) {
+
+        testService.initializeHttpClientDetails();
+        if(executionId != null) {
+            File tempFile;
+            AtomicReference<File> file = new AtomicReference<>();
+            try {
+
+                List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(executionId, ApplicationConstants.ENTITY_TYPE.EXECUTION);
+                if(attachmentList != null && attachmentList.size() > 0) {
+                    List<ExecutionAttachmentDTO> executionAttachments = attachmentList.stream()
+                            .filter(Objects::nonNull).collect(Collectors.toList());
+                    List<File> filesToDelete = new ArrayList<>();
+                    executionAttachments.forEach(attachment -> {
+                        if(attachment != null) {
+                            try {
+                                File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                                if(executionAttachmentFile != null) {
+                                    filesToDelete.add(executionAttachmentFile);
+                                    file.set(executionAttachmentFile);
+                                }
+                            } catch (Exception e) {
+                                log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                            }
+                        }
+                    });
+                    if (!filesToDelete.isEmpty()) {
+                        filesToDelete.forEach(f -> {
+                            if(f.exists())
+                                f.delete();
+                        });
+                    }
+                }
+            } catch (Exception ex) {
+                log.error("Error while creating attachment for issue", ex);
+            }
+            // Try to determine file's content type
+            String contentType = request.getServletContext().getMimeType(file.get().getAbsolutePath());
+            // Fallback to the default content type if type could not be determined
+            if(contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return String.format("File name is  %s!", file.get().getName());
+        } else {
+            return "Not Found";
+        }
     }
 }

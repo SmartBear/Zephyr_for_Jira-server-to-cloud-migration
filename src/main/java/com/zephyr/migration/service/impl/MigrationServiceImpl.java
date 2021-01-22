@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.dto.ExecutionAttachmentDTO;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.model.SearchRequest;
@@ -30,12 +31,14 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -60,6 +63,9 @@ public class MigrationServiceImpl implements MigrationService {
 
     @Autowired
     ExecutionService executionService;
+
+    @Autowired
+    AttachmentService attachmentService;
 
     @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
@@ -91,7 +97,10 @@ public class MigrationServiceImpl implements MigrationService {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
                 if (migrateFolders) {
-                    beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    boolean migrateExecutions = beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    if(migrateExecutions) {
+                        beginExecutionLevelAttachments(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    }
                 }
             }
         }
@@ -594,6 +603,40 @@ public class MigrationServiceImpl implements MigrationService {
             }
         }
         return true;
+    }
+
+    private void beginExecutionLevelAttachments(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) {
+        try {
+            ExecutionDTO executionDTO = new ExecutionDTO();
+            //Read the execution mapping file and start processing it.
+            List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(executionDTO.getId(), ApplicationConstants.ENTITY_TYPE.EXECUTION);
+            if(attachmentList != null && attachmentList.size() > 0) {
+                List<ExecutionAttachmentDTO> executionAttachments = attachmentList.stream()
+                        .filter(Objects::nonNull).collect(Collectors.toList());
+                List<File> filesToDelete = new ArrayList<>();
+                executionAttachments.forEach(attachment -> {
+                    if(attachment != null) {
+                        try {
+                            File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                            if(executionAttachmentFile != null) {
+                                filesToDelete.add(executionAttachmentFile);
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                        }
+                    }
+                });
+                if (!filesToDelete.isEmpty()) {
+
+                    filesToDelete.forEach(file -> {
+                        if(file.exists())
+                            file.delete();
+                    });
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Error while creating attachment for issue", ex);
+        }
     }
 
     private ZfjCloudExecutionBean prepareRequestForCloud(ExecutionDTO serverExecution, SearchRequest searchRequest, String assignedAccountId) {

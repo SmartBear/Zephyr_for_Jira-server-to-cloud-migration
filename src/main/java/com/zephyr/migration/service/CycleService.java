@@ -1,6 +1,5 @@
 package com.zephyr.migration.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
 

@@ -2,6 +2,7 @@ package com.zephyr.migration.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
