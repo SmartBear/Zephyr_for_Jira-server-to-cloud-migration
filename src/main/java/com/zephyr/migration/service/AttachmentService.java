@@ -11,4 +11,6 @@ public interface AttachmentService {
     List<ExecutionAttachmentDTO> getAttachmentResponse(Integer id, ApplicationConstants.ENTITY_TYPE entityType);
 
     File downloadExecutionAttachmentFileFromZFJ(String fileId, String fileName);
+
+    public void addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception;
 }

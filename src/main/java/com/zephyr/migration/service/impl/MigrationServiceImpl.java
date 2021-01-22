@@ -12,10 +12,7 @@ import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.ExecutionAttachmentDTO;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.model.SearchRequest;
-import com.zephyr.migration.model.ZfjCloudCycleBean;
-import com.zephyr.migration.model.ZfjCloudExecutionBean;
-import com.zephyr.migration.model.ZfjCloudFolderBean;
+import com.zephyr.migration.model.*;
 import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.*;
 import org.apache.commons.lang3.StringUtils;
@@ -608,31 +605,41 @@ public class MigrationServiceImpl implements MigrationService {
     private void beginExecutionLevelAttachments(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) {
         try {
             ExecutionDTO executionDTO = new ExecutionDTO();
-            //Read the execution mapping file and start processing it.
-            List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(executionDTO.getId(), ApplicationConstants.ENTITY_TYPE.EXECUTION);
-            if(attachmentList != null && attachmentList.size() > 0) {
-                List<ExecutionAttachmentDTO> executionAttachments = attachmentList.stream()
-                        .filter(Objects::nonNull).collect(Collectors.toList());
-                List<File> filesToDelete = new ArrayList<>();
-                executionAttachments.forEach(attachment -> {
-                    if(attachment != null) {
-                        try {
-                            File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
-                            if(executionAttachmentFile != null) {
-                                filesToDelete.add(executionAttachmentFile);
+            Map<String, String> mappedServerToCloudExecutionIdMap = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
+            if (mappedServerToCloudExecutionIdMap != null && !mappedServerToCloudExecutionIdMap.isEmpty()) {
+                mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+                    //Read the execution mapping file and start processing it.
+                    List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
+                    if(attachmentList != null && attachmentList.size() > 0) {
+                        List<ExecutionAttachmentDTO> executionAttachments = attachmentList.stream()
+                                .filter(Objects::nonNull).collect(Collectors.toList());
+                        List<File> filesToDelete = new ArrayList<>();
+                        executionAttachments.forEach(attachment -> {
+                            if(attachment != null) {
+                                try {
+                                    File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                                    if(executionAttachmentFile != null) {
+                                        filesToDelete.add(executionAttachmentFile);
+                                    }
+                                } catch (Exception e) {
+                                    log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                                }
                             }
-                        } catch (Exception e) {
-                            log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                        });
+                        if (!filesToDelete.isEmpty()) {
+                            filesToDelete.forEach(file -> {
+                                if(file.exists()){
+                                    try {
+                                        attachmentService.addExecutionAttachmentInCloud(file, cloudExecutionId, projectId.toString());
+                                    }catch (Exception e) {
+                                        log.error("Error while adding attachment for issue", e);
+                                    }
+                                    file.delete();
+                                }
+                            });
                         }
                     }
                 });
-                if (!filesToDelete.isEmpty()) {
-
-                    filesToDelete.forEach(file -> {
-                        if(file.exists())
-                            file.delete();
-                    });
-                }
             }
         } catch (Exception ex) {
             log.error("Error while creating attachment for issue", ex);

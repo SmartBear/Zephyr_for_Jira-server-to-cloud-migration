@@ -6,9 +6,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
+import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.ExecutionAttachmentDTO;
 import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.utils.ApplicationConstants;
+import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.JsonUtil;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.codehaus.jackson.type.TypeReference;
@@ -16,14 +19,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -34,6 +41,9 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Autowired
     @Qualifier(value = "zapiHttpClient")
     private HttpClient zapiHttpClient;
+
+    @Autowired
+    ConfigProperties configProperties;
 
     @Override
     public List<ExecutionAttachmentDTO> getAttachmentResponse(Integer executionId, ApplicationConstants.ENTITY_TYPE entityType) {
@@ -89,5 +99,51 @@ public class AttachmentServiceImpl implements AttachmentService {
             }
         }
         return file;
+    }
+
+    @Override
+    public void addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception {
+        try{
+            int filesize = FileUtils.getFileSizeInMB(attachment);
+            if (filesize > 10) {
+                log.info("file size for issue " + cloudExecutionId + "will be ignored as size is greater than allowed limits (10MB)");
+                return;
+            }
+            log.info("Serving --> {}", "addExecutionAttachmentInCloud()");
+            final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+            final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+            final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+            final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+            JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+            String addAttachmentUrl = CLOUD_BASE_URL + ApplicationConstants.ADD_EXECUTION_ATTACHMENT_URL;
+            String createUrl = addAttachmentUrl;
+            String queryparams = null;
+            createUrl = createUrl + "?";
+            try {
+                queryparams = URLEncoder.encode("entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId  + "&comment=updated by migration", "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            createUrl = createUrl + queryparams;
+            String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
+            addAttachmentUrl = addAttachmentUrl + "?entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId + "&comment=updated by migration";
+            MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
+
+            map.add("file", new FileSystemResource(attachment));
+            map.add("attachmentFileName", attachment.getName());
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.set(HttpHeaders.AUTHORIZATION, jwt);
+            headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity(map, headers);
+            ResponseEntity<String> response = restTemplate.exchange(addAttachmentUrl, HttpMethod.POST, entity, String.class);
+            log.info("add attachment response is : " + response.getBody());
+        }catch (Exception e){
+            log.error("Exception while creating attachments.{}","Method: sendAttachments()",e);
+            throw new Exception(e);
+        }
     }
 }
