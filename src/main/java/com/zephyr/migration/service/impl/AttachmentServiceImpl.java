@@ -1,5 +1,6 @@
 package com.zephyr.migration.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -8,6 +9,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.ExecutionAttachmentDTO;
+import com.zephyr.migration.model.ZfjAttachmentBean;
 import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -30,7 +32,6 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -102,12 +103,13 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    public void addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception {
+    public ZfjAttachmentBean addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception {
+        ZfjAttachmentBean zfjCloudAttachmentBean = null;
         try{
             int filesize = FileUtils.getFileSizeInMB(attachment);
             if (filesize > 10) {
                 log.info("file size for issue " + cloudExecutionId + "will be ignored as size is greater than allowed limits (10MB)");
-                return;
+                return zfjCloudAttachmentBean;
             }
             log.info("Serving --> {}", "addExecutionAttachmentInCloud()");
             final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
@@ -139,11 +141,21 @@ public class AttachmentServiceImpl implements AttachmentService {
             headers.set(HttpHeaders.AUTHORIZATION, jwt);
             headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
             HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity(map, headers);
-            ResponseEntity<String> response = restTemplate.exchange(addAttachmentUrl, HttpMethod.POST, entity, String.class);
+            ResponseEntity<JsonNode> response = restTemplate.exchange(addAttachmentUrl, HttpMethod.POST, entity, JsonNode.class);
+            //read the json node response & prepare attachment bean object.
+            zfjCloudAttachmentBean = new ZfjAttachmentBean();
+                if (response != null) {
+                    JsonNode responseBody = response.getBody();
+                    if (response.getBody() != null) {
+                        zfjCloudAttachmentBean.setCloudExecutionId(responseBody.findValue("entityId").asText());
+                        zfjCloudAttachmentBean.setCloudExecutionAttachmentId(responseBody.findValue("id").asText());
+                    }
+                }
             log.info("add attachment response is : " + response.getBody());
         }catch (Exception e){
             log.error("Exception while creating attachments.{}","Method: sendAttachments()",e);
             throw new Exception(e);
         }
+        return zfjCloudAttachmentBean;
     }
 }

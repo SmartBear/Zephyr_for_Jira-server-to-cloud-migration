@@ -29,9 +29,11 @@ public class ApplicationConstants {
     public static final String MAPPING_CYCLE_FILE_NAME ="migration-cycle-mapping-project-";
     public static final String MAPPING_FOLDER_FILE_NAME ="migration-folder-mapping-project-";
     public static final String MAPPING_EXECUTION_FILE_NAME ="migration-execution-mapping-project-";
+    public static final String MAPPING_EXECUTION_ATTACHMENT_FILE_NAME ="migration-execution-attachment-mapping-project-";
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
     public static final String FOLDER_MAPPING_SHEET_NAME = "folder-mapping";
     public static final String EXECUTION_MAPPING_SHEET_NAME = "execution-mapping";
+    public static final String EXECUTION_ATTACHMENT_MAPPING_SHEET_NAME = "execution-attachment-mapping";
     public static final String ASSIGNEE_TYPE = "assignee";
 
     /******* SERVER API endpoint URL *********/

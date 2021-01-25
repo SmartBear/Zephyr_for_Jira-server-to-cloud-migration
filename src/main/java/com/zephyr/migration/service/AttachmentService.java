@@ -1,6 +1,7 @@
 package com.zephyr.migration.service;
 
 import com.zephyr.migration.dto.ExecutionAttachmentDTO;
+import com.zephyr.migration.model.ZfjAttachmentBean;
 import com.zephyr.migration.utils.ApplicationConstants;
 
 import java.io.File;
@@ -12,5 +13,5 @@ public interface AttachmentService {
 
     File downloadExecutionAttachmentFileFromZFJ(String fileId, String fileName);
 
-    public void addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception;
+    public ZfjAttachmentBean addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception;
 }
