@@ -50,4 +50,9 @@ public class ApplicationConstants {
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";
 
     public enum ENTITY_TYPE { EXECUTION, TESTSTEP, TESTSTEPRESULT }
+
+    public static final String EXECUTION_ENTITY = "execution";
+    public static final String STEP_RESULT_ENTITY = "stepresult";
+    public static final String TEST_STEP_ENTITY = "teststep";
+
 }

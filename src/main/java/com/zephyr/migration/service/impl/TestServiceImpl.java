@@ -11,7 +11,12 @@ import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.dto.ExecutionAttachmentDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
+import com.zephyr.migration.dto.TestStepResultDTO;
+import com.zephyr.migration.model.ZfjAttachmentBean;
+import com.zephyr.migration.model.ZfjCloudStepResultBean;
+import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.service.VersionService;
@@ -30,8 +35,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Service
 public class TestServiceImpl implements TestService {
@@ -49,6 +56,9 @@ public class TestServiceImpl implements TestService {
 
     @Autowired
     CycleService cycleService;
+
+    @Autowired
+    AttachmentService attachmentService;
 
     @Autowired
     @Qualifier(value = "zapiHttpClient")
@@ -170,6 +180,55 @@ public class TestServiceImpl implements TestService {
         } catch (Exception ex) {
             log.error("Error while calling project meta reindex api call " + ex.fillInStackTrace());
         }
+    }
+
+    @Override
+    public void importStepResultLevelAttachments(List<TestStepResultDTO> testStepResults, Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap) {
+
+        List<TestStepResultDTO> testStepResultNewList = testStepResults.stream()
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        testStepResultNewList.forEach(testStepResult -> {
+            try {
+                List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(testStepResult.getId(), ApplicationConstants.ENTITY_TYPE.TESTSTEPRESULT);
+                if(attachmentList != null && attachmentList.size() > 0) {
+                    List<ExecutionAttachmentDTO> stepResultsAttachmentList = attachmentList.stream()
+                            .filter(Objects::nonNull).collect(Collectors.toList());
+                    List<File> filesToDelete = new ArrayList<>();
+                    stepResultsAttachmentList.forEach(stepResultAttachment -> {
+                        try {
+                            File testStepAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(stepResultAttachment.getFileId(), stepResultAttachment.getFileName());
+                            if(testStepAttachmentFile != null) {
+                                filesToDelete.add(testStepAttachmentFile);
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while downloading the step result attachment for step result -> " + stepResultAttachment.getFileId() + " ->  for step result: " + testStepResult.getId(), e);
+                        }
+                    });
+                    if (!filesToDelete.isEmpty()) {
+                        ZfjCloudStepResultBean zfjCloudStepResultBean = stepResultBeanMap.get(testStepResult.getOrderId());
+                        int fileCount = 0;
+                        for (File file : filesToDelete) {
+                            if (file.exists()) {
+                                try {
+                                    ZfjAttachmentBean zfjAttachmentBean = attachmentService.addAttachmentInCloud(file, zfjCloudStepResultBean.getExecutionId(), "10000", ApplicationConstants.STEP_RESULT_ENTITY, zfjCloudStepResultBean.getId());
+                                   if(null != zfjAttachmentBean) {
+                                       log.info("file uploaded successfully.");
+                                   }
+                                } catch (Exception e) {
+                                    log.error("Error while adding attachment for issue", e);
+                                }
+                                file.delete();
+                                ++fileCount;
+                            }
+                        }
+
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error while uploading the Step Result Attachment for Step Result: " + testStepResult.getId(), e);
+            }
+        });
+
     }
 
     private JiraIssueDTO prepareRequestObject(Issue issue) {

@@ -13,5 +13,5 @@ public interface AttachmentService {
 
     File downloadExecutionAttachmentFileFromZFJ(String fileId, String fileName);
 
-    ZfjAttachmentBean addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception;
+    ZfjAttachmentBean addAttachmentInCloud(File attachment, String cloudExecutionId, String projectId, String entityName, String entityId) throws Exception;
 }

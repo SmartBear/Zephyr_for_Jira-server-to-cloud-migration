@@ -103,7 +103,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    public ZfjAttachmentBean addExecutionAttachmentInCloud(File attachment, String cloudExecutionId, String projectId) throws Exception {
+    public ZfjAttachmentBean addAttachmentInCloud(File attachment, String cloudExecutionId, String projectId, String entityName, String entityId) throws Exception {
         ZfjAttachmentBean zfjCloudAttachmentBean = null;
         try{
             int filesize = FileUtils.getFileSizeInMB(attachment);
@@ -122,13 +122,13 @@ public class AttachmentServiceImpl implements AttachmentService {
             String queryParams = null;
             createUrl = createUrl + "?";
             try {
-                queryParams = URLEncoder.encode("entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId  + "&comment=updated by migration", "UTF-8");
+                queryParams = URLEncoder.encode("entityName=" + entityName + "&entityId=" + entityId + "&projectId=" + projectId  + "&comment=updated by migration" + "&executionId=" + cloudExecutionId, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
             createUrl = createUrl + queryParams;
             String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
-            addAttachmentUrl = addAttachmentUrl + "?entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId + "&comment=updated by migration";
+            addAttachmentUrl = addAttachmentUrl + "?entityName=" + entityName + "&entityId=" + entityId + "&projectId=" + projectId + "&comment=updated by migration" + "&executionId=" + cloudExecutionId ;
             MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
 
             map.add("file", new FileSystemResource(attachment));

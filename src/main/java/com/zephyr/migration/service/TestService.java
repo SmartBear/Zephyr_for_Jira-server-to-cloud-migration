@@ -2,6 +2,11 @@ package com.zephyr.migration.service;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.zephyr.migration.dto.JiraIssueDTO;
+import com.zephyr.migration.dto.TestStepResultDTO;
+import com.zephyr.migration.model.ZfjCloudStepResultBean;
+
+import java.util.List;
+import java.util.Map;
 
 public interface TestService {
 
@@ -18,4 +23,6 @@ public interface TestService {
     void initializeHttpClientDetails();
 
     void triggerProjectMetaData(Long projectId);
+
+    void importStepResultLevelAttachments(List<TestStepResultDTO> testStepResults, Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap);
 }

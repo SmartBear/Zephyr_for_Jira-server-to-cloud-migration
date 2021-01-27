@@ -2,6 +2,7 @@ package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.zephyr.migration.dto.ExecutionAttachmentDTO;
+import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
@@ -12,6 +13,7 @@ import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import com.zephyr.migration.utils.ConfigProperties;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -229,8 +232,8 @@ public class TestController {
         }
     }
 
-    @GetMapping("/getStepResultsFromZFJCloud")
-    public String downloadFile(@RequestParam("executionId") String executionId, @RequestParam("issueId") Integer issueId) {
+    @GetMapping("/uploadFileForStepResults")
+    public String uploadFileForStepResults(@RequestParam("executionId") String executionId, @RequestParam("issueId") Integer issueId) {
 
         testService.initializeHttpClientDetails();
         if(executionId != null) {
@@ -240,6 +243,13 @@ public class TestController {
             List<ZfjCloudStepResultBean> stepResultBeans = testStepService.getTestStepResultsFromZFJCloud(executionId,issueId);
             log.info("step result beans "+stepResultBeans.toString());
 
+            String serverExecutionId = "757";
+            List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
+            if(CollectionUtils.isNotEmpty(testStepResults)) {
+                TestStepResultDTO testStepResultDTO = testStepResults.get(0);
+                Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = stepResultBeans.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
+                testService.importStepResultLevelAttachments(testStepResults,stepResultBeanMap);
+            }
             return "Step results found";
         }
         return "Not Found";

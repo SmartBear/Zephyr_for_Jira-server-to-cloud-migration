@@ -657,7 +657,7 @@ public class MigrationServiceImpl implements MigrationService {
                                 for (File file : filesToDelete) {
                                     if (file.exists()) {
                                         try {
-                                            ZfjAttachmentBean zfjAttachmentBean = attachmentService.addExecutionAttachmentInCloud(file, cloudExecutionId, projectId.toString());
+                                            ZfjAttachmentBean zfjAttachmentBean = attachmentService.addAttachmentInCloud(file, cloudExecutionId, projectId + "", ApplicationConstants.EXECUTION_ENTITY, cloudExecutionId);
                                             if (zfjAttachmentBean != null) {
                                                 zfjAttachmentBean.setServerExecutionId(serverExecutionId);
                                                 zfjAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
@@ -676,7 +676,7 @@ public class MigrationServiceImpl implements MigrationService {
                 }
 
                 if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
-                    migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap);
+                    migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap, projectId+"");
                 }
 
                 if (Files.exists(executionAttachmentMappedFile) && !zfjAttachmentBeanList.isEmpty()) {
@@ -694,51 +694,60 @@ public class MigrationServiceImpl implements MigrationService {
         }
     }
 
-    private void migrateStepResultLevelAttachments(Map<String, String> mappedServerToCloudExecutionIdMap) {
+    private void migrateStepResultLevelAttachments(Map<String, String> mappedServerToCloudExecutionIdMap, String projectId) {
         mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
             List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
             if(CollectionUtils.isNotEmpty(testStepResults)) {
                 TestStepResultDTO testStepResultDTO = testStepResults.get(0);
                 List<ZfjCloudStepResultBean> cloudStepResultList = testStepService.getTestStepResultsFromZFJCloud(cloudExecutionId, testStepResultDTO.getIssueId());
-                Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = cloudStepResultList.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
-                importStepResultLevelAttachments(testStepResults,stepResultBeanMap);
+                if(CollectionUtils.isNotEmpty(cloudStepResultList)) {
+                    Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = cloudStepResultList.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
+                    importStepResultLevelAttachments(testStepResults,stepResultBeanMap, projectId);
+                }
             }
         });
     }
 
-    private void importStepResultLevelAttachments(List<TestStepResultDTO> testStepResults, Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap) {
+    private void importStepResultLevelAttachments(List<TestStepResultDTO> testStepResults, Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap, String projectId) {
 
         List<TestStepResultDTO> testStepResultNewList = testStepResults.stream()
                 .filter(Objects::nonNull).collect(Collectors.toList());
-        testStepResultNewList.forEach(testStepResult -> {
+        for (TestStepResultDTO testStepResult : testStepResultNewList) {
             try {
                 List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(testStepResult.getId(), ApplicationConstants.ENTITY_TYPE.TESTSTEPRESULT);
-                if(attachmentList != null && attachmentList.size() > 0) {
+                if (attachmentList != null && attachmentList.size() > 0) {
                     List<ExecutionAttachmentDTO> stepResultsAttachmentList = attachmentList.stream()
                             .filter(Objects::nonNull).collect(Collectors.toList());
                     List<File> filesToDelete = new ArrayList<>();
                     stepResultsAttachmentList.forEach(stepResultAttachment -> {
-                         try {
-                                File testStepAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(stepResultAttachment.getFileId(), stepResultAttachment.getFileName());
-                                if(testStepAttachmentFile != null) {
-                                    filesToDelete.add(testStepAttachmentFile);
-                                }
-                         } catch (Exception e) {
-                                log.error("Error while downloading the step result attachment for step result -> " + stepResultAttachment.getFileId() + " ->  for step result: " + testStepResult.getId(), e);
-                         }
+                        try {
+                            File testStepAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(stepResultAttachment.getFileId(), stepResultAttachment.getFileName());
+                            if (testStepAttachmentFile != null) {
+                                filesToDelete.add(testStepAttachmentFile);
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while downloading the step result attachment for step result -> " + stepResultAttachment.getFileId() + " ->  for step result: " + testStepResult.getId(), e);
+                        }
                     });
                     if (!filesToDelete.isEmpty()) {
-
-                        filesToDelete.forEach(file -> {
-                            if(file.exists())
-                                file.delete();
+                        ZfjCloudStepResultBean zfjCloudStepResultBean = stepResultBeanMap.get(testStepResult.getOrderId());
+                        filesToDelete.stream().filter(File::exists).forEach(file -> {
+                            try {
+                                ZfjAttachmentBean zfjAttachmentBean = attachmentService.addAttachmentInCloud(file, zfjCloudStepResultBean.getExecutionId(), projectId, ApplicationConstants.STEP_RESULT_ENTITY, zfjCloudStepResultBean.getId());
+                                if (null != zfjAttachmentBean) {
+                                    log.info("file uploaded successfully.");
+                                }
+                            } catch (Exception e) {
+                                log.error("Error while adding attachment for issue", e);
+                            }
+                            file.delete();
                         });
                     }
                 }
             } catch (Exception e) {
                 log.error("Error while uploading the Step Result Attachment for Step Result: " + testStepResult.getId(), e);
             }
-        });
+        }
     }
 
     private ZfjCloudExecutionBean prepareRequestForCloud(ExecutionDTO serverExecution, SearchRequest searchRequest, String assignedAccountId) {
