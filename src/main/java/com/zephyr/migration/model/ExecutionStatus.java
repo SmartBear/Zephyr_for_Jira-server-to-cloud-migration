@@ -1,32 +1,22 @@
 package com.zephyr.migration.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
 
-
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExecutionStatus implements Serializable {
 
     private static final long serialVersionUID = -659066232549849610L;
-    private Long id;
     private String name;
+    private Integer id;
+    private String description;
     private String color;
-    private String type;
+    private Integer type;
 
     public ExecutionStatus() {
-    }
-
-    public ExecutionStatus(Long id, String name, String color, String type) {
-        this.id = id;
-        this.name = name;
-        this.color = color;
-        this.type = type;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getName() {
@@ -37,6 +27,22 @@ public class ExecutionStatus implements Serializable {
         this.name = name;
     }
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public String getColor() {
         return color;
     }
@@ -45,11 +51,11 @@ public class ExecutionStatus implements Serializable {
         this.color = color;
     }
 
-    public String getType() {
+    public Integer getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(Integer type) {
         this.type = type;
     }
 }

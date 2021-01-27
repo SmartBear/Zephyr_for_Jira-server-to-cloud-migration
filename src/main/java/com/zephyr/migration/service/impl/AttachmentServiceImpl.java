@@ -117,14 +117,14 @@ public class AttachmentServiceImpl implements AttachmentService {
             JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
             String addAttachmentUrl = CLOUD_BASE_URL + ApplicationConstants.ADD_EXECUTION_ATTACHMENT_URL;
             String createUrl = addAttachmentUrl;
-            String queryparams = null;
+            String queryParams = null;
             createUrl = createUrl + "?";
             try {
-                queryparams = URLEncoder.encode("entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId  + "&comment=updated by migration", "UTF-8");
+                queryParams = URLEncoder.encode("entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId  + "&comment=updated by migration", "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            createUrl = createUrl + queryparams;
+            createUrl = createUrl + queryParams;
             String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
             addAttachmentUrl = addAttachmentUrl + "?entityName=execution&entityId=" + cloudExecutionId + "&projectId=" + projectId + "&comment=updated by migration";
             MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
@@ -138,7 +138,7 @@ public class AttachmentServiceImpl implements AttachmentService {
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set(HttpHeaders.AUTHORIZATION, jwt);
             headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
-            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity(map, headers);
+            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(map, headers);
             ResponseEntity<String> response = restTemplate.exchange(addAttachmentUrl, HttpMethod.POST, entity, String.class);
             log.info("add attachment response is : " + response.getBody());
         }catch (Exception e){

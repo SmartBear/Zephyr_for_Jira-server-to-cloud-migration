@@ -6,10 +6,8 @@ import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.model.SearchRequest;
-import com.zephyr.migration.service.AttachmentService;
-import com.zephyr.migration.service.ExecutionService;
-import com.zephyr.migration.service.FolderService;
-import com.zephyr.migration.service.TestService;
+import com.zephyr.migration.model.ZfjCloudStepResultBean;
+import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
@@ -67,6 +65,9 @@ public class TestController {
 
     @Autowired
     AttachmentService attachmentService;
+
+    @Autowired
+    TestStepService testStepService;
 
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
@@ -221,16 +222,26 @@ public class TestController {
             } catch (Exception ex) {
                 log.error("Error while creating attachment for issue", ex);
             }
-            // Try to determine file's content type
-            String contentType = request.getServletContext().getMimeType(file.get().getAbsolutePath());
-            // Fallback to the default content type if type could not be determined
-            if(contentType == null) {
-                contentType = "application/octet-stream";
-            }
 
             return String.format("File name is  %s!", file.get().getName());
         } else {
             return "Not Found";
         }
+    }
+
+    @GetMapping("/getStepResultsFromZFJCloud")
+    public String downloadFile(@RequestParam("executionId") String executionId, @RequestParam("issueId") Integer issueId) {
+
+        testService.initializeHttpClientDetails();
+        if(executionId != null) {
+            if(issueId == null) {
+                issueId = 10003;
+            }
+            List<ZfjCloudStepResultBean> stepResultBeans = testStepService.getTestStepResultsFromZFJCloud(executionId,issueId);
+            log.info("step result beans "+stepResultBeans.toString());
+
+            return "Step results found";
+        }
+        return "Not Found";
     }
 }
