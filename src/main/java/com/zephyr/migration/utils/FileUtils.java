@@ -41,6 +41,7 @@ public class FileUtils {
     private static final String ISSUE_ID_COLUMN_NAME = "Issue-Id";
     private static final String SERVER_EXECUTION_ID_COLUMN_NAME = "server-execution-id";
     private static final String CLOUD_EXECUTION_ID_COLUMN_NAME = "cloud-execution-id";
+    private static final String SERVER_EXECUTION_ATTACHMENT_ID_COLUMN_NAME = "server-execution-attachment-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -350,6 +351,38 @@ public class FileUtils {
             }
         }
         return serverCloudIdsMapping;
+    }
+
+    public static List<String> readExecutionAttachmentMappingFile(String directory, String filename) throws IOException {
+        //obtaining input bytes from a file
+        HSSFSheet sheet;
+        try (FileInputStream fis = new FileInputStream(directory + "/" + filename)) {
+            //creating workbook instance that refers to .xls file
+            try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+                //creating a Sheet object to retrieve the object
+                sheet = wb.getSheet(ApplicationConstants.EXECUTION_ATTACHMENT_MAPPING_SHEET_NAME);
+            }
+        }
+
+        int serverExecutionAttachmentIDColIndex = 0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            if(SERVER_EXECUTION_ATTACHMENT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                serverExecutionAttachmentIDColIndex = cell.getColumnIndex();
+            }
+        }
+        List<String> mappedServerExecutionAttachmentIds = new ArrayList<>();
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//headers
+
+            Cell serverExecutionAttachmentIdCellVal = r.getCell(serverExecutionAttachmentIDColIndex);
+
+            if (Objects.nonNull(serverExecutionAttachmentIdCellVal)) {
+                mappedServerExecutionAttachmentIds.add(serverExecutionAttachmentIdCellVal.getStringCellValue());
+            }
+        }
+        return mappedServerExecutionAttachmentIds;
     }
 
     public static Map<String, String> readExecutionMappingFile(String directory, String filename) throws IOException {

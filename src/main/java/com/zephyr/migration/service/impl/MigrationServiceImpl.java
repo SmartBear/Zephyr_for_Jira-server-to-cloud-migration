@@ -604,49 +604,92 @@ public class MigrationServiceImpl implements MigrationService {
         return true;
     }
 
-    private void beginExecutionLevelAttachments(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) {
+    private void beginExecutionLevelAttachments(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
         try {
             Map<String, String> mappedServerToCloudExecutionIdMap = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
             if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
-                mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
-                    //Read the execution mapping file and start processing it.
-                    List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
-                    if(attachmentList != null && attachmentList.size() > 0) {
-                        List<ExecutionAttachmentDTO> executionAttachments = attachmentList.stream()
-                                .filter(Objects::nonNull).collect(Collectors.toList());
-                        List<File> filesToDelete = new ArrayList<>();
-                        executionAttachments.forEach(attachment -> {
-                            if(attachment != null) {
+                Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
+                String projectName = null;
+                if (project != null) {
+                    projectName = project.getName();
+                }
+                List<ZfjAttachmentBean> zfjAttachmentBeanList = new ArrayList<>();
+                Path executionAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                    mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+                        //Read the execution mapping file and start processing it.
+                        List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
+                        List<ExecutionAttachmentDTO> finalAttachmentList = new ArrayList<ExecutionAttachmentDTO>();
+                        if (attachmentList != null && attachmentList.size() > 0) {
+                            if (Files.exists(executionAttachmentMappedFile)) {
                                 try {
-                                    File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
-                                    if(executionAttachmentFile != null) {
-                                        filesToDelete.add(executionAttachmentFile);
+                                    List<String> mappedServerToCloudExecutionAttachmentMap = FileUtils.readExecutionAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                                    if (!mappedServerToCloudExecutionAttachmentMap.isEmpty()) {
+                                        for (ExecutionAttachmentDTO executionAttachment : attachmentList) {
+                                            if (!mappedServerToCloudExecutionAttachmentMap.contains(executionAttachment.getFileId())) {
+                                                finalAttachmentList.add(executionAttachment);
+                                            }
+                                        }
                                     }
-                                } catch (Exception e) {
-                                    log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                                } catch (IOException e) {
+                                    log.error("Error while reading execution attachment mapping file", e);
                                 }
                             }
-                        });
-                        if (!filesToDelete.isEmpty()) {
-                            filesToDelete.forEach(file -> {
-                                if(file.exists()){
+                            List<ExecutionAttachmentDTO> executionAttachments = finalAttachmentList.stream()
+                                    .filter(Objects::nonNull).collect(Collectors.toList());
+                            List<File> filesToDelete = new ArrayList<>();
+                            List<String> attachmentFileId = new ArrayList<String>();
+                            executionAttachments.forEach(attachment -> {
+                                if (attachment != null) {
                                     try {
-                                        attachmentService.addExecutionAttachmentInCloud(file, cloudExecutionId, projectId.toString());
-                                    }catch (Exception e) {
-                                        log.error("Error while adding attachment for issue", e);
+                                        File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                                        if (executionAttachmentFile != null) {
+                                            filesToDelete.add(executionAttachmentFile);
+                                            attachmentFileId.add(attachment.getFileId());
+                                        }
+                                    } catch (Exception e) {
+                                        log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
                                     }
-                                    file.delete();
                                 }
                             });
+                            if (!filesToDelete.isEmpty()) {
+                                int fileCount = 0;
+                                for (File file : filesToDelete) {
+                                    if (file.exists()) {
+                                        try {
+                                            ZfjAttachmentBean zfjAttachmentBean = attachmentService.addExecutionAttachmentInCloud(file, cloudExecutionId, projectId.toString());
+                                            if (zfjAttachmentBean != null) {
+                                                zfjAttachmentBean.setServerExecutionId(serverExecutionId);
+                                                zfjAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
+                                                zfjAttachmentBeanList.add(zfjAttachmentBean);
+                                            }
+                                        } catch (Exception e) {
+                                            log.error("Error while adding attachment for issue", e);
+                                        }
+                                        file.delete();
+                                        ++fileCount;
+                                    }
+                                }
+                            }
                         }
-                    }
-                });
-            }
-            if(!mappedServerToCloudExecutionIdMap.isEmpty()) {
-                migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap);
-            }
+                    });
+                }
 
-        } catch (Exception ex) {
+                if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                    migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap);
+                }
+
+                if (Files.exists(executionAttachmentMappedFile) && !zfjAttachmentBeanList.isEmpty()) {
+                    progressQueue.put("Updating the mapping file for execution attachment migration for project : " + projectId);
+                    migrationMappingFileGenerationUtil.updateExecutionAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjAttachmentBeanList);
+                } else {
+                    if (!zfjAttachmentBeanList.isEmpty()) {
+                        progressQueue.put("Creating the mapping file for execution attachment migration for project : " + projectId);
+                        migrationMappingFileGenerationUtil.generateExecutionAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjAttachmentBeanList);
+                    }
+                }
+            }
+        }catch (Exception ex) {
             log.error("Error while creating attachment for issue", ex);
         }
     }
