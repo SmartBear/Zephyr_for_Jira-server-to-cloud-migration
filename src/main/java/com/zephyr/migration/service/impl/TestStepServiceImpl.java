@@ -64,7 +64,7 @@ public class TestStepServiceImpl implements TestStepService {
     }
 
     @Override
-    public List<ZfjCloudStepResultBean> getTestStepResultsFromZFJCloud(String cloudExecutionId, Integer issueId) {
+    public List<ZfjCloudStepResultBean> getTestStepResultsFromZFJCloud(String cloudExecutionId) {
         log.info("Serving --> {}", "getTestStepResultsFromZFJCloud()");
 
         List<ZfjCloudStepResultBean> responseList = new ArrayList<>();
@@ -77,11 +77,11 @@ public class TestStepServiceImpl implements TestStepService {
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
         JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
         String getTestStepResultsUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_GET_TEST_STEP_RESULTS_URL;
-        String createJwtUrl = getTestStepResultsUrl;
+        String createJwtUrl;
         String queryParams = null;
         createJwtUrl = getTestStepResultsUrl + "?";
         try {
-            queryParams = URLEncoder.encode("issueId=" + issueId + "&executionId=" + cloudExecutionId, "UTF-8");
+            queryParams = URLEncoder.encode("executionId=" + cloudExecutionId, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -89,7 +89,7 @@ public class TestStepServiceImpl implements TestStepService {
 
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.GET, createJwtUrl);
 
-        getTestStepResultsUrl = getTestStepResultsUrl + "?issueId=" + issueId + "&executionId=" + cloudExecutionId;
+        getTestStepResultsUrl = getTestStepResultsUrl + "?&executionId=" + cloudExecutionId;
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();

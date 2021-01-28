@@ -9,6 +9,6 @@ public interface TestStepService {
 
     List<TestStepResultDTO> getTestStepsResultFromZFJ(String executionId);
 
-    List<ZfjCloudStepResultBean> getTestStepResultsFromZFJCloud(String cloudExecutionId, Integer issueId);
+    List<ZfjCloudStepResultBean> getTestStepResultsFromZFJCloud(String cloudExecutionId);
 
 }

@@ -240,7 +240,7 @@ public class TestController {
             if(issueId == null) {
                 issueId = 10003;
             }
-            List<ZfjCloudStepResultBean> stepResultBeans = testStepService.getTestStepResultsFromZFJCloud(executionId,issueId);
+            List<ZfjCloudStepResultBean> stepResultBeans = testStepService.getTestStepResultsFromZFJCloud(executionId);
             log.info("step result beans "+stepResultBeans.toString());
 
             String serverExecutionId = "757";

@@ -619,7 +619,7 @@ public class MigrationServiceImpl implements MigrationService {
                     mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
                         //Read the execution mapping file and start processing it.
                         List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
-                        List<ExecutionAttachmentDTO> finalAttachmentList = new ArrayList<ExecutionAttachmentDTO>();
+                        List<ExecutionAttachmentDTO> finalAttachmentList = new ArrayList<>();
                         if (attachmentList != null && attachmentList.size() > 0) {
                             if (Files.exists(executionAttachmentMappedFile)) {
                                 try {
@@ -634,11 +634,13 @@ public class MigrationServiceImpl implements MigrationService {
                                 } catch (IOException e) {
                                     log.error("Error while reading execution attachment mapping file", e);
                                 }
+                            } else {
+                                finalAttachmentList.addAll(attachmentList);
                             }
                             List<ExecutionAttachmentDTO> executionAttachments = finalAttachmentList.stream()
                                     .filter(Objects::nonNull).collect(Collectors.toList());
                             List<File> filesToDelete = new ArrayList<>();
-                            List<String> attachmentFileId = new ArrayList<String>();
+                            List<String> attachmentFileId = new ArrayList<>();
                             executionAttachments.forEach(attachment -> {
                                 if (attachment != null) {
                                     try {
@@ -699,7 +701,7 @@ public class MigrationServiceImpl implements MigrationService {
             List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
             if(CollectionUtils.isNotEmpty(testStepResults)) {
                 TestStepResultDTO testStepResultDTO = testStepResults.get(0);
-                List<ZfjCloudStepResultBean> cloudStepResultList = testStepService.getTestStepResultsFromZFJCloud(cloudExecutionId, testStepResultDTO.getIssueId());
+                List<ZfjCloudStepResultBean> cloudStepResultList = testStepService.getTestStepResultsFromZFJCloud(cloudExecutionId);
                 if(CollectionUtils.isNotEmpty(cloudStepResultList)) {
                     Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = cloudStepResultList.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
                     importStepResultLevelAttachments(testStepResults,stepResultBeanMap, projectId);
