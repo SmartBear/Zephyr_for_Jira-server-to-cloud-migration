@@ -3,8 +3,10 @@ package com.zephyr.migration.utils;
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.CycleDTO;
+import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -255,6 +257,44 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
+    public void updateExecutionMappingFile(String projectId, String projectName, String migrationFilePath, Map<ExecutionDTO, ZfjCloudExecutionBean> dtoZfjCloudExecutionBeanMap) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_EXECUTION_FILE_NAME+projectId+".xls";
+        try {
+            if(dtoZfjCloudExecutionBeanMap.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
+                HSSFWorkbook wb=new HSSFWorkbook(inputStream);
+                HSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[dtoZfjCloudExecutionBeanMap.size()][11];
+                int rowCount = sheet.getLastRowNum();
+
+                populateExecutionRowDataSet(rowDataSet, projectId, projectName, dtoZfjCloudExecutionBeanMap);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for execution mapping file.", ex.fillInStackTrace());
+        }
+    }
 
     private void populateVersionRowDataSet(Object[][] rowDataSet, Long projectId, Map<String, Long> serverCloudVersionMapping) {
         AtomicInteger row = new AtomicInteger();
@@ -314,11 +354,50 @@ public class MigrationMappingFileGenerationUtil {
         });
     }
 
+    private void populateExecutionRowDataSet(Object[][] rowDataSet, String projectId, String projectName, Map<ExecutionDTO, ZfjCloudExecutionBean> dtoZfjCloudExecutionBeanMap) {
+        AtomicInteger row = new AtomicInteger();
+        dtoZfjCloudExecutionBeanMap.forEach((serverExecution, cloudExecutionBean) -> {
+            int column = 0;
+            rowDataSet[row.get()][column] = projectId + "";
+            ++column;
+            rowDataSet[row.get()][column] = projectName + "";
+            ++column;
+            rowDataSet[row.get()][column] = serverExecution.getVersionName() + "";
+            ++column;
+            rowDataSet[row.get()][column] = serverExecution.getIssueId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = serverExecution.getIssueKey() + ""; //Issue name.
+            ++column;
+            rowDataSet[row.get()][column] = serverExecution.getCycleName() + ""; //Cycle name
+            ++column;
+            rowDataSet[row.get()][column] = cloudExecutionBean.getCycleId() + ""; //cloud cycle ID
+            ++column;
+            rowDataSet[row.get()][column] = null != serverExecution.getFolderName() ? serverExecution.getFolderName() : ""; //folder name
+            ++column;
+            rowDataSet[row.get()][column] = null != cloudExecutionBean.getFolderId() ? cloudExecutionBean.getFolderId() : ""; //cloud folder ID
+            ++column;
+            rowDataSet[row.get()][column] = null != serverExecution.getId() ? serverExecution.getId()+"" : ""; //server execution ID
+            ++column;
+            rowDataSet[row.get()][column] = null != cloudExecutionBean.getId() ? cloudExecutionBean.getId() : ""; //cloud execution ID
+            row.incrementAndGet();
+        });
+    }
+
     public void generateCycleMappingReportExcel(Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap, String projectId, String projectName, String migrationFilePath) {
         try {
             List<List<String>> responseList = cycleDataToPrintInExcel(zephyrServerCloudCycleMappingMap, projectId, projectName);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeCycleDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    public void generateExecutionMappingReportExcel(String projectId, String projectName, String migrationFilePath, Map<ExecutionDTO, ZfjCloudExecutionBean> executionMap) {
+        try {
+            List<List<String>> responseList = executionDataToPrintInExcel(projectId, projectName, executionMap);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeExecutionDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId, responseList);
         }catch (Exception e){
             log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
@@ -353,6 +432,30 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
+    public List<List<String>> executionDataToPrintInExcel(String projectId, String projectName, Map<ExecutionDTO, ZfjCloudExecutionBean> executionMap) throws Exception {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateExecutionHeader());
+        List<String> executionMappingList;
+        for (Map.Entry<ExecutionDTO,ZfjCloudExecutionBean> entry : executionMap.entrySet()) {
+            ExecutionDTO executionDTO = entry.getKey();
+            ZfjCloudExecutionBean zfjCloudExecutionBean = entry.getValue();
+            executionMappingList = new ArrayList<>();
+            executionMappingList.add(projectId);
+            executionMappingList.add(projectName);
+            executionMappingList.add(executionDTO.getVersionName());
+            executionMappingList.add(executionDTO.getIssueId()+"");
+            executionMappingList.add(executionDTO.getIssueKey());
+            executionMappingList.add(executionDTO.getCycleName());
+            executionMappingList.add(zfjCloudExecutionBean.getCycleId());
+            executionMappingList.add(null != executionDTO.getFolderName() ? executionDTO.getFolderName() : "");
+            executionMappingList.add(null != zfjCloudExecutionBean.getFolderId() ? zfjCloudExecutionBean.getFolderId() : "");
+            executionMappingList.add(null != executionDTO.getId() ? executionDTO.getId()+"" : "");
+            executionMappingList.add(null != zfjCloudExecutionBean.getId() ? zfjCloudExecutionBean.getId() : "");
+            recordToAdd.add(executionMappingList);
+        }
+        return recordToAdd;
+    }
+
     public List<List<String>> folderDataToPrintInExcel(Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap, String projectId, String projectName) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateFolderHeader());
@@ -382,6 +485,22 @@ public class MigrationMappingFileGenerationUtil {
         excelHeader.add("server-cycle-id");
         excelHeader.add("cloud-cycle-id");
         excelHeader.add("Cycle-Name");
+        return excelHeader;
+    }
+
+    public static List<String> generateExecutionHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project Id");
+        excelHeader.add("Project Name");
+        excelHeader.add("Version Name");
+        excelHeader.add("Issue-Id");
+        excelHeader.add("Issue-Key");
+        excelHeader.add("Cycle Name");
+        excelHeader.add("cloud-cycle-id");
+        excelHeader.add("Folder Name");
+        excelHeader.add("cloud-folder-id");
+        excelHeader.add("server-execution-id");
+        excelHeader.add("cloud-execution-id");
         return excelHeader;
     }
 

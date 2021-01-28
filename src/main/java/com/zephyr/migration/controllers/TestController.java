@@ -1,9 +1,11 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.FolderDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
-import com.zephyr.migration.model.SearchFolderRequest;
+import com.zephyr.migration.model.SearchRequest;
+import com.zephyr.migration.service.ExecutionService;
 import com.zephyr.migration.service.FolderService;
 import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.utils.ApplicationConstants;
@@ -49,6 +51,9 @@ public class TestController {
 
     @Autowired
     FolderService folderService;
+
+    @Autowired
+    ExecutionService executionService;
 
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
@@ -141,7 +146,7 @@ public class TestController {
         folderDTO.setFolderName("tata");
         folderDTO.setProjectId("10000");
         folderDTO.setVersionId("-1");
-        folderService.createFolderInZephyrCloud(folderDTO, new SearchFolderRequest());
+        folderService.createFolderInZephyrCloud(folderDTO, new SearchRequest());
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 
@@ -152,5 +157,17 @@ public class TestController {
         final String SERVER_BASE_URL = configProp.getConfigValue("zfj.server.baseUrl");
         folderService.fetchFoldersFromZephyrServer(39L, "SERVER_BASE_URL", "SERVER_USER_NAME",new ArrayBlockingQueue<>(10000));
         return String.format("Hello Unscheduled version has been created for project %s!", projectId);
+    }
+
+    @GetMapping("/create/execution")
+    public String createExecutionInJiraCloud() {
+        ZfjCloudExecutionBean executionDTO = new ZfjCloudExecutionBean();
+        executionDTO.setProjectId(10000);
+        executionDTO.setVersionId(-1);
+        executionDTO.setComment("testing comment");
+        executionDTO.setCycleId("b08568d9-237f-420f-84e5-3b7e7d28855a");
+        executionDTO.setIssueId(10005);
+        executionService.createExecutionInJiraCloud(executionDTO);
+        return String.format("Hello execution has been created for cycle %s!", executionDTO.getCycleId());
     }
 }

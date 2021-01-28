@@ -1,20 +1,13 @@
 package com.zephyr.migration.utils;
 
-import com.zephyr.migration.service.impl.VersionServiceImpl;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.FileCopyUtils;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /** This Utility use for Printing Data in Excel
@@ -33,15 +26,13 @@ public class ExcelUtils {
      */
     public void writeToExcelFileMethod(String migrationFilePath, String fileName, String sheetName,List<List<String>> recordList) throws Exception {
         int rowNum = 0;
-        int noOfRecords = (recordList.size()-3);
-        String errorMessage = "Sorry. The file you are looking for does not exist";
         HSSFSheet firstSheet;
         HSSFWorkbook workbook;
         FileOutputStream fos;
         workbook = new HSSFWorkbook();
-        HSSFCellStyle hsfstyle = workbook.createCellStyle();
-        hsfstyle.setBorderBottom(BorderStyle.THICK);
-        hsfstyle.setFillBackgroundColor((short)245);
+        HSSFCellStyle hsfStyle = workbook.createCellStyle();
+        hsfStyle.setBorderBottom(BorderStyle.THICK);
+        hsfStyle.setFillBackgroundColor((short)245);
         firstSheet = workbook.createSheet(sheetName);
         Row headerRow = firstSheet.createRow(rowNum);
         headerRow.setHeightInPoints(40);
@@ -66,7 +57,6 @@ public class ExcelUtils {
             response.setContentLength((int)excelFile.length());
             InputStream inputStream = new BufferedInputStream(new FileInputStream(excelFile));
             FileCopyUtils.copy(inputStream, response.getOutputStream());*/
-           //excelFile.delete();
 
         } catch (Exception e) {
             log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
@@ -77,30 +67,21 @@ public class ExcelUtils {
 
     }
 
-    //create header for excel
-    public static ArrayList<String> excelHeader(String[] header){
-        return new ArrayList<>(Arrays.asList(header));
-    }
-
     public void writeCycleDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
         int rowNum = 0;
-        int noOfRecords = (recordList.size()-3);
-        String errorMessage = "Sorry. The file you are looking for does not exist";
         //FileInputStream fis=new FileInputStream(new File(migrationFilePath+"/"+ fileName +".xls"));
-        HSSFSheet firstSheet;
         HSSFSheet secondSheet;
         HSSFWorkbook workbook;
         FileOutputStream fos;
         workbook = new HSSFWorkbook();
-        //firstSheet = workbook.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
-        HSSFCellStyle hsfstyle = workbook.createCellStyle();
-        hsfstyle.setBorderBottom(BorderStyle.THICK);
-        hsfstyle.setFillBackgroundColor((short)245);
+        HSSFCellStyle hsfStyle = workbook.createCellStyle();
+        hsfStyle.setBorderBottom(BorderStyle.THICK);
+        hsfStyle.setFillBackgroundColor((short)245);
         secondSheet = workbook.createSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
         Row headerRow = secondSheet.createRow(rowNum);
         headerRow.setHeightInPoints(40);
         fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
-        //Sheet cloneSheet = workbook.cloneSheet(0);
+
         try {
 
             for (List<String> record : recordList) {
@@ -114,14 +95,40 @@ public class ExcelUtils {
 
             workbook.write(fos);
 
-            /*response.setContentType("application/vnd.ms-excel");
-            String headerKey = "Content-Disposition";
-            String headerValue = String.format("attachment; filename="+fileName+".xls");
-            response.setHeader(headerKey, headerValue);
-            response.setContentLength((int)excelFile.length());
-            InputStream inputStream = new BufferedInputStream(new FileInputStream(excelFile));
-            FileCopyUtils.copy(inputStream, response.getOutputStream());*/
-            //excelFile.delete();
+        } catch (Exception e) {
+            log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+        } finally {
+            fos.close();
+            workbook.close();
+        }
+
+    }
+
+    public void writeExecutionDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
+        int rowNum = 0;
+        HSSFSheet secondSheet;
+        HSSFWorkbook workbook;
+        FileOutputStream fos;
+        workbook = new HSSFWorkbook();
+        HSSFCellStyle hsfStyle = workbook.createCellStyle();
+        hsfStyle.setBorderBottom(BorderStyle.THICK);
+        hsfStyle.setFillBackgroundColor((short)245);
+        secondSheet = workbook.createSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+        Row headerRow = secondSheet.createRow(rowNum);
+        headerRow.setHeightInPoints(40);
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        try {
+
+            for (List<String> record : recordList) {
+                Row row = secondSheet.createRow(rowNum);
+                for (int k = 0; k < record.size(); k++) {
+                    Cell cell = row.createCell(k);
+                    cell.setCellValue(record.get(k));
+                }
+                rowNum++;
+            }
+
+            workbook.write(fos);
 
         } catch (Exception e) {
             log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
@@ -135,23 +142,17 @@ public class ExcelUtils {
 
     public void writeFolderDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
         int rowNum = 0;
-        int noOfRecords = (recordList.size()-3);
-        String errorMessage = "Sorry. The file you are looking for does not exist";
-        //FileInputStream fis=new FileInputStream(new File(migrationFilePath+"/"+ fileName +".xls"));
-        HSSFSheet firstSheet;
         HSSFSheet secondSheet;
         HSSFWorkbook workbook;
         FileOutputStream fos;
         workbook = new HSSFWorkbook();
-        //firstSheet = workbook.getSheet(ApplicationConstants.VERSION_MAPPING_SHEET_NAME);
-        HSSFCellStyle hsfstyle = workbook.createCellStyle();
-        hsfstyle.setBorderBottom(BorderStyle.THICK);
-        hsfstyle.setFillBackgroundColor((short)245);
+        HSSFCellStyle hsfStyle = workbook.createCellStyle();
+        hsfStyle.setBorderBottom(BorderStyle.THICK);
+        hsfStyle.setFillBackgroundColor((short)245);
         secondSheet = workbook.createSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
         Row headerRow = secondSheet.createRow(rowNum);
         headerRow.setHeightInPoints(40);
         fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
-        //Sheet cloneSheet = workbook.cloneSheet(0);
         try {
 
             for (List<String> record : recordList) {
@@ -164,15 +165,6 @@ public class ExcelUtils {
             }
 
             workbook.write(fos);
-
-            /*response.setContentType("application/vnd.ms-excel");
-            String headerKey = "Content-Disposition";
-            String headerValue = String.format("attachment; filename="+fileName+".xls");
-            response.setHeader(headerKey, headerValue);
-            response.setContentLength((int)excelFile.length());
-            InputStream inputStream = new BufferedInputStream(new FileInputStream(excelFile));
-            FileCopyUtils.copy(inputStream, response.getOutputStream());*/
-            //excelFile.delete();
 
         } catch (Exception e) {
             log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
