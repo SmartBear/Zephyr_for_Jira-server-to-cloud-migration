@@ -42,6 +42,8 @@ public class FileUtils {
     private static final String SERVER_EXECUTION_ID_COLUMN_NAME = "server-execution-id";
     private static final String CLOUD_EXECUTION_ID_COLUMN_NAME = "cloud-execution-id";
     private static final String SERVER_EXECUTION_ATTACHMENT_ID_COLUMN_NAME = "server-execution-attachment-id";
+    private static final String SERVER_STEP_RESULT_ID_COLUMN_NAME = "server-stepresult-id";
+    private static final String SERVER_STEP_RESULT_ATTACHMENT_ID_COLUMN_NAME = "server-attachment-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -383,6 +385,42 @@ public class FileUtils {
             }
         }
         return mappedServerExecutionAttachmentIds;
+    }
+
+    public static Boolean readStepResultAttachmentMappingFile(String directory, String filename, String serverStepResultId, String serverStepResultAttachmentId) throws IOException {
+        //obtaining input bytes from a file
+        HSSFSheet sheet;
+        try (FileInputStream fis = new FileInputStream(directory + "/" + filename)) {
+            //creating workbook instance that refers to .xls file
+            try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+                //creating a Sheet object to retrieve the object
+                sheet = wb.getSheet(ApplicationConstants.STEP_RESULT_ATTACHMENT_MAPPING_SHEET_NAME);
+            }
+        }
+
+        int serverStepResultIDColIndex = 0, serverStepResultAttachmentIDColIndex = 0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            if(SERVER_STEP_RESULT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                serverStepResultIDColIndex = cell.getColumnIndex();
+            }else if(SERVER_STEP_RESULT_ATTACHMENT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                serverStepResultAttachmentIDColIndex = cell.getColumnIndex();
+            }
+        }
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//headers
+
+            Cell serverStepResultIDCellVal = r.getCell(serverStepResultIDColIndex);
+            Cell serverStepResultAttachmentIDCellVal = r.getCell(serverStepResultAttachmentIDColIndex);
+
+            if (Objects.nonNull(serverStepResultIDCellVal) && Objects.nonNull(serverStepResultAttachmentIDCellVal)) {
+                if (serverStepResultId.equalsIgnoreCase(serverStepResultIDCellVal.getStringCellValue()) && serverStepResultAttachmentId.equalsIgnoreCase(serverStepResultAttachmentIDCellVal.getStringCellValue())) {
+                    return Boolean.TRUE;
+                }
+            }
+        }
+        return false;
     }
 
     public static Map<String, String> readExecutionMappingFile(String directory, String filename) throws IOException {

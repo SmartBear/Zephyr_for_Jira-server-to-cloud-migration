@@ -6,6 +6,9 @@ public class ZfjAttachmentBean {
     private String cloudExecutionId;
     private String serverExecutionAttachmentId;
     private String serverExecutionId;
+    private Integer serverStepResultId;
+    private String fileId;
+    private String fileName;
 
     public String getCloudExecutionAttachmentId() {
         return cloudExecutionAttachmentId;
@@ -37,5 +40,29 @@ public class ZfjAttachmentBean {
 
     public void setServerExecutionId(String serverExecutionId) {
         this.serverExecutionId = serverExecutionId;
+    }
+
+    public Integer getServerStepResultId() {
+        return serverStepResultId;
+    }
+
+    public void setServerStepResultId(Integer serverStepResultId) {
+        this.serverStepResultId = serverStepResultId;
+    }
+
+    public String getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }
