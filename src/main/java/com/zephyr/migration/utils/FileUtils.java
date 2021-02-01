@@ -425,35 +425,35 @@ public class FileUtils {
 
     public static Map<String, String> readExecutionMappingFile(String directory, String filename) throws IOException {
         //obtaining input bytes from a file
-        HSSFSheet sheet;
-        try (FileInputStream fis = new FileInputStream(directory + "/" + filename)) {
-            //creating workbook instance that refers to .xls file
-            try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
-                //creating a Sheet object to retrieve the object
-                sheet = wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
-            }
-        }
-
-        int cloudExecutionIdIndex=0, serverExecutionIdIndex=0;
-        Row row = sheet.getRow(0);
-        for (Cell cell : row) {
-            // Column header names.
-            if(CLOUD_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
-                cloudExecutionIdIndex = cell.getColumnIndex();
-            }else if(SERVER_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
-                serverExecutionIdIndex = cell.getColumnIndex();
-            }
-        }
+        FileInputStream fis = new FileInputStream(directory + "/" + filename);
         Map<String, String> serverCloudIdsMapping = new HashMap<>();
-        for (Row r : sheet) {
-            if (r.getRowNum()==0) continue;//headers
-
-            Cell cloudExecutionIdCellVal = r.getCell(cloudExecutionIdIndex);
-            Cell serverExecutionIdCellVal = r.getCell(serverExecutionIdIndex);
-
-            if (Objects.nonNull(serverExecutionIdCellVal) && Objects.nonNull(cloudExecutionIdCellVal)) {
-                serverCloudIdsMapping.put(serverExecutionIdCellVal.getStringCellValue(), cloudExecutionIdCellVal.getStringCellValue());
+        HSSFSheet sheet;
+        //creating workbook instance that refers to .xls file
+        try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+            //creating a Sheet object to retrieve the object
+            sheet = wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+            int cloudExecutionIdIndex=0, serverExecutionIdIndex=0;
+            Row row = sheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if(CLOUD_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudExecutionIdIndex = cell.getColumnIndex();
+                }else if(SERVER_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverExecutionIdIndex = cell.getColumnIndex();
+                }
             }
+            for (Row r : sheet) {
+                if (r.getRowNum()==0) continue;//headers
+
+                Cell cloudExecutionIdCellVal = r.getCell(cloudExecutionIdIndex);
+                Cell serverExecutionIdCellVal = r.getCell(serverExecutionIdIndex);
+
+                if (Objects.nonNull(serverExecutionIdCellVal) && Objects.nonNull(cloudExecutionIdCellVal)) {
+                    serverCloudIdsMapping.put(serverExecutionIdCellVal.getStringCellValue(), cloudExecutionIdCellVal.getStringCellValue());
+                }
+            }
+        }finally {
+            fis.close();
         }
         return serverCloudIdsMapping;
     }
