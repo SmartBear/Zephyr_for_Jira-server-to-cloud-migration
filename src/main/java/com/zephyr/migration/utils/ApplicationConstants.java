@@ -16,6 +16,8 @@ public class ApplicationConstants {
     public static final String CLOUD_CREATE_CYCLE_URL = "/public/rest/api/1.0/migration/create/cycle";
     public static final String CLOUD_CREATE_FOLDER_URL = "/public/rest/api/1.0/migration/create/folder";
     public static final String CLOUD_CREATE_EXECUTION_URL = "/public/rest/api/1.0/migration/create/execution";
+    public static final String ADD_EXECUTION_ATTACHMENT_URL = "/public/rest/api/1.0/migration/add/attachment";
+    public static final String CLOUD_GET_TEST_STEP_RESULTS_URL = "/public/rest/api/1.0/migration/getStepResults";
 
     /******* General constants *********/
     public static final String XLS = ".xls";
@@ -28,9 +30,13 @@ public class ApplicationConstants {
     public static final String MAPPING_CYCLE_FILE_NAME ="migration-cycle-mapping-project-";
     public static final String MAPPING_FOLDER_FILE_NAME ="migration-folder-mapping-project-";
     public static final String MAPPING_EXECUTION_FILE_NAME ="migration-execution-mapping-project-";
+    public static final String MAPPING_EXECUTION_ATTACHMENT_FILE_NAME ="migration-execution-attachment-mapping-project-";
+    public static final String MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME ="migration-step-result-attachment-mapping-project-";
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
     public static final String FOLDER_MAPPING_SHEET_NAME = "folder-mapping";
     public static final String EXECUTION_MAPPING_SHEET_NAME = "execution-mapping";
+    public static final String EXECUTION_ATTACHMENT_MAPPING_SHEET_NAME = "execution-attachment-mapping";
+    public static final String STEP_RESULT_ATTACHMENT_MAPPING_SHEET_NAME = "step-result-attachment-mapping";
     public static final String ASSIGNEE_TYPE = "assignee";
 
     /******* SERVER API endpoint URL *********/
@@ -38,7 +44,17 @@ public class ApplicationConstants {
     public static final String SERVER_GET_FOLDERS_URL = "cycle/%s/folders?projectId=%s&versionId=%s&offset=%s&limit=%s";
     public static final String ZAPI_RESOURCE_GET_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&offset=%s&limit=%s";
     public static final String ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&folderId=%s&offset=%s&limit=%s";
+    public static final String ZAPI_RESOURCE_GET_ATTACHMENT = "attachment/attachmentsByEntity?entityId=%s&entityType=%s";
+    public static final String ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION = "attachment/%s/file";
+    public static final String ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID = "stepResult?executionId=%s&expand=executionStatus";
 
     public static final String CYCLE_LEVEL_EXECUTION = "Cycle Level Execution";
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";
+
+    public enum ENTITY_TYPE { EXECUTION, TESTSTEP, TESTSTEPRESULT }
+
+    public static final String EXECUTION_ENTITY = "execution";
+    public static final String STEP_RESULT_ENTITY = "stepresult";
+    public static final String TEST_STEP_ENTITY = "teststep";
+
 }

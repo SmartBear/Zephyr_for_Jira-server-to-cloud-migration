@@ -8,15 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
-import com.zephyr.migration.dto.CycleDTO;
-import com.zephyr.migration.dto.ExecutionDTO;
-import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.model.SearchRequest;
-import com.zephyr.migration.model.ZfjCloudCycleBean;
-import com.zephyr.migration.model.ZfjCloudExecutionBean;
-import com.zephyr.migration.model.ZfjCloudFolderBean;
+import com.zephyr.migration.dto.*;
+import com.zephyr.migration.model.*;
 import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.*;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +26,15 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -60,6 +59,12 @@ public class MigrationServiceImpl implements MigrationService {
 
     @Autowired
     ExecutionService executionService;
+
+    @Autowired
+    AttachmentService attachmentService;
+
+    @Autowired
+    TestStepService testStepService;
 
     @Autowired
     MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
@@ -91,7 +96,10 @@ public class MigrationServiceImpl implements MigrationService {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
                 if (migrateFolders) {
-                    beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    boolean migrateExecutions = beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    if(migrateExecutions) {
+                        beginExecutionLevelAttachments(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    }
                 }
             }
         }
@@ -596,6 +604,183 @@ public class MigrationServiceImpl implements MigrationService {
         return true;
     }
 
+    private void beginExecutionLevelAttachments(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
+        try {
+            Map<String, String> mappedServerToCloudExecutionIdMap = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
+            if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
+                String projectName = null;
+                if (project != null) {
+                    projectName = project.getName();
+                }
+                List<ZfjAttachmentBean> zfjAttachmentBeanList = new ArrayList<>();
+                Path executionAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                    mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+                        //Read the execution mapping file and start processing it.
+                        List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
+                        List<ExecutionAttachmentDTO> finalAttachmentList = new ArrayList<>();
+                        if (attachmentList != null && attachmentList.size() > 0) {
+                            if (Files.exists(executionAttachmentMappedFile)) {
+                                try {
+                                    List<String> mappedServerToCloudExecutionAttachmentMap = FileUtils.readExecutionAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                                    if (!mappedServerToCloudExecutionAttachmentMap.isEmpty()) {
+                                        for (ExecutionAttachmentDTO executionAttachment : attachmentList) {
+                                            if (!mappedServerToCloudExecutionAttachmentMap.contains(executionAttachment.getFileId())) {
+                                                finalAttachmentList.add(executionAttachment);
+                                            }
+                                        }
+                                    }
+                                } catch (IOException e) {
+                                    log.error("Error while reading execution attachment mapping file", e);
+                                }
+                            } else {
+                                finalAttachmentList.addAll(attachmentList);
+                            }
+                            List<ExecutionAttachmentDTO> executionAttachments = finalAttachmentList.stream()
+                                    .filter(Objects::nonNull).collect(Collectors.toList());
+                            List<File> filesToDelete = new ArrayList<>();
+                            List<String> attachmentFileId = new ArrayList<>();
+                            executionAttachments.forEach(attachment -> {
+                                if (attachment != null) {
+                                    try {
+                                        File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                                        if (executionAttachmentFile != null) {
+                                            filesToDelete.add(executionAttachmentFile);
+                                            attachmentFileId.add(attachment.getFileId());
+                                        }
+                                    } catch (Exception e) {
+                                        log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                                    }
+                                }
+                            });
+                            if (!filesToDelete.isEmpty()) {
+                                int fileCount = 0;
+                                for (File file : filesToDelete) {
+                                    if (file.exists()) {
+                                        try {
+                                            ZfjAttachmentBean zfjAttachmentBean = attachmentService.addAttachmentInCloud(file, cloudExecutionId, projectId + "", ApplicationConstants.EXECUTION_ENTITY, cloudExecutionId);
+                                            if (zfjAttachmentBean != null) {
+                                                zfjAttachmentBean.setServerExecutionId(serverExecutionId);
+                                                zfjAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
+                                                zfjAttachmentBeanList.add(zfjAttachmentBean);
+                                            }
+                                        } catch (Exception e) {
+                                            log.error("Error while adding attachment for issue", e);
+                                        }
+                                        file.delete();
+                                        ++fileCount;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                    migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap, projectId+"", projectName);
+                }
+
+                if (Files.exists(executionAttachmentMappedFile) && !zfjAttachmentBeanList.isEmpty()) {
+                    progressQueue.put("Updating the mapping file for execution attachment migration for project : " + projectId);
+                    migrationMappingFileGenerationUtil.updateExecutionAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjAttachmentBeanList);
+                } else {
+                    if (!zfjAttachmentBeanList.isEmpty()) {
+                        progressQueue.put("Creating the mapping file for execution attachment migration for project : " + projectId);
+                        migrationMappingFileGenerationUtil.generateExecutionAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjAttachmentBeanList);
+                    }
+                }
+            }
+        }catch (Exception ex) {
+            log.error("Error while creating attachment for issue", ex);
+        }
+    }
+
+    private void migrateStepResultLevelAttachments(Map<String, String> mappedServerToCloudExecutionIdMap, String projectId, String projectName) {
+        mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+            List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
+            if(CollectionUtils.isNotEmpty(testStepResults)) {
+                TestStepResultDTO testStepResultDTO = testStepResults.get(0);
+                List<ZfjCloudStepResultBean> cloudStepResultList = testStepService.getTestStepResultsFromZFJCloud(cloudExecutionId);
+                if(CollectionUtils.isNotEmpty(cloudStepResultList)) {
+                    Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = cloudStepResultList.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
+                    importStepResultLevelAttachments(testStepResults,stepResultBeanMap, projectId, projectName);
+                }
+            }
+        });
+    }
+
+    private void importStepResultLevelAttachments(List<TestStepResultDTO> testStepResults, Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap, String projectId, String projectName) {
+        List<ZfjAttachmentBean> zfjAttachmentBeanList = new ArrayList<>();
+        Path stepResultAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+        List<TestStepResultDTO> testStepResultNewList = testStepResults.stream()
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        for (TestStepResultDTO testStepResult : testStepResultNewList) {
+            try {
+                List<String> stepResultFileId = new ArrayList<>();
+                List<String> stepResultFileName = new ArrayList<>();
+                List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(testStepResult.getId(), ApplicationConstants.ENTITY_TYPE.TESTSTEPRESULT);
+                if (attachmentList != null && attachmentList.size() > 0) {
+                    List<ExecutionAttachmentDTO> stepResultsAttachmentList = attachmentList.stream()
+                            .filter(Objects::nonNull).collect(Collectors.toList());
+                    List<File> filesToDelete = new ArrayList<>();
+                    stepResultsAttachmentList.forEach(stepResultAttachment -> {
+                        Boolean stepResultAndAttachmentFileEntryExist = Boolean.FALSE;
+                        try {
+                            if (Files.exists(stepResultAttachmentMappedFile)) {
+                                stepResultAndAttachmentFileEntryExist = FileUtils.readStepResultAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS, testStepResult.getId().toString(), stepResultAttachment.getFileId());
+                            }
+                        }catch ( IOException ex) {
+                            log.error("Error while reading the step result attachment mapping file for step result -> " + stepResultAttachment.getFileId() + " ->  for step result: " + testStepResult.getId(), ex);
+                        }
+                        try {
+                            if (!stepResultAndAttachmentFileEntryExist) {
+                                File testStepAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(stepResultAttachment.getFileId(), stepResultAttachment.getFileName());
+                                if (testStepAttachmentFile != null) {
+                                    filesToDelete.add(testStepAttachmentFile);
+                                    stepResultFileId.add(stepResultAttachment.getFileId());
+                                    stepResultFileName.add(stepResultAttachment.getFileName());
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while downloading the step result attachment for step result -> " + stepResultAttachment.getFileId() + " ->  for step result: " + testStepResult.getId(), e);
+                        }
+                    });
+                    if (!filesToDelete.isEmpty()) {
+                        int fileCount = 0;
+                        ZfjCloudStepResultBean zfjCloudStepResultBean = stepResultBeanMap.get(testStepResult.getOrderId());
+                        for (File file : filesToDelete) {
+                            if (file.exists()) {
+                                try {
+                                    ZfjAttachmentBean zfjAttachmentBean = attachmentService.addAttachmentInCloud(file, zfjCloudStepResultBean.getExecutionId(), projectId, ApplicationConstants.STEP_RESULT_ENTITY, zfjCloudStepResultBean.getId());
+                                    if (null != zfjAttachmentBean) {
+                                        log.info("file uploaded successfully.");
+                                        zfjAttachmentBean.setServerStepResultId(testStepResult.getId());
+                                        zfjAttachmentBean.setFileId(stepResultFileId.get(fileCount));
+                                        zfjAttachmentBean.setFileName(stepResultFileName.get(fileCount));
+                                        zfjAttachmentBeanList.add(zfjAttachmentBean);
+                                    }
+                                } catch (Exception e) {
+                                    log.error("Error while adding attachment for issue", e);
+                                }
+                                file.delete();
+                                ++fileCount;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error while uploading the Step Result Attachment for Step Result: " + testStepResult.getId(), e);
+            }
+        }
+        if (zfjAttachmentBeanList != null && !zfjAttachmentBeanList.isEmpty() && Files.exists(stepResultAttachmentMappedFile)) {
+            migrationMappingFileGenerationUtil.updateStepResultAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjAttachmentBeanList);
+        }
+        if (zfjAttachmentBeanList != null && !zfjAttachmentBeanList.isEmpty() && !Files.exists(stepResultAttachmentMappedFile)) {
+            migrationMappingFileGenerationUtil.generateStepResultAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjAttachmentBeanList);
+        }
+    }
+
     private ZfjCloudExecutionBean prepareRequestForCloud(ExecutionDTO serverExecution, SearchRequest searchRequest, String assignedAccountId) {
         ZfjCloudExecutionBean zfjCloudExecutionBean = new ZfjCloudExecutionBean();
 
@@ -611,7 +796,12 @@ public class MigrationServiceImpl implements MigrationService {
         if(Objects.nonNull(searchRequest.getCloudFolderId())) {
             zfjCloudExecutionBean.setFolderId(searchRequest.getCloudFolderId());
         }
-        zfjCloudExecutionBean.setComment("created using zephyr server - cloud migration.");
+        if(StringUtils.isNotBlank(serverExecution.getComment())) {
+            zfjCloudExecutionBean.setComment(serverExecution.getComment());
+        }else {
+            zfjCloudExecutionBean.setComment("");
+        }
+
         try {
             if (StringUtils.isNotEmpty(serverExecution.getExecutedOn())) {
                 zfjCloudExecutionBean.setExecutedOnStr(serverExecution.getExecutedOn());

@@ -1,13 +1,12 @@
 package com.zephyr.migration.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.CycleDTO;
-import com.zephyr.migration.dto.VersionDTO;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.service.CycleService;
 import com.zephyr.migration.utils.ApplicationConstants;
@@ -88,8 +87,8 @@ public class CycleServiceImpl implements CycleService {
             String content = response.getEntity(String.class);
             outputResponse = JsonUtil.readValue(content,reference);
 
-        } catch (IOException e) {
-            log.error("Error while converting cycle json to object -> ", e.fillInStackTrace());
+        } catch (IOException | ClientHandlerException e) {
+            log.error("Error while getting cycle response from server instance -> ", e.fillInStackTrace());
         }
         outputResponse.forEach((key, cycle) -> {
             if (Objects.nonNull(cycle.getName())) {

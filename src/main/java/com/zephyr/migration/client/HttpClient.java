@@ -12,7 +12,6 @@ import com.sun.jersey.api.json.JSONConfiguration;
 
 import javax.ws.rs.core.MediaType;
 import java.util.Objects;
-import java.util.Properties;
 
 /**
  * <p>Handles http/https connections.</p>
@@ -68,7 +67,7 @@ public abstract class HttpClient {
 
     public ClientResponse getWithNoContentType() {
         if (Objects.isNull(webResource)) {
-            throw new IllegalStateException("webResource is not Initializied. call setResourceName() method ");
+            throw new IllegalStateException("webResource is not Initialized. call setResourceName() method ");
         }
 
         ClientResponse response = webResource.get(ClientResponse.class);
