@@ -13,6 +13,20 @@ This will launch the spring boot server at default port 8080.
 3) Cloud Zephyr Admin User Credentials.
 {AccountId, AccessKey, SecretKey}`
 
+##### To Generate the API keys.
+1. Navigate to Manage Apps section from settings section.
+2. Navigate to Zephyr for Jira Cloud.
+3. Click on Generate API keys.
+4. Find the available keys associated with account or create one new :)
+
+![img.png](img.png)
+
+##### To Get the user account ID from JIRA.
+1. Click on the User icon & navigate to profile section.
+2. In the address bar, you will get the user account id from Atlassian.
+
+![img_1.png](img_1.png)
+
 ###### **To Trigger the migration**
 
 Launch the application at http://{localhost:port}/beginMigration   
