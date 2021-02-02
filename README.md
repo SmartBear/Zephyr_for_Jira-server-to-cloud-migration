@@ -27,4 +27,18 @@ Navigate to the home directory of the project. It will have a directory created 
 Navigate to the path specified in the application.properties
 It will have the mapping file created for the migration project.
 
+### To use the precompiled migration tool.
+##### Java should be installed & Java home path should be configured correctly.
+1. Navigate to the /Zephyr_for_Jira-server-to-cloud-migration/PreCompiled-Jars
+2. Download the zip files.
+3. Modify the application.properties file with specific instance information.
+   (Migration File Path, Port, Server instance details, Cloud instance details)
+    
+4. Save the application.properties file after making the necessary changes.
+5. Run the below command to launch the application.
+
+java -jar Zephyr_for_Jira-server-to-cloud-migration-1.0.jar --spring.config.location=file:./application.properties
+
+6. It will launch the application at mentioned port.   
+
 
