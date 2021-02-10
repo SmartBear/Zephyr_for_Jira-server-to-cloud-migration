@@ -47,6 +47,7 @@ public class ApplicationConstants {
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT = "attachment/attachmentsByEntity?entityId=%s&entityType=%s";
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION = "attachment/%s/file";
     public static final String ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID = "stepResult?executionId=%s&expand=executionStatus";
+    public static final String ZAPI_RESOURCE_GET_TEST_STEP = "teststep/%s";
 
     public static final String CYCLE_LEVEL_EXECUTION = "Cycle Level Execution";
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";

@@ -5,6 +5,7 @@ import com.google.gson.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
+import com.zephyr.migration.dto.TestStepDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.TestStepService;
@@ -14,6 +15,8 @@ import com.zephyr.migration.utils.JsonUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.type.TypeReference;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,5 +116,25 @@ public class TestStepServiceImpl implements TestStepService {
             log.error("Error while getting step results from cloud " + e.fillInStackTrace());
         }
         return responseList;
+    }
+
+    @Override
+    public List<TestStepDTO> fetchTestStepsFromZFJ(Integer issueId) {
+        List<TestStepDTO> testStepDTOS = new ArrayList<>();
+        try {
+            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_TEST_STEP,issueId));
+            ClientResponse response = zapiHttpClient.get();
+            String content = response.getEntity(String.class);
+            JSONArray array = new JSONArray(content);
+            TypeReference<TestStepDTO> ref1 = new TypeReference<TestStepDTO>(){};
+            for(int i=0; i<array.length(); i++){
+                JSONObject json = (JSONObject)array.get(i);
+                TestStepDTO step = JsonUtil.readValue(json.toString(), ref1);
+                testStepDTOS.add(step);
+            }
+        } catch (IOException e) {
+            log.warn("Exception occurred while fetching test steps from server :", e.fillInStackTrace());
+        }
+        return testStepDTOS;
     }
 }
