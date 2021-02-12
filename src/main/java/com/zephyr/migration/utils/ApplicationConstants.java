@@ -18,6 +18,7 @@ public class ApplicationConstants {
     public static final String CLOUD_CREATE_EXECUTION_URL = "/public/rest/api/1.0/migration/create/execution";
     public static final String ADD_EXECUTION_ATTACHMENT_URL = "/public/rest/api/1.0/migration/add/attachment";
     public static final String CLOUD_GET_TEST_STEP_RESULTS_URL = "/public/rest/api/1.0/migration/getStepResults";
+    public static final String CLOUD_CREATE_BULK_TEST_STEP_URL = "/public/rest/api/1.0/migration/create/bulk/teststep";
 
     /******* General constants *********/
     public static final String XLS = ".xls";

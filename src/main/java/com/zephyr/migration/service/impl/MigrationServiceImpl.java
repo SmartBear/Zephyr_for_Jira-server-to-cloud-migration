@@ -486,7 +486,7 @@ public class MigrationServiceImpl implements MigrationService {
      * execution migration
      */
     private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
-        Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
+        Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
         String projectName = null;
         if (project != null) {
             projectName = project.getName();
@@ -520,10 +520,21 @@ public class MigrationServiceImpl implements MigrationService {
                             finalExecutionsListToBeProcessed.forEach(serverExecution -> {
 
                                 if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
-                                    List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                                    Map<List<TestStepDTO>, List<TestStepDTO>> serverCloudTestStepDetails = new HashMap<>();
+                                    List<TestStepDTO> createdCloudTestStepList = null;
+                                            List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
                                     // create steps in zephyr cloud.
+                                    if (testStepDTOList != null && !testStepDTOList.isEmpty()) {
+                                        createdCloudTestStepList = new ArrayList<TestStepDTO>();
+                                        createdCloudTestStepList = testStepService.createTestStepInJiraCloud(testStepDTOList, serverExecution.getIssueId(), projectId);
+
+                                    }
                                     // add the created steps in map
                                     fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
+                                    if (createdCloudTestStepList != null && !createdCloudTestStepList.isEmpty()) {
+                                        serverCloudTestStepDetails.put(testStepDTOList, createdCloudTestStepList);
+                                    }
+
                                 }
                                 ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
                                 if(Objects.nonNull(zfjCloudExecutionBean)) {
