@@ -148,13 +148,23 @@ public class TestStepServiceImpl implements TestStepService {
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
         JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
         String createCloudBulkTestStepUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_CREATE_BULK_TEST_STEP_URL;
-        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createCloudBulkTestStepUrl);
+
+        String createUrl = createCloudBulkTestStepUrl;
+        String queryParams = null;
+        createUrl = createUrl + "?";
+        try {
+            queryParams = URLEncoder.encode("projectId=" + projectId + "&issueId=" + issueId, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        createUrl = createUrl + queryParams;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
+        createCloudBulkTestStepUrl = createCloudBulkTestStepUrl + "?projectId=" + projectId + "&issueId=" + issueId;
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
-
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testSteps), headers);
         JsonNode response;
         List<TestStepDTO> testStepList = null;

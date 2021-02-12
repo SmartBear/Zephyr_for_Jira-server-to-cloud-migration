@@ -520,6 +520,7 @@ public class MigrationServiceImpl implements MigrationService {
                             finalExecutionsListToBeProcessed.forEach(serverExecution -> {
 
                                 if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
+                                    Integer serverIssueId = serverExecution.getIssueId();
                                     Map<List<TestStepDTO>, List<TestStepDTO>> serverCloudTestStepDetails = new HashMap<>();
                                     List<TestStepDTO> createdCloudTestStepList = null;
                                             List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
