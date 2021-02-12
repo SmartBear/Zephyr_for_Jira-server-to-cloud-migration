@@ -125,12 +125,15 @@ public class TestStepServiceImpl implements TestStepService {
             zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_TEST_STEP,issueId));
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
-            JSONArray array = new JSONArray(content);
-            TypeReference<TestStepDTO> ref1 = new TypeReference<TestStepDTO>(){};
-            for(int i=0; i<array.length(); i++){
-                JSONObject json = (JSONObject)array.get(i);
-                TestStepDTO step = JsonUtil.readValue(json.toString(), ref1);
-                testStepDTOS.add(step);
+
+            JsonParser parser = new JsonParser();
+            JsonElement element = parser.parse(content);
+            JsonObject object = element.getAsJsonObject();
+            JsonArray testStepsArray = object.getAsJsonArray("stepBeanCollection");
+
+            TypeReference<List<TestStepDTO>> reference = new TypeReference<List<TestStepDTO>>() {};
+            if (Objects.nonNull(testStepsArray)) {
+                testStepDTOS = JsonUtil.readValue(testStepsArray.toString(), reference);
             }
         } catch (IOException e) {
             log.warn("Exception occurred while fetching test steps from server :", e.fillInStackTrace());
