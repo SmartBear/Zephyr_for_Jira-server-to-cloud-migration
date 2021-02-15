@@ -521,12 +521,12 @@ public class MigrationServiceImpl implements MigrationService {
 
                                 if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                     Integer serverIssueId = serverExecution.getIssueId();
-                                    Map<List<TestStepDTO>, List<TestStepDTO>> serverCloudTestStepDetails = new HashMap<>();
-                                    List<TestStepDTO> createdCloudTestStepList = null;
-                                            List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                                    Map<List<TestStepDTO>, List<JiraCloudTestStepDTO>> serverCloudTestStepDetails = new HashMap<>();
+                                    List<JiraCloudTestStepDTO> createdCloudTestStepList = null;
+                                    List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
                                     // create steps in zephyr cloud.
                                     if (testStepDTOList != null && !testStepDTOList.isEmpty()) {
-                                        createdCloudTestStepList = new ArrayList<TestStepDTO>();
+                                        createdCloudTestStepList = new ArrayList<JiraCloudTestStepDTO>();
                                         createdCloudTestStepList = testStepService.createTestStepInJiraCloud(testStepDTOList, serverExecution.getIssueId(), projectId);
 
                                     }

@@ -6,6 +6,7 @@ import com.google.gson.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
+import com.zephyr.migration.dto.JiraCloudTestStepDTO;
 import com.zephyr.migration.dto.TestStepDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
@@ -140,7 +141,7 @@ public class TestStepServiceImpl implements TestStepService {
     }
 
     @Override
-    public List<TestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId) {
+    public List<JiraCloudTestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId) {
         log.info("Serving --> {}", "createTestStepInJiraCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -166,23 +167,21 @@ public class TestStepServiceImpl implements TestStepService {
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testSteps), headers);
-        JsonNode response;
-        List<TestStepDTO> testStepList = null;
+        String response;
+        List<JiraCloudTestStepDTO> testStepList = new ArrayList<>();
         try {
             log.info("request to cloud for create bulk test step for this issue id ::: "+ issueId.toString());
-            response = restTemplate.postForObject(createCloudBulkTestStepUrl, entity, JsonNode.class);
-            //read the json node response & prepare cycle bean object.
+            response = restTemplate.postForObject(createCloudBulkTestStepUrl, entity, String.class);
             if (response != null && !response.isEmpty()) {
-                ObjectMapper mapper = new ObjectMapper();
-                testStepList = new ArrayList<>();
-                /*mapper.readValue(response, new TypeReference<List<TestStepDTO>>(){});
-                testStepList = mapper.readValue(response, new TypeReference<List<TestStepDTO>>(){});
-                testStepList = JSONc.getObjectMapper().convertValue(response, new TypeReference<List<TestStepDTO>>(){});
+                JsonParser parser = new JsonParser();
+                JsonElement element = parser.parse(response);
+                JsonObject object = element.getAsJsonObject();
+                JsonArray testStepsArray = object.getAsJsonArray("teststepList");
 
-                TestStepDTO[] pp1 = mapper.readValue(response, TestStepDTO[].class);
-
-                // 2. convert JSON array to List of objects
-                List<TestStepDTO> ppl2 = Arrays.asList(mapper.readValue(response, TestStepDTO[].class));*/
+                TypeReference<List<JiraCloudTestStepDTO>> reference = new TypeReference<List<JiraCloudTestStepDTO>>() {};
+                if (Objects.nonNull(testStepsArray)) {
+                    testStepList = JsonUtil.readValue(testStepsArray.toString(), reference);
+                }
             }
         } catch (Exception e) {
             log.error("Error while creating test step in cloud for" + issueId.toString() + "this issue id " + e.fillInStackTrace());

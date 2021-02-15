@@ -1,5 +1,6 @@
 package com.zephyr.migration.service;
 
+import com.zephyr.migration.dto.JiraCloudTestStepDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.dto.TestStepDTO;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
@@ -15,6 +16,6 @@ public interface TestStepService {
 
     List<TestStepDTO> fetchTestStepsFromZFJ(Integer issueId);
 
-    List<TestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId);
+    List<JiraCloudTestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId);
 
 }
