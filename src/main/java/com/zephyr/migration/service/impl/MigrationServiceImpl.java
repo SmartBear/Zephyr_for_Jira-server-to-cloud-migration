@@ -520,21 +520,10 @@ public class MigrationServiceImpl implements MigrationService {
                             finalExecutionsListToBeProcessed.forEach(serverExecution -> {
 
                                 if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
-                                    Integer serverIssueId = serverExecution.getIssueId();
-                                    Map<List<TestStepDTO>, List<JiraCloudTestStepDTO>> serverCloudTestStepDetails = new HashMap<>();
-                                    List<JiraCloudTestStepDTO> createdCloudTestStepList = null;
                                     List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                    // create steps in zephyr cloud.
-                                    if (testStepDTOList != null && !testStepDTOList.isEmpty()) {
-                                        createdCloudTestStepList = new ArrayList<JiraCloudTestStepDTO>();
-                                        createdCloudTestStepList = testStepService.createTestStepInJiraCloud(testStepDTOList, serverExecution.getIssueId(), projectId);
-
-                                    }
+                                    createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
                                     // add the created steps in map
                                     fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
-                                    if (createdCloudTestStepList != null && !createdCloudTestStepList.isEmpty()) {
-                                        serverCloudTestStepDetails.put(testStepDTOList, createdCloudTestStepList);
-                                    }
 
                                 }
                                 ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
@@ -544,7 +533,7 @@ public class MigrationServiceImpl implements MigrationService {
                                     }
                                 }
                             });
-                        }
+                    }
                     }
                 }else {
                     if(null != executionList && executionList.size() >0) {
@@ -552,7 +541,7 @@ public class MigrationServiceImpl implements MigrationService {
 
                             if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                 List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                // create steps in zephyr cloud.
+                                createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
                                 // add the created steps in map
                                 fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
                             }
@@ -595,6 +584,7 @@ public class MigrationServiceImpl implements MigrationService {
                                     if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                         List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
                                         // create steps in zephyr cloud.
+                                        createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
                                         // add the created steps in map
                                         fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
                                     }
@@ -614,7 +604,9 @@ public class MigrationServiceImpl implements MigrationService {
 
                                 if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                     List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                    // create steps in zephyr cloud.
+                                    createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
+                                    // add the created steps in map
+                                    fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
                                     // add the created steps in map
                                     fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
                                 }
@@ -860,5 +852,43 @@ public class MigrationServiceImpl implements MigrationService {
             log.info("Error while converting string to date");
         }
         return zfjCloudExecutionBean;
+    }
+
+    public void createTestStepInJiraCloud(Long projectId, Integer issueId, List<TestStepDTO> testStepDTOList) {
+        List<JiraCloudTestStepDTO> createdCloudTestStepList = null;
+        Path testStepMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLS);
+        if (Files.exists(testStepMappedFile)) {
+            try {
+                List<Integer> mappedTestStepId = FileUtils.readTestStepMappingFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLS, issueId.toString());
+                if (mappedTestStepId != null && mappedTestStepId.size() > 0) {
+                    List<TestStepDTO> alreadyCreatedTestStep = new ArrayList<>();
+                    for (TestStepDTO testStepDTO : testStepDTOList) {
+                        if (testStepDTO != null && mappedTestStepId.contains(testStepDTO.getId())) {
+                            alreadyCreatedTestStep.add(testStepDTO);
+                        }
+                    }
+                    if (alreadyCreatedTestStep.size() > 0) {
+                        testStepDTOList.removeAll(alreadyCreatedTestStep);
+                    }
+                }
+            }catch (Exception ex) {
+                log.info("Exception while fetching mapped test step id");
+            }
+        }
+        // create steps in zephyr cloud.
+        if (testStepDTOList != null && !testStepDTOList.isEmpty()) {
+            createdCloudTestStepList = new ArrayList<JiraCloudTestStepDTO>();
+            createdCloudTestStepList = testStepService.createTestStepInJiraCloud(testStepDTOList, issueId, projectId);
+
+        }
+
+        if (createdCloudTestStepList != null && !createdCloudTestStepList.isEmpty()) {
+            if (!Files.exists(testStepMappedFile)) {
+                migrationMappingFileGenerationUtil.generateTestStepMappingReportExcel(projectId + "", issueId.toString(),
+                        migrationFilePath,testStepDTOList,createdCloudTestStepList);
+            }else {
+                migrationMappingFileGenerationUtil.updateTestStepMappingFile(projectId + "", issueId.toString(), migrationFilePath, testStepDTOList, createdCloudTestStepList);
+            }
+        }
     }
 }
