@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +48,7 @@ public class FileUtils {
     private static final String SERVER_STEP_RESULT_ATTACHMENT_ID_COLUMN_NAME = "server-attachment-id";
     private static final String SERVER_TEST_STEP_ID_COLUMN_NAME = "server-teststep-id";
     private static final String CLOUD_TEST_STEP_ID_COLUMN_NAME = "cloud-teststep-id";
+    private static final String SERVER_TEST_STEP_ATTACHMENT_ID_COLUMN_NAME = "server-attachment-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -544,5 +546,77 @@ public class FileUtils {
         double kilobytes = (bytes / 1024);
         double megabytes = (kilobytes / 1024);
         return (int)megabytes;
+    }
+
+    public static Map<String, ArrayList<String>> readTestStepIdsMappingFile(String migrationFilePath, String fileName) throws IOException {
+        Map<String,ArrayList<String>> testStepIdsMap = new HashMap<>();
+
+        HSSFSheet sheet;
+        //creating workbook instance that refers to .xls file
+        try (FileInputStream fis = new FileInputStream(migrationFilePath + "/" + fileName); HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+            //creating a Sheet object to retrieve the object
+            sheet = wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+            int serverIdColIndex = 0, cloudStepIdColIndex = 0, issueIdColIndex =0;
+            Row row = sheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if (CLOUD_TEST_STEP_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudStepIdColIndex = cell.getColumnIndex();
+                } else if (SERVER_TEST_STEP_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverIdColIndex = cell.getColumnIndex();
+                }else if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    issueIdColIndex = cell.getColumnIndex();
+                }
+            }
+            for (Row r : sheet) {
+                if (r.getRowNum() == 0) continue;//headers
+
+                Cell serverIdCellVal = r.getCell(serverIdColIndex);
+                Cell cloudStepIdCellVal = r.getCell(cloudStepIdColIndex);
+                Cell issueIdCellVal = r.getCell(issueIdColIndex);
+                if (null != serverIdCellVal && null != cloudStepIdCellVal) {
+                    ArrayList<String> list = new ArrayList<>();
+                    list.add(cloudStepIdCellVal.getStringCellValue());
+                    list.add(issueIdCellVal.getStringCellValue());
+                    testStepIdsMap.put(serverIdCellVal.getStringCellValue(), list);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error occurred while reading the file.", e.fillInStackTrace());
+        }
+
+        return testStepIdsMap;
+    }
+
+    public static List<String> readTestStepsAttachmentMappingFile(String migrationFilePath, String fileName) throws IOException {
+
+        HSSFSheet sheet;
+        try (FileInputStream fis = new FileInputStream(migrationFilePath + "/" + fileName)) {
+            //creating workbook instance that refers to .xls file
+            try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+                //creating a Sheet object to retrieve the object
+                sheet = wb.getSheet(ApplicationConstants.TEST_STEP_ATTACHMENT_MAPPING_SHEET_NAME);
+            }
+        }
+
+        int serverAttachmentIDColIndex = 0;
+        Row row = sheet.getRow(0);
+        for (Cell cell : row) {
+            // Column header names.
+            if(SERVER_TEST_STEP_ATTACHMENT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                serverAttachmentIDColIndex = cell.getColumnIndex();
+            }
+        }
+        List<String> mappedServerTestStepAttachmentIds = new ArrayList<>();
+        for (Row r : sheet) {
+            if (r.getRowNum()==0) continue;//headers
+
+            Cell serverExecutionAttachmentIdCellVal = r.getCell(serverAttachmentIDColIndex);
+
+            if (Objects.nonNull(serverExecutionAttachmentIdCellVal)) {
+                mappedServerTestStepAttachmentIds.add(serverExecutionAttachmentIdCellVal.getStringCellValue());
+            }
+        }
+        return mappedServerTestStepAttachmentIds;
     }
 }

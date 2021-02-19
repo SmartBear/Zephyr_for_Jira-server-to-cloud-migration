@@ -34,12 +34,14 @@ public class ApplicationConstants {
     public static final String MAPPING_TEST_STEP_FILE_NAME ="migration-test-step-mapping-project-";
     public static final String MAPPING_EXECUTION_ATTACHMENT_FILE_NAME ="migration-execution-attachment-mapping-project-";
     public static final String MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME ="migration-step-result-attachment-mapping-project-";
+    public static final String MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME = "migration-test-step-attachment-mapping-project-";
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
     public static final String FOLDER_MAPPING_SHEET_NAME = "folder-mapping";
     public static final String EXECUTION_MAPPING_SHEET_NAME = "execution-mapping";
     public static final String TEST_STEP_MAPPING_SHEET_NAME = "test-step-mapping";
     public static final String EXECUTION_ATTACHMENT_MAPPING_SHEET_NAME = "execution-attachment-mapping";
     public static final String STEP_RESULT_ATTACHMENT_MAPPING_SHEET_NAME = "step-result-attachment-mapping";
+    public static final String TEST_STEP_ATTACHMENT_MAPPING_SHEET_NAME = "test-step-attachment-mapping";
     public static final String ASSIGNEE_TYPE = "assignee";
 
     /******* SERVER API endpoint URL *********/

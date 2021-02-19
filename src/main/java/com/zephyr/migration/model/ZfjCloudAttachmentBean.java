@@ -1,12 +1,14 @@
 package com.zephyr.migration.model;
 
-public class ZfjAttachmentBean {
+public class ZfjCloudAttachmentBean {
 
     private String cloudExecutionAttachmentId;
     private String cloudExecutionId;
     private String serverExecutionAttachmentId;
     private String serverExecutionId;
     private Integer serverStepResultId;
+    private String serverTestStepId;
+    private Integer cloudTestStepId;
     private String fileId;
     private String fileName;
 
@@ -64,5 +66,21 @@ public class ZfjAttachmentBean {
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
+    }
+
+    public String getServerTestStepId() {
+        return serverTestStepId;
+    }
+
+    public void setServerTestStepId(String serverTestStepId) {
+        this.serverTestStepId = serverTestStepId;
+    }
+
+    public Integer getCloudTestStepId() {
+        return cloudTestStepId;
+    }
+
+    public void setCloudTestStepId(Integer cloudTestStepId) {
+        this.cloudTestStepId = cloudTestStepId;
     }
 }

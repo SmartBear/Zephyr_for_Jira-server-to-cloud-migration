@@ -8,8 +8,8 @@ import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
-import com.zephyr.migration.dto.ExecutionAttachmentDTO;
-import com.zephyr.migration.model.ZfjAttachmentBean;
+import com.zephyr.migration.dto.AttachmentDTO;
+import com.zephyr.migration.model.ZfjCloudAttachmentBean;
 import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -47,10 +47,10 @@ public class AttachmentServiceImpl implements AttachmentService {
     ConfigProperties configProperties;
 
     @Override
-    public List<ExecutionAttachmentDTO> getAttachmentResponse(Integer executionId, ApplicationConstants.ENTITY_TYPE entityType) {
+    public List<AttachmentDTO> getAttachmentResponse(Integer executionId, ApplicationConstants.ENTITY_TYPE entityType) {
         zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_ATTACHMENT, executionId, entityType.name()));
-        List<ExecutionAttachmentDTO> executionAttachmentList = new ArrayList<>(0);
-        TypeReference<List<ExecutionAttachmentDTO>> reference = new TypeReference<List<ExecutionAttachmentDTO>>() {};
+        List<AttachmentDTO> executionAttachmentList = new ArrayList<>(0);
+        TypeReference<List<AttachmentDTO>> reference = new TypeReference<List<AttachmentDTO>>() {};
         try {
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
@@ -66,8 +66,9 @@ public class AttachmentServiceImpl implements AttachmentService {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            log.error("Error while converting attachment json to object -> ", e);
+            log.error("Error while converting attachment json to object -> ", e.fillInStackTrace());
+        } catch (Exception ex) {
+            log.error("Error while fetching attachment json for execution id -> " + executionId, ex.fillInStackTrace());
         }
         return executionAttachmentList;
     }
@@ -103,8 +104,8 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    public ZfjAttachmentBean addAttachmentInCloud(File attachment, String cloudExecutionId, String projectId, String entityName, String entityId) throws Exception {
-        ZfjAttachmentBean zfjCloudAttachmentBean = null;
+    public ZfjCloudAttachmentBean addAttachmentInCloud(File attachment, String cloudExecutionId, String projectId, String entityName, String entityId) throws Exception {
+        ZfjCloudAttachmentBean zfjCloudAttachmentBean = null;
         try{
             int filesize = FileUtils.getFileSizeInMB(attachment);
             if (filesize > 10) {
@@ -144,7 +145,7 @@ public class AttachmentServiceImpl implements AttachmentService {
             HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity(map, headers);
             ResponseEntity<JsonNode> response = restTemplate.exchange(addAttachmentUrl, HttpMethod.POST, entity, JsonNode.class);
             //read the json node response & prepare attachment bean object.
-            zfjCloudAttachmentBean = new ZfjAttachmentBean();
+            zfjCloudAttachmentBean = new ZfjCloudAttachmentBean();
                 if (response != null) {
                     JsonNode responseBody = response.getBody();
                     if (response.getBody() != null) {
