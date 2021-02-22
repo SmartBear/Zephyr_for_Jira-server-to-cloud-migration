@@ -188,4 +188,34 @@ public class TestStepServiceImpl implements TestStepService {
         }
         return testStepList;
     }
+
+    @Override
+    public String updateStepResult(TestStepDTO testStepDTO) {
+        log.info("Serving --> {}", "updateStepResult()");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+        final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+        final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+        JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+        String updateStepResultUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_UPDATE_STEP_RESULT_URL;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, updateStepResultUrl);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testStepDTO), headers);
+        String response;
+        try {
+            response = restTemplate.postForObject(updateStepResultUrl, entity, String.class);
+            //read the json node response & prepare cycle bean object.
+            /*if (response != null && !response.isEmpty()) {
+            }*/
+        } catch (Exception e) {
+            log.error("Error while updating step result in cloud " + e.getMessage());
+            return null;
+        }
+        return response;
+    }
 }

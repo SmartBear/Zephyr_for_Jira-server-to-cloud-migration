@@ -18,4 +18,6 @@ public interface TestStepService {
 
     List<JiraCloudTestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId);
 
+    String updateStepResult(TestStepDTO testStepDTO);
+
 }
