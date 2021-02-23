@@ -1,7 +1,5 @@
 package com.zephyr.migration.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
@@ -10,6 +8,7 @@ import com.zephyr.migration.dto.JiraCloudTestStepDTO;
 import com.zephyr.migration.dto.TestStepDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
+import com.zephyr.migration.model.ZfjCloudStepResultUpdateBean;
 import com.zephyr.migration.service.TestStepService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -17,8 +16,6 @@ import com.zephyr.migration.utils.JsonUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.type.TypeReference;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -190,7 +187,7 @@ public class TestStepServiceImpl implements TestStepService {
     }
 
     @Override
-    public String updateStepResult(TestStepDTO testStepDTO) {
+    public void updateStepResult(ZfjCloudStepResultUpdateBean stepResultUpdateBean) {
         log.info("Serving --> {}", "updateStepResult()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -205,17 +202,12 @@ public class TestStepServiceImpl implements TestStepService {
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
 
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testStepDTO), headers);
-        String response;
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(stepResultUpdateBean), headers);
         try {
-            response = restTemplate.postForObject(updateStepResultUrl, entity, String.class);
-            //read the json node response & prepare cycle bean object.
-            /*if (response != null && !response.isEmpty()) {
-            }*/
+            String response = restTemplate.postForObject(updateStepResultUrl, entity, String.class);
+
         } catch (Exception e) {
             log.error("Error while updating step result in cloud " + e.getMessage());
-            return null;
         }
-        return response;
     }
 }
