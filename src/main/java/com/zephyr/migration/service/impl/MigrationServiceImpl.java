@@ -756,7 +756,7 @@ public class MigrationServiceImpl implements MigrationService {
         Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = new HashMap<>();
 
         List<ZfjCloudStepResultBean> cloudStepResultList = testStepService.getTestStepResultsFromZFJCloud(cloudExecutionId);
-        if(CollectionUtils.isEmpty(cloudStepResultList)) {
+        if(!CollectionUtils.isEmpty(cloudStepResultList)) {
             stepResultBeanMap = cloudStepResultList.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
         }
 
