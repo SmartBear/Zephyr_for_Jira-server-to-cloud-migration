@@ -1,11 +1,8 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
-import com.zephyr.migration.dto.ExecutionAttachmentDTO;
-import com.zephyr.migration.dto.TestStepResultDTO;
+import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
-import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.*;
@@ -253,5 +250,16 @@ public class TestController {
             return "Step results found";
         }
         return "Not Found";
+    }
+
+    @GetMapping("getVersions")
+    public String getVersions(@RequestParam("projectId") Integer projectId) {
+
+        testService.initializeHttpClientDetails();
+
+        List<JiraVersionDTO> versionList = testService.getVersionList(projectId);
+
+        return "Versions from zephyr fetched found "+versionList.size();
+
     }
 }

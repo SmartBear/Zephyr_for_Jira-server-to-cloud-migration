@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.ExecutionDTO;
 import com.zephyr.migration.dto.FolderDTO;
+import com.zephyr.migration.dto.JiraVersionDTO;
 import com.zephyr.migration.model.ZfjAttachmentBean;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
@@ -33,7 +34,7 @@ public class MigrationMappingFileGenerationUtil {
     /*
     * Generate Excel File For Migration Report
     * */
-    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) {
+    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, List<JiraVersionDTO> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) {
         try {
             List<List<String>> responseList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
             ExcelUtils excelUtils = new ExcelUtils();
@@ -59,15 +60,15 @@ public class MigrationMappingFileGenerationUtil {
      * @return
      * @throws Exception
      */
-    public List<List<String>> versionDataToPrintInExcel(String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
+    public List<List<String>> versionDataToPrintInExcel(String projectId, List<JiraVersionDTO> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
 
-        Map<Long, Version> serverVersionMap = new HashMap<>();
+        Map<Long, JiraVersionDTO> serverVersionMap = new HashMap<>();
         if(Objects.nonNull(versionsFromZephyrServer)) {
             versionsFromZephyrServer.forEach(version -> {
                 //serverVersionIdList.add(version.getId());
-                serverVersionMap.put(version.getId(), version);
+                serverVersionMap.put(Long.parseLong(version.getId()), version);
             });
         }
 

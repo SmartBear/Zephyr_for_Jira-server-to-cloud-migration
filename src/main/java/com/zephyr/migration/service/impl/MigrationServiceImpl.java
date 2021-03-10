@@ -76,6 +76,10 @@ public class MigrationServiceImpl implements MigrationService {
     @Qualifier(value = "zapiHttpClient")
     private HttpClient zapiHttpClient;
 
+    @Autowired
+    @Qualifier(value ="jiraHttpClient")
+    private HttpClient jiraHttpClient;
+
     private final ArrayBlockingQueue<String> progressQueue = new ArrayBlockingQueue<>(10000);
 
     @Override
@@ -119,6 +123,7 @@ public class MigrationServiceImpl implements MigrationService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+        jiraHttpClient.init();
     }
 
     ///////////////////////////////// Private method goes below ///////////////////////////////////////////////////////
@@ -128,7 +133,11 @@ public class MigrationServiceImpl implements MigrationService {
      */
     private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
 
-        Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
+        List<JiraVersionDTO> jiraVersionList = versionService.getVersionListFromServer(projectId+"");
+
+        log.info("Number of versions fetched from Zephyr for jira server:: "+jiraVersionList.size());
+
+        log.info("Versions data from Zephyr for jira server:: "+jiraVersionList);
 
         Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
         if(Files.exists(path)){
@@ -142,7 +151,7 @@ public class MigrationServiceImpl implements MigrationService {
                 versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
-            createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+            createUnmappedVersionInCloud(jiraVersionList, mappedServerToCloudVersionList, projectId, migrationFilePath);
             return true;
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
@@ -155,9 +164,9 @@ public class MigrationServiceImpl implements MigrationService {
                  * 3. Update the xls mapping file.
                  * 4. trigger the project meta data.
                  */
-                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), jiraVersionList,versionsFromZephyrCloud);
                 List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
-                createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+                createUnmappedVersionInCloud(jiraVersionList, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
                 return true;
             }else {
@@ -373,14 +382,14 @@ public class MigrationServiceImpl implements MigrationService {
      * @param migrationFilePath
      * @throws InterruptedException
      */
-    private void createUnmappedVersionInCloud(Iterable<Version> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId, String migrationFilePath) throws InterruptedException {
+    private void createUnmappedVersionInCloud(List<JiraVersionDTO> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId, String migrationFilePath) throws InterruptedException {
         if(Objects.nonNull(versionsFromZephyrServer)) {
             progressQueue.put("Got the versions from JIRA Server.");
             Map<String, Long> serverCloudVersionMapping = new HashMap<>();
             versionsFromZephyrServer.forEach(jiraServerVersion -> {
                 try {
                     progressQueue.put("Version Details : "+ jiraServerVersion.getName());
-                    String versionId = Objects.nonNull(jiraServerVersion.getId()) ? Long.toString(jiraServerVersion.getId()) : null;
+                    String versionId = Objects.nonNull(jiraServerVersion.getId()) ? jiraServerVersion.getId() : null;
                     if(!mappedServerToCloudVersionList.contains(versionId)) {
                         progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());
                         JsonNode versionCreatedInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);

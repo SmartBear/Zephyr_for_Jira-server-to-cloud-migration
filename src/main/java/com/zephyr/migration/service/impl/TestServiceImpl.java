@@ -15,6 +15,7 @@ import com.zephyr.migration.dto.ExecutionAttachmentDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.ZfjAttachmentBean;
+import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.service.CycleService;
@@ -64,6 +65,10 @@ public class TestServiceImpl implements TestService {
     @Qualifier(value = "zapiHttpClient")
     private HttpClient zapiHttpClient;
 
+    @Autowired
+    @Qualifier(value ="jiraHttpClient")
+    private HttpClient jiraHttpClient;
+
     @Value("${migrationFilePath}")
     private String migrationFilePath;
 
@@ -108,7 +113,7 @@ public class TestServiceImpl implements TestService {
         Map<String, Long> serverCloudVersionMapping = new HashMap<>();
 
         versionsFromZephyrServer.forEach(version -> {
-            JsonNode versionNode = versionService.createVersionInZephyrCloud(version,projectId);
+          /*  JsonNode versionNode = versionService.createVersionInZephyrCloud(version,projectId);
             try {
                 log.info("created version in cloud : " + new ObjectMapper().writeValueAsString(versionNode));
 
@@ -120,7 +125,7 @@ public class TestServiceImpl implements TestService {
 
             } catch (JsonProcessingException e) {
                 log.error("Error occurred while creating version in jira cloud.", e.fillInStackTrace());
-            }
+            }*/
         });
 
         migrationMappingFileGenerationUtil.updateVersionMappingFile(projectId, migrationFilePath, serverCloudVersionMapping);
@@ -156,6 +161,7 @@ public class TestServiceImpl implements TestService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+        jiraHttpClient.init();
     }
 
     @Override
@@ -229,6 +235,31 @@ public class TestServiceImpl implements TestService {
             }
         });
 
+    }
+
+    @Override
+    public List<JiraVersionDTO> getVersionList(Integer projectId) {
+        log.info("Serving --> {}", "getIssueDetailsFromServer()");
+        log.info("Getting version details from server with project id  : " + projectId);
+
+
+        /*
+        JiraServerClient jiraServerClient = new JiraServerClient("admin", "password", "http://15.207.184.119:8089/");
+         Iterable<Version> versions = jiraServerClient.getVersions(projectId * 1L);
+        versions.forEach(v ->{
+            JiraVersionDTO versionDTO = new JiraVersionDTO();
+            versionDTO.setName(v.getName());
+            versionDTO.setProjectId(projectId.toString());
+            versionDTO.setDescription(v.getDescription());
+            versionDTO.setId(v.getId().toString());
+
+            list.add(versionDTO);
+        });*/
+
+        List<JiraVersionDTO> list = versionService.getVersionListFromServer(projectId.toString());
+
+        log.info("Version details fetched "+list);
+        return list;
     }
 
     private JiraIssueDTO prepareRequestObject(Issue issue) {

@@ -40,6 +40,7 @@ public class ApplicationConstants {
     public static final String ASSIGNEE_TYPE = "assignee";
 
     /******* SERVER API endpoint URL *********/
+    public static final String JIRA_RESOURCE_VERSION = "project/%s/version";
     public static final String SERVER_GET_CYCLES_URL = "cycle?projectId=%s&versionId=%s";
     public static final String SERVER_GET_FOLDERS_URL = "cycle/%s/folders?projectId=%s&versionId=%s&offset=%s&limit=%s";
     public static final String ZAPI_RESOURCE_GET_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&offset=%s&limit=%s";
