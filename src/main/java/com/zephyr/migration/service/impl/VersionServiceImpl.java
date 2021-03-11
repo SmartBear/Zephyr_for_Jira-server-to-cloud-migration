@@ -33,6 +33,7 @@ import java.util.List;
 public class VersionServiceImpl implements VersionService {
 
     private static final Logger log = LoggerFactory.getLogger(VersionServiceImpl.class);
+    private static final String MIGRATED = "_Migrated";
 
     @Autowired
     ConfigProperties configProperties;
@@ -114,7 +115,7 @@ public class VersionServiceImpl implements VersionService {
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
         VersionDTO versionDTO = new VersionDTO();
         versionDTO.setDescription(jiraServerVersion.getDescription());
-        versionDTO.setName(jiraServerVersion.getName());
+        versionDTO.setName(jiraServerVersion.getName()+MIGRATED);
         versionDTO.setProjectId(projectId);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(versionDTO), headers);
         JsonNode response = null;
