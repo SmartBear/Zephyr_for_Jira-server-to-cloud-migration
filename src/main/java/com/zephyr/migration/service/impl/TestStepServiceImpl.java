@@ -1,12 +1,14 @@
 package com.zephyr.migration.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
+import com.zephyr.migration.dto.JiraCloudTestStepDTO;
+import com.zephyr.migration.dto.TestStepDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
+import com.zephyr.migration.model.ZfjCloudStepResultUpdateBean;
 import com.zephyr.migration.service.TestStepService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -26,10 +28,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class TestStepServiceImpl implements TestStepService {
@@ -113,5 +112,102 @@ public class TestStepServiceImpl implements TestStepService {
             log.error("Error while getting step results from cloud " + e.fillInStackTrace());
         }
         return responseList;
+    }
+
+    @Override
+    public List<TestStepDTO> fetchTestStepsFromZFJ(Integer issueId) {
+        List<TestStepDTO> testStepDTOS = new ArrayList<>();
+        try {
+            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_TEST_STEP,issueId));
+            ClientResponse response = zapiHttpClient.get();
+            String content = response.getEntity(String.class);
+
+            JsonParser parser = new JsonParser();
+            JsonElement element = parser.parse(content);
+            JsonObject object = element.getAsJsonObject();
+            JsonArray testStepsArray = object.getAsJsonArray("stepBeanCollection");
+
+            TypeReference<List<TestStepDTO>> reference = new TypeReference<List<TestStepDTO>>() {};
+            if (Objects.nonNull(testStepsArray)) {
+                testStepDTOS = JsonUtil.readValue(testStepsArray.toString(), reference);
+            }
+        } catch (IOException e) {
+            log.warn("Exception occurred while fetching test steps from server :", e.fillInStackTrace());
+        }
+        return testStepDTOS;
+    }
+
+    @Override
+    public List<JiraCloudTestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId) {
+        log.info("Serving --> {}", "createTestStepInJiraCloud()");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+        final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+        final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+        JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+        String createCloudBulkTestStepUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_CREATE_BULK_TEST_STEP_URL;
+
+        String createUrl = createCloudBulkTestStepUrl;
+        String queryParams = null;
+        createUrl = createUrl + "?";
+        try {
+            queryParams = URLEncoder.encode("projectId=" + projectId + "&issueId=" + issueId, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        createUrl = createUrl + queryParams;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
+        createCloudBulkTestStepUrl = createCloudBulkTestStepUrl + "?projectId=" + projectId + "&issueId=" + issueId;
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testSteps), headers);
+        String response;
+        List<JiraCloudTestStepDTO> testStepList = new ArrayList<>();
+        try {
+            log.info("request to cloud for create bulk test step for this issue id ::: "+ issueId.toString());
+            response = restTemplate.postForObject(createCloudBulkTestStepUrl, entity, String.class);
+            if (response != null && !response.isEmpty()) {
+                JsonParser parser = new JsonParser();
+                JsonElement element = parser.parse(response);
+                JsonObject object = element.getAsJsonObject();
+                JsonArray testStepsArray = object.getAsJsonArray("teststepList");
+
+                TypeReference<List<JiraCloudTestStepDTO>> reference = new TypeReference<List<JiraCloudTestStepDTO>>() {};
+                if (Objects.nonNull(testStepsArray)) {
+                    testStepList = JsonUtil.readValue(testStepsArray.toString(), reference);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error while creating test step in cloud for" + issueId.toString() + "this issue id " + e.fillInStackTrace());
+        }
+        return testStepList;
+    }
+
+    @Override
+    public void updateStepResult(ZfjCloudStepResultUpdateBean stepResultUpdateBean) {
+        log.info("Serving --> {}", "updateStepResult()");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+        final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+        final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+        JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+        String updateStepResultUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_UPDATE_STEP_RESULT_URL;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, updateStepResultUrl);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(stepResultUpdateBean), headers);
+        try {
+            String response = restTemplate.postForObject(updateStepResultUrl, entity, String.class);
+
+        } catch (Exception e) {
+            log.error("Error while updating step result in cloud " + e.getMessage());
+        }
     }
 }

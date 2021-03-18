@@ -2,10 +2,8 @@ package com.zephyr.migration.utils;
 
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.zephyr.migration.dto.CycleDTO;
-import com.zephyr.migration.dto.ExecutionDTO;
-import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.model.ZfjAttachmentBean;
+import com.zephyr.migration.dto.*;
+import com.zephyr.migration.model.ZfjCloudAttachmentBean;
 import com.zephyr.migration.model.ZfjCloudCycleBean;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.ZfjCloudFolderBean;
@@ -296,18 +294,57 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void updateExecutionAttachmentMappingFile(String projectId, String projectName, String migrationFilePath, List<ZfjAttachmentBean> zfjAttachmentBeanList) {
+    public void updateTestStepMappingFile(String projectId, String issueId, String migrationFilePath, List<TestStepDTO> testStepDTOList, List<JiraCloudTestStepDTO> createdCloudTestStepReList) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME+projectId+".xls";
+        try {
+            if(testStepDTOList.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
+                HSSFWorkbook wb=new HSSFWorkbook(inputStream);
+                HSSFSheet sheet=wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[testStepDTOList.size()][11];
+                int rowCount = sheet.getLastRowNum();
+
+                populateTestStepRowDataSet(rowDataSet, projectId, issueId, testStepDTOList, createdCloudTestStepReList);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for test step mapping file.", ex.fillInStackTrace());
+        }
+    }
+
+    public void updateExecutionAttachmentMappingFile(String projectId, String projectName, String migrationFilePath, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME+projectId+".xls";
         try {
-            if(zfjAttachmentBeanList != null && zfjAttachmentBeanList.size() > 0) {
+            if(zfjCloudAttachmentBeanList != null && zfjCloudAttachmentBeanList.size() > 0) {
                 FileInputStream inputStream = new FileInputStream(excelFilePath);
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_ATTACHMENT_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[zfjAttachmentBeanList.size()][11];
+                Object[][] rowDataSet = new Object[zfjCloudAttachmentBeanList.size()][11];
                 int rowCount = sheet.getLastRowNum();
 
-                populateExecutionAttachmentRowDataSet(rowDataSet, projectId, projectName, zfjAttachmentBeanList);
+                populateExecutionAttachmentRowDataSet(rowDataSet, projectId, projectName, zfjCloudAttachmentBeanList);
 
                 for (Object[] rowData : rowDataSet) {
                     Row row = sheet.createRow(++rowCount);
@@ -335,18 +372,18 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void updateStepResultAttachmentMappingFile(String projectId, String projectName, String migrationFilePath, List<ZfjAttachmentBean> zfjAttachmentBeanList) {
+    public void updateStepResultAttachmentMappingFile(String projectId, String projectName, String migrationFilePath, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
         String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME+projectId+".xls";
         try {
-            if(zfjAttachmentBeanList != null && zfjAttachmentBeanList.size() > 0) {
+            if(zfjCloudAttachmentBeanList != null && zfjCloudAttachmentBeanList.size() > 0) {
                 FileInputStream inputStream = new FileInputStream(excelFilePath);
                 HSSFWorkbook wb=new HSSFWorkbook(inputStream);
                 HSSFSheet sheet=wb.getSheet(ApplicationConstants.STEP_RESULT_ATTACHMENT_MAPPING_SHEET_NAME);
 
-                Object[][] rowDataSet = new Object[zfjAttachmentBeanList.size()][11];
+                Object[][] rowDataSet = new Object[zfjCloudAttachmentBeanList.size()][11];
                 int rowCount = sheet.getLastRowNum();
 
-                populateStepResultAttachmentRowDataSet(rowDataSet, projectId, projectName, zfjAttachmentBeanList);
+                populateStepResultAttachmentRowDataSet(rowDataSet, projectId, projectName, zfjCloudAttachmentBeanList);
 
                 for (Object[] rowData : rowDataSet) {
                     Row row = sheet.createRow(++rowCount);
@@ -461,42 +498,78 @@ public class MigrationMappingFileGenerationUtil {
         });
     }
 
-    private void populateExecutionAttachmentRowDataSet(Object[][] rowDataSet, String projectId, String projectName, List<ZfjAttachmentBean> zfjAttachmentBeanList) {
+    private void populateTestStepRowDataSet(Object[][] rowDataSet, String projectId, String issueId, List<TestStepDTO> testStepDTOList, List<JiraCloudTestStepDTO> createdCloudTestStepList) {
         AtomicInteger row = new AtomicInteger();
-        for (ZfjAttachmentBean zfjAttachmentBean : zfjAttachmentBeanList) {
+        for (int i = 0; i <= testStepDTOList.size()-1; i++) {
             int column = 0;
             rowDataSet[row.get()][column] = projectId + "";
             ++column;
-            rowDataSet[row.get()][column] = projectName + "";
+            rowDataSet[row.get()][column] = issueId + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getCloudExecutionId() + "";
+            rowDataSet[row.get()][column] = testStepDTOList.get(i).getId() + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getCloudExecutionAttachmentId() + "";
-            ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getServerExecutionId() + "";
-            ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getServerExecutionAttachmentId() + "";
+            rowDataSet[row.get()][column] = createdCloudTestStepList.get(i).getId() + "";
             row.incrementAndGet();
         }
     }
 
-    private void populateStepResultAttachmentRowDataSet(Object[][] rowDataSet, String projectId, String projectName, List<ZfjAttachmentBean> zfjAttachmentBeanList) {
+    private void populateExecutionAttachmentRowDataSet(Object[][] rowDataSet, String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
         AtomicInteger row = new AtomicInteger();
-        for (ZfjAttachmentBean zfjAttachmentBean : zfjAttachmentBeanList) {
+        for (ZfjCloudAttachmentBean zfjCloudAttachmentBean : zfjCloudAttachmentBeanList) {
             int column = 0;
             rowDataSet[row.get()][column] = projectId + "";
             ++column;
             rowDataSet[row.get()][column] = projectName + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getServerStepResultId() + "";
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getCloudExecutionId() + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getFileId() + "";
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getCloudExecutionAttachmentId() + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getCloudExecutionId() + "";
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getServerExecutionId() + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getCloudExecutionAttachmentId() + "";
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getServerExecutionAttachmentId() + "";
+            row.incrementAndGet();
+        }
+    }
+
+    private void populateStepResultAttachmentRowDataSet(Object[][] rowDataSet, String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
+        AtomicInteger row = new AtomicInteger();
+        for (ZfjCloudAttachmentBean zfjCloudAttachmentBean : zfjCloudAttachmentBeanList) {
+            int column = 0;
+            rowDataSet[row.get()][column] = projectId + "";
             ++column;
-            rowDataSet[row.get()][column] = zfjAttachmentBean.getFileName() + "";
+            rowDataSet[row.get()][column] = projectName + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getServerStepResultId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getFileId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getCloudExecutionId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getCloudExecutionAttachmentId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getFileName() + "";
+            row.incrementAndGet();
+        }
+    }
+
+    private void populateTestStepAttachmentRowDataSet(Object[][] rowDataSet, String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
+        AtomicInteger row = new AtomicInteger();
+        for (ZfjCloudAttachmentBean zfjCloudAttachmentBean : zfjCloudAttachmentBeanList) {
+            int column = 0;
+            rowDataSet[row.get()][column] = projectId + "";
+            ++column;
+            rowDataSet[row.get()][column] = projectName + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getServerTestStepId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getFileId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getCloudTestStepId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getCloudExecutionAttachmentId() + "";
+            ++column;
+            rowDataSet[row.get()][column] = zfjCloudAttachmentBean.getFileName() + "";
             row.incrementAndGet();
         }
     }
@@ -511,9 +584,9 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void generateExecutionAttachmentMappingReportExcel(String projectId, String projectName, String migrationFilePath, List<ZfjAttachmentBean> zfjAttachmentBeanList) {
+    public void generateExecutionAttachmentMappingReportExcel(String projectId, String projectName, String migrationFilePath, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
         try {
-            List<List<String>> responseList = executionAttachmentDataToPrintInExcel(projectId, projectName, zfjAttachmentBeanList);
+            List<List<String>> responseList = executionAttachmentDataToPrintInExcel(projectId, projectName, zfjCloudAttachmentBeanList);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeExecutionAttachmentDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId, responseList);
         }catch (Exception e){
@@ -521,11 +594,60 @@ public class MigrationMappingFileGenerationUtil {
         }
     }
 
-    public void generateStepResultAttachmentMappingReportExcel(String projectId, String projectName, String migrationFilePath, List<ZfjAttachmentBean> zfjAttachmentBeanList) {
+    public void generateStepResultAttachmentMappingReportExcel(String projectId, String projectName, String migrationFilePath, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
         try {
-            List<List<String>> responseList = stepResultAttachmentDataToPrintInExcel(projectId, projectName, zfjAttachmentBeanList);
+            List<List<String>> responseList = stepResultAttachmentDataToPrintInExcel(projectId, projectName, zfjCloudAttachmentBeanList);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeStepResultAttachmentDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    public void updateTestStepAttachmentMappingFile(String projectId, String projectName, String migrationFilePath, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME+projectId+".xls";
+        try {
+            if(zfjCloudAttachmentBeanList != null && zfjCloudAttachmentBeanList.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
+                HSSFWorkbook wb=new HSSFWorkbook(inputStream);
+                HSSFSheet sheet=wb.getSheet(ApplicationConstants.TEST_STEP_ATTACHMENT_MAPPING_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[zfjCloudAttachmentBeanList.size()][9];
+                int rowCount = sheet.getLastRowNum();
+
+                populateTestStepAttachmentRowDataSet(rowDataSet, projectId, projectName, zfjCloudAttachmentBeanList);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for execution attachment mapping file.", ex.fillInStackTrace());
+        }
+    }
+
+    public void generateTestStepAttachmentMappingReportExcel(String projectId, String projectName, String migrationFilePath, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
+        try {
+            List<List<String>> responseList = testStepAttachmentDataToPrintInExcel(projectId, projectName, zfjCloudAttachmentBeanList);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeTestStepAttachmentDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME + projectId, responseList);
         }catch (Exception e){
             log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
@@ -536,6 +658,16 @@ public class MigrationMappingFileGenerationUtil {
             List<List<String>> responseList = executionDataToPrintInExcel(projectId, projectName, executionMap);
             ExcelUtils excelUtils = new ExcelUtils();
             excelUtils.writeExecutionDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    public void generateTestStepMappingReportExcel(String projectId, String issueId, String migrationFilePath, List<TestStepDTO> serverTestStepList, List<JiraCloudTestStepDTO> cloudTestStepMapList) {
+        try {
+            List<List<String>> responseList = testStepDataToPrintInExcel(projectId, issueId, serverTestStepList, cloudTestStepMapList);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeTestStepDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId, responseList);
         }catch (Exception e){
             log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
         }
@@ -594,36 +726,69 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
-    public List<List<String>> executionAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjAttachmentBean> zfjAttachmentBeanList) throws Exception {
+    public List<List<String>> testStepDataToPrintInExcel(String projectId, String issueId, List<TestStepDTO> serverTestStepList, List<JiraCloudTestStepDTO> cloudTestStepMapList) throws Exception {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateTestStepHeader());
+        List<String> testStepMappingList;
+        for (int i = 0; i <= serverTestStepList.size()-1; i++) {
+            testStepMappingList = new ArrayList<>();
+            testStepMappingList.add(projectId);
+            testStepMappingList.add(issueId);
+            testStepMappingList.add(serverTestStepList.get(i).getId().toString());
+            testStepMappingList.add(cloudTestStepMapList.get(i).getId());
+            recordToAdd.add(testStepMappingList);
+        }
+        return recordToAdd;
+    }
+
+    public List<List<String>> executionAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateExecutionAttachmentHeader());
         List<String> executionAttachmentMappingList;
-        for (ZfjAttachmentBean zfjAttachmentBean : zfjAttachmentBeanList) {
+        for (ZfjCloudAttachmentBean zfjCloudAttachmentBean : zfjCloudAttachmentBeanList) {
             executionAttachmentMappingList = new ArrayList<>();
             executionAttachmentMappingList.add(projectId);
             executionAttachmentMappingList.add(projectName);
-            executionAttachmentMappingList.add(zfjAttachmentBean.getCloudExecutionId());
-            executionAttachmentMappingList.add(zfjAttachmentBean.getCloudExecutionAttachmentId());
-            executionAttachmentMappingList.add(zfjAttachmentBean.getServerExecutionId());
-            executionAttachmentMappingList.add(zfjAttachmentBean.getServerExecutionAttachmentId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getCloudExecutionId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getCloudExecutionAttachmentId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getServerExecutionId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getServerExecutionAttachmentId());
             recordToAdd.add(executionAttachmentMappingList);
         }
         return recordToAdd;
     }
 
-    public List<List<String>> stepResultAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjAttachmentBean> zfjAttachmentBeanList) throws Exception {
+    public List<List<String>> stepResultAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateStepResultAttachmentHeader());
         List<String> executionAttachmentMappingList;
-        for (ZfjAttachmentBean zfjAttachmentBean : zfjAttachmentBeanList) {
+        for (ZfjCloudAttachmentBean zfjCloudAttachmentBean : zfjCloudAttachmentBeanList) {
             executionAttachmentMappingList = new ArrayList<>();
             executionAttachmentMappingList.add(projectId);
             executionAttachmentMappingList.add(projectName);
-            executionAttachmentMappingList.add(zfjAttachmentBean.getServerStepResultId()+"");
-            executionAttachmentMappingList.add(zfjAttachmentBean.getFileId());
-            executionAttachmentMappingList.add(zfjAttachmentBean.getCloudExecutionId());
-            executionAttachmentMappingList.add(zfjAttachmentBean.getCloudExecutionAttachmentId());
-            executionAttachmentMappingList.add(zfjAttachmentBean.getFileName());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getServerStepResultId()+"");
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getFileId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getCloudExecutionId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getCloudExecutionAttachmentId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getFileName());
+            recordToAdd.add(executionAttachmentMappingList);
+        }
+        return recordToAdd;
+    }
+
+    private List<List<String>> testStepAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateTestStepAttachmentHeader());
+        List<String> executionAttachmentMappingList;
+        for (ZfjCloudAttachmentBean zfjCloudAttachmentBean : zfjCloudAttachmentBeanList) {
+            executionAttachmentMappingList = new ArrayList<>();
+            executionAttachmentMappingList.add(projectId);
+            executionAttachmentMappingList.add(projectName);
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getServerTestStepId()+"");
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getFileId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getCloudTestStepId()+"");
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getCloudExecutionAttachmentId());
+            executionAttachmentMappingList.add(zfjCloudAttachmentBean.getFileName());
             recordToAdd.add(executionAttachmentMappingList);
         }
         return recordToAdd;
@@ -677,6 +842,15 @@ public class MigrationMappingFileGenerationUtil {
         return excelHeader;
     }
 
+    public static List<String> generateTestStepHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project Id");
+        excelHeader.add("Issue-Id");
+        excelHeader.add("server-teststep-id");
+        excelHeader.add("cloud-teststep-id");
+        return excelHeader;
+    }
+
     public static List<String> generateExecutionAttachmentHeader() {
         List<String> excelHeader = new ArrayList<String>();
         excelHeader.add("Project Id");
@@ -712,4 +886,18 @@ public class MigrationMappingFileGenerationUtil {
         excelHeader.add("Folder-Name");
         return excelHeader;
     }
+
+    private List<String> generateTestStepAttachmentHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project Id");
+        excelHeader.add("Project Name");
+        excelHeader.add("server-test-step-id");
+        excelHeader.add("server-attachment-id");
+        excelHeader.add("cloud-test-step-id");
+        excelHeader.add("cloud-attachment-id");
+        excelHeader.add("file name");
+        return excelHeader;
+    }
+
+
 }

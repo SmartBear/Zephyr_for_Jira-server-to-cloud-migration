@@ -140,6 +140,42 @@ public class ExcelUtils {
 
     }
 
+    public void writeTestStepDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
+        int rowNum = 0;
+        HSSFSheet secondSheet;
+        HSSFWorkbook workbook;
+        FileOutputStream fos;
+        workbook = new HSSFWorkbook();
+        HSSFCellStyle hsfStyle = workbook.createCellStyle();
+        hsfStyle.setBorderBottom(BorderStyle.THICK);
+        hsfStyle.setFillBackgroundColor((short)245);
+        secondSheet = workbook.createSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+        Row headerRow = secondSheet.createRow(rowNum);
+        headerRow.setHeightInPoints(40);
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        try {
+
+            for (List<String> record : recordList) {
+                Row row = secondSheet.createRow(rowNum);
+                for (int k = 0; k < record.size(); k++) {
+                    Cell cell = row.createCell(k);
+                    cell.setCellValue(record.get(k));
+                }
+                rowNum++;
+            }
+
+            workbook.write(fos);
+
+        } catch (Exception e) {
+            log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+        } finally {
+            //fis.close();
+            fos.close();
+            workbook.close();
+        }
+
+    }
+
     public void writeExecutionAttachmentDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
         int rowNum = 0;
         HSSFSheet secondSheet;
@@ -248,4 +284,35 @@ public class ExcelUtils {
 
     }
 
+    public void writeTestStepAttachmentDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> dataList) throws IOException {
+        int rowNum = 0;
+        HSSFSheet secondSheet;
+        HSSFWorkbook workbook;
+        FileOutputStream fos;
+        workbook = new HSSFWorkbook();
+        HSSFCellStyle hsfStyle = workbook.createCellStyle();
+        hsfStyle.setBorderBottom(BorderStyle.THICK);
+        hsfStyle.setFillBackgroundColor((short)245);
+        secondSheet = workbook.createSheet(ApplicationConstants.TEST_STEP_ATTACHMENT_MAPPING_SHEET_NAME);
+        Row headerRow = secondSheet.createRow(rowNum);
+        headerRow.setHeightInPoints(40);
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        try {
+            for (List<String> record : dataList) {
+                Row row = secondSheet.createRow(rowNum);
+                for (int k = 0; k < record.size(); k++) {
+                    Cell cell = row.createCell(k);
+                    cell.setCellValue(record.get(k));
+                }
+                rowNum++;
+            }
+            workbook.write(fos);
+        } catch (Exception e) {
+            log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+        } finally {
+            //fis.close();
+            fos.close();
+            workbook.close();
+        }
+    }
 }

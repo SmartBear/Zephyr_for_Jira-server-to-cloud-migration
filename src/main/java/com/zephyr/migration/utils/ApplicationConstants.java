@@ -18,6 +18,8 @@ public class ApplicationConstants {
     public static final String CLOUD_CREATE_EXECUTION_URL = "/public/rest/api/1.0/migration/create/execution";
     public static final String ADD_EXECUTION_ATTACHMENT_URL = "/public/rest/api/1.0/migration/add/attachment";
     public static final String CLOUD_GET_TEST_STEP_RESULTS_URL = "/public/rest/api/1.0/migration/getStepResults";
+    public static final String CLOUD_CREATE_BULK_TEST_STEP_URL = "/public/rest/api/1.0/migration/create/bulk/teststep";
+    public static final String CLOUD_UPDATE_STEP_RESULT_URL = "/public/rest/api/1.0/migration/update/stepResult";
 
     /******* General constants *********/
     public static final String XLS = ".xls";
@@ -30,13 +32,17 @@ public class ApplicationConstants {
     public static final String MAPPING_CYCLE_FILE_NAME ="migration-cycle-mapping-project-";
     public static final String MAPPING_FOLDER_FILE_NAME ="migration-folder-mapping-project-";
     public static final String MAPPING_EXECUTION_FILE_NAME ="migration-execution-mapping-project-";
+    public static final String MAPPING_TEST_STEP_FILE_NAME ="migration-test-step-mapping-project-";
     public static final String MAPPING_EXECUTION_ATTACHMENT_FILE_NAME ="migration-execution-attachment-mapping-project-";
     public static final String MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME ="migration-step-result-attachment-mapping-project-";
+    public static final String MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME = "migration-test-step-attachment-mapping-project-";
     public static final String CYCLE_MAPPING_SHEET_NAME = "cycle-mapping";
     public static final String FOLDER_MAPPING_SHEET_NAME = "folder-mapping";
     public static final String EXECUTION_MAPPING_SHEET_NAME = "execution-mapping";
+    public static final String TEST_STEP_MAPPING_SHEET_NAME = "test-step-mapping";
     public static final String EXECUTION_ATTACHMENT_MAPPING_SHEET_NAME = "execution-attachment-mapping";
     public static final String STEP_RESULT_ATTACHMENT_MAPPING_SHEET_NAME = "step-result-attachment-mapping";
+    public static final String TEST_STEP_ATTACHMENT_MAPPING_SHEET_NAME = "test-step-attachment-mapping";
     public static final String ASSIGNEE_TYPE = "assignee";
 
     /******* SERVER API endpoint URL *********/
@@ -47,6 +53,7 @@ public class ApplicationConstants {
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT = "attachment/attachmentsByEntity?entityId=%s&entityType=%s";
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION = "attachment/%s/file";
     public static final String ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID = "stepResult?executionId=%s&expand=executionStatus";
+    public static final String ZAPI_RESOURCE_GET_TEST_STEP = "teststep/%s";
 
     public static final String CYCLE_LEVEL_EXECUTION = "Cycle Level Execution";
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";

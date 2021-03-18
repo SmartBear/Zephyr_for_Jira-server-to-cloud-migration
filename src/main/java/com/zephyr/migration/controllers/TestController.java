@@ -1,11 +1,8 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
-import com.zephyr.migration.dto.ExecutionAttachmentDTO;
-import com.zephyr.migration.dto.TestStepResultDTO;
+import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
-import com.zephyr.migration.dto.FolderDTO;
-import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.*;
@@ -18,9 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -197,9 +191,9 @@ public class TestController {
             AtomicReference<File> file = new AtomicReference<>();
             try {
 
-                List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(executionId, ApplicationConstants.ENTITY_TYPE.EXECUTION);
+                List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(executionId, ApplicationConstants.ENTITY_TYPE.EXECUTION);
                 if(attachmentList != null && attachmentList.size() > 0) {
-                    List<ExecutionAttachmentDTO> executionAttachments = attachmentList.stream()
+                    List<AttachmentDTO> executionAttachments = attachmentList.stream()
                             .filter(Objects::nonNull).collect(Collectors.toList());
                     List<File> filesToDelete = new ArrayList<>();
                     executionAttachments.forEach(attachment -> {
@@ -253,5 +247,20 @@ public class TestController {
             return "Step results found";
         }
         return "Not Found";
+    }
+
+    @GetMapping("getTestSteps")
+    public String getTestSteps(@RequestParam("issueId") Integer issueId) {
+
+        testService.initializeHttpClientDetails();
+
+
+            List<TestStepDTO> testStepDTOS = testStepService.fetchTestStepsFromZFJ(issueId);
+            log.info("step result beans "+testStepDTOS.toString());
+
+
+
+            return "Step results found "+ testStepDTOS.toString();
+
     }
 }

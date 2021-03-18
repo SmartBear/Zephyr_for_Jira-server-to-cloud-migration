@@ -1,6 +1,7 @@
 package com.zephyr.migration.service.impl;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.atlassian.jira.rest.client.api.domain.Project;
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,10 +12,10 @@ import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.CycleDTO;
-import com.zephyr.migration.dto.ExecutionAttachmentDTO;
+import com.zephyr.migration.dto.AttachmentDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
-import com.zephyr.migration.model.ZfjAttachmentBean;
+import com.zephyr.migration.model.ZfjCloudAttachmentBean;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.AttachmentService;
 import com.zephyr.migration.service.CycleService;
@@ -22,6 +23,7 @@ import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.service.VersionService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -189,9 +195,9 @@ public class TestServiceImpl implements TestService {
                 .filter(Objects::nonNull).collect(Collectors.toList());
         testStepResultNewList.forEach(testStepResult -> {
             try {
-                List<ExecutionAttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(testStepResult.getId(), ApplicationConstants.ENTITY_TYPE.TESTSTEPRESULT);
+                List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(testStepResult.getId(), ApplicationConstants.ENTITY_TYPE.TESTSTEPRESULT);
                 if(attachmentList != null && attachmentList.size() > 0) {
-                    List<ExecutionAttachmentDTO> stepResultsAttachmentList = attachmentList.stream()
+                    List<AttachmentDTO> stepResultsAttachmentList = attachmentList.stream()
                             .filter(Objects::nonNull).collect(Collectors.toList());
                     List<File> filesToDelete = new ArrayList<>();
                     stepResultsAttachmentList.forEach(stepResultAttachment -> {
@@ -210,8 +216,8 @@ public class TestServiceImpl implements TestService {
                         for (File file : filesToDelete) {
                             if (file.exists()) {
                                 try {
-                                    ZfjAttachmentBean zfjAttachmentBean = attachmentService.addAttachmentInCloud(file, zfjCloudStepResultBean.getExecutionId(), "10000", ApplicationConstants.STEP_RESULT_ENTITY, zfjCloudStepResultBean.getId());
-                                   if(null != zfjAttachmentBean) {
+                                    ZfjCloudAttachmentBean zfjCloudAttachmentBean = attachmentService.addAttachmentInCloud(file, zfjCloudStepResultBean.getExecutionId(), "10000", ApplicationConstants.STEP_RESULT_ENTITY, zfjCloudStepResultBean.getId());
+                                   if(null != zfjCloudAttachmentBean) {
                                        log.info("file uploaded successfully.");
                                    }
                                 } catch (Exception e) {
