@@ -328,8 +328,7 @@ public class MigrationServiceImpl implements MigrationService {
                         progressQueue.put("Creating the mapping file for folder migration.");
                         migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
                         return true;
-                    }else { return Files.exists(folderMappedFile); }
-
+                    }
             }
         }
         return true;
@@ -506,27 +505,51 @@ public class MigrationServiceImpl implements MigrationService {
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
 
             Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
+            Set<String> uniqueVersionIds = new HashSet<>();
 
             //create cycle level executions
             mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
                 log.info("Fetching executions for cycle with id:: "+serverCycleId + " for version ::"+searchRequest.getVersionId());
-                List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 3000);
+                uniqueVersionIds.add(searchRequest.getVersionId());
 
-                if (Files.exists(executionMappedFile)) {
-                    if (executionList != null && !executionList.isEmpty()) {
-                        List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
-                                searchRequest.getCloudCycleId(), null, executionList, ApplicationConstants.CYCLE_LEVEL_EXECUTION);
-                        log.info("Final list to be processed for serverCycleId : "+ serverCycleId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
-                        if(finalExecutionsListToBeProcessed.size() >0) {
-                            finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+                if(!serverCycleId.equals(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                    List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 3000);
+
+                    if (Files.exists(executionMappedFile)) {
+                        if (executionList != null && !executionList.isEmpty()) {
+                            List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
+                                    searchRequest.getCloudCycleId(), null, executionList, ApplicationConstants.CYCLE_LEVEL_EXECUTION);
+                            log.info("Final list to be processed for serverCycleId : "+ serverCycleId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
+                            if(finalExecutionsListToBeProcessed.size() >0) {
+                                finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+
+                                    if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
+                                        List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                                        createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
+                                        // add the created steps in map
+                                        fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
+
+                                    }
+                                    ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                                    if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                        if(zfjCloudExecutionBean.getId() != null) {
+                                            finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }else {
+                        if(null != executionList && executionList.size() >0) {
+                            executionList.forEach(serverExecution -> {
 
                                 if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                     List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
                                     createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
                                     // add the created steps in map
                                     fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
-
                                 }
+
                                 ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
                                 if(Objects.nonNull(zfjCloudExecutionBean)) {
                                     if(zfjCloudExecutionBean.getId() != null) {
@@ -534,29 +557,19 @@ public class MigrationServiceImpl implements MigrationService {
                                     }
                                 }
                             });
-                    }
-                    }
-                }else {
-                    if(null != executionList && executionList.size() >0) {
-                        executionList.forEach(serverExecution -> {
-
-                            if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
-                                List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
-                                // add the created steps in map
-                                fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
-                            }
-
-                            ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
-                            if(Objects.nonNull(zfjCloudExecutionBean)) {
-                                if(zfjCloudExecutionBean.getId() != null) {
-                                    finalResponse.put(serverExecution,zfjCloudExecutionBean);
-                                }
-                            }
-                        });
+                        }
                     }
                 }
             });
+
+            if(!uniqueVersionIds.isEmpty()) {
+                //create execution for Adhoc cycle per version.
+                uniqueVersionIds.forEach(versionId -> {
+                    List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(projectId.toString(), versionId, ApplicationConstants.AD_HOC_CYCLE_ID, 0, 3000);
+                    finalResponse.putAll(createExecutionsForAdhocCycle(executionList,projectId,versionId,fetchedTestStepsFromServer,executionMappedFile));
+                });
+
+            }
 
             if (!Files.exists(folderMappedFile)) return true;
 
@@ -1003,5 +1016,61 @@ public class MigrationServiceImpl implements MigrationService {
         zfjCloudStepResultUpdateBean.setComment(testStepResult.getComment());
 
         return zfjCloudStepResultUpdateBean;
+    }
+
+    private Map<ExecutionDTO, ZfjCloudExecutionBean> createExecutionsForAdhocCycle(List<ExecutionDTO> executionList, Long projectId, String versionId, Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer, Path executionMappedFile) {
+        Map<ExecutionDTO, ZfjCloudExecutionBean> createdExecutionResponse = new HashMap<>();
+        final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.setProjectId(projectId+"");
+        searchRequest.setCloudVersionId(versionId);
+        searchRequest.setCloudCycleId(ApplicationConstants.AD_HOC_CYCLE_ID);
+
+        if (Files.exists(executionMappedFile)) {
+            if (executionList != null && !executionList.isEmpty()) {
+                List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
+                        ApplicationConstants.AD_HOC_CYCLE_ID, null, executionList, ApplicationConstants.CYCLE_LEVEL_EXECUTION);
+                log.info("Final list to be processed for serverCycleId : "+ ApplicationConstants.AD_HOC_CYCLE_ID + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
+                if(finalExecutionsListToBeProcessed.size() >0) {
+                    finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+
+                        if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
+                            List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                            createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
+                            // add the created steps in map
+                            fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
+
+                        }
+                        ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                        if(Objects.nonNull(zfjCloudExecutionBean)) {
+                            if(zfjCloudExecutionBean.getId() != null) {
+                                createdExecutionResponse.put(serverExecution,zfjCloudExecutionBean);
+                            }
+                        }
+                    });
+                }
+            }
+        } else {
+            if(null != executionList && executionList.size() >0) {
+                executionList.forEach(serverExecution -> {
+
+                    if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
+                        List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                        createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
+                        // add the created steps in map
+                        fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
+                    }
+
+                    ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                    if(Objects.nonNull(zfjCloudExecutionBean)) {
+                        if(zfjCloudExecutionBean.getId() != null) {
+                            createdExecutionResponse.put(serverExecution,zfjCloudExecutionBean);
+                        }
+                    }
+                });
+            }
+        }
+        return createdExecutionResponse;
     }
 }
