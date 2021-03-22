@@ -332,7 +332,7 @@ public class MigrationServiceImpl implements MigrationService {
 
             }
         }
-        return false;
+        return true;
     }
 
 
