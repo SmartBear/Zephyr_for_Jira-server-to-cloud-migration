@@ -59,12 +59,13 @@ public class CycleServiceImpl implements CycleService {
         try {
             response = restTemplate.postForObject(createCloudCycleUrl, entity, JsonNode.class);
             //read the json node response & prepare cycle bean object.
-            if (response != null && !response.isEmpty()) {
+            if (null != response) {
                 zfjCloudCycleBean.setName(response.findValue("name").asText());
                 zfjCloudCycleBean.setId(response.findValue("id").asText());
                 zfjCloudCycleBean.setProjectId(response.findValue("projectId").asLong());
                 zfjCloudCycleBean.setVersionId(response.findValue("versionId").asLong());
             }
+            log.info("Create cycle response from cloud endpoint: "+response);
         } catch (Exception e) {
             log.error("Error while creating cycle in cloud " + e.getMessage());
             return null;

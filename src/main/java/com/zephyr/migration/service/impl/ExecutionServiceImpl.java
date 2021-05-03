@@ -115,6 +115,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             if (response != null && !response.isEmpty()) {
                 zfjCloudExecutionBean.setId(response.findValue("id").asText());
             }
+            log.info("Create execution response from cloud endpoint: "+response);
         } catch (Exception e) {
             log.error("Error while creating execution in cloud " + e.fillInStackTrace());
         }

@@ -133,7 +133,7 @@ public class MigrationServiceImpl implements MigrationService {
         Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
         if(Files.exists(path)){
             //Logic to read the mapping file & validate whether corresponding cloud & server section exists.
-            log.debug("Version Mapping file exists for the given project.");
+            log.info("Version Mapping file exists for the given project.");
             progressQueue.put("Version Mapping file exists for the given project.");
             List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
             if (!mappedServerToCloudVersionList.contains(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID)) {
@@ -381,17 +381,19 @@ public class MigrationServiceImpl implements MigrationService {
                     progressQueue.put("Version Details : "+ jiraServerVersion.getName());
                     String versionId = Objects.nonNull(jiraServerVersion.getId()) ? Long.toString(jiraServerVersion.getId()) : null;
                     if(!mappedServerToCloudVersionList.contains(versionId)) {
+                        log.info("Version Details doesn't exist in cloud, creating the version in cloud instance: \"+ jiraServerVersion.getName()");
                         progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());
                         JsonNode versionCreatedInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);
                         if(Objects.nonNull(versionCreatedInCloud) && versionCreatedInCloud.has("id")) {
 
                             Long cloudVersionId = versionCreatedInCloud.findValue("id").asLong();
+                            log.info("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
                             progressQueue.put("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
                             serverCloudVersionMapping.put(versionId, cloudVersionId);
                         }
-
                     }
                 } catch (InterruptedException | JsonProcessingException e) {
+                    log.info("Version creation failed in cloud instance: "+e.fillInStackTrace());
                     log.error("", e.fillInStackTrace());
                 }
             });
@@ -503,7 +505,7 @@ public class MigrationServiceImpl implements MigrationService {
 
             Map<String, SearchRequest> mappedServerToCloudCycleMap = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
-
+            log.info("cloudAccountId ::: ["+cloudAccountId+"]");
             Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
             Set<String> uniqueVersionIds = new HashSet<>();
 
@@ -571,33 +573,52 @@ public class MigrationServiceImpl implements MigrationService {
 
             }
 
-            if (!Files.exists(folderMappedFile)) return true;
+            if (Files.exists(folderMappedFile)) {
+                mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
+                    Map<String,String> mappedServerCloudFolderIds = FileUtils.getServerCloudFolderMapping(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
+                            searchRequest.getCloudCycleId(), serverCycleId);
 
-            mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
-                Map<String,String> mappedServerCloudFolderIds = FileUtils.getServerCloudFolderMapping(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
-                        searchRequest.getCloudCycleId(), serverCycleId);
+                    if (!((mappedServerCloudFolderIds != null) && (mappedServerCloudFolderIds.size() > 0))) return;
 
-                if (!((mappedServerCloudFolderIds != null) && (mappedServerCloudFolderIds.size() > 0))) return;
+                    // submit this list to executor service
+                    mappedServerCloudFolderIds.forEach((serverFolderId, cloudFolderId) -> {
+                        log.info("Fetching executions from server with folder id:: ["+ serverFolderId + "]");
+                        searchRequest.setCloudFolderId(cloudFolderId);
+                        List<ExecutionDTO> folderExecutionList = executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
+                                serverCycleId, serverFolderId, 0, 3000);
+                        // futures.add(scheduledExecutorService.schedule(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService),5,TimeUnit.SECONDS));
 
-                // submit this list to executor service
-                mappedServerCloudFolderIds.forEach((serverFolderId, cloudFolderId) -> {
-                    log.info("Fetching executions from server with folder id:: ["+ serverFolderId + "]");
-                    searchRequest.setCloudFolderId(cloudFolderId);
-                    List<ExecutionDTO> folderExecutionList = executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
-                            serverCycleId, serverFolderId, 0, 3000);
-                  // futures.add(scheduledExecutorService.schedule(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService),5,TimeUnit.SECONDS));
+                        if (Files.exists(executionMappedFile)) {
+                            if (folderExecutionList != null && !folderExecutionList.isEmpty()) {
+                                List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
+                                        null, searchRequest.getCloudFolderId(), folderExecutionList, ApplicationConstants.FOLDER_LEVEL_EXECUTION);
+                                log.info("Final list to be processed for serverFolderId : "+ serverFolderId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
+                                if(finalExecutionsListToBeProcessed.size() >0) {
+                                    finalExecutionsListToBeProcessed.forEach(serverExecution -> {
 
-                    if (Files.exists(executionMappedFile)) {
-                        if (folderExecutionList != null && !folderExecutionList.isEmpty()) {
-                            List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
-                                    null, searchRequest.getCloudFolderId(), folderExecutionList, ApplicationConstants.FOLDER_LEVEL_EXECUTION);
-                            log.info("Final list to be processed for serverFolderId : "+ serverFolderId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
-                            if(finalExecutionsListToBeProcessed.size() >0) {
-                                finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+                                        if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
+                                            List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                                            // create steps in zephyr cloud.
+                                            createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
+                                            // add the created steps in map
+                                            fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
+                                        }
+
+                                        ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                                        if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                            if(zfjCloudExecutionBean.getId() != null) {
+                                                finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        } else {
+                            if(null != folderExecutionList && folderExecutionList.size() >0) {
+                                folderExecutionList.forEach(serverExecution -> {
 
                                     if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                         List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                        // create steps in zephyr cloud.
                                         createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
                                         // add the created steps in map
                                         fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
@@ -612,28 +633,9 @@ public class MigrationServiceImpl implements MigrationService {
                                 });
                             }
                         }
-                    } else {
-                        if(null != folderExecutionList && folderExecutionList.size() >0) {
-                            folderExecutionList.forEach(serverExecution -> {
-
-                                if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
-                                    List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                    createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
-                                    // add the created steps in map
-                                    fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
-                                }
-
-                                ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
-                                if(Objects.nonNull(zfjCloudExecutionBean)) {
-                                    if(zfjCloudExecutionBean.getId() != null) {
-                                        finalResponse.put(serverExecution,zfjCloudExecutionBean);
-                                    }
-                                }
-                            });
-                        }
-                    }
+                    });
                 });
-            });
+            }
 
             if (Files.exists(executionMappedFile)) {
                 progressQueue.put("Updating the mapping file for execution migration for project : "+projectId);
@@ -650,91 +652,98 @@ public class MigrationServiceImpl implements MigrationService {
 
     private void beginAttachmentsEntityMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
         try {
-            Map<String, String> mappedServerToCloudExecutionIdMap = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
-            if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
-                Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
-                String projectName = null;
-                if (project != null) {
-                    projectName = project.getName();
-                }
-                List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList = new ArrayList<>();
-                Path executionAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+            Path executionMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
+
+            if (Files.exists(executionMappedFile)) {
+                Map<String, String> mappedServerToCloudExecutionIdMap = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS);
                 if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
-                    mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
-                        //Read the execution mapping file and start processing it.
-                        List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
-                        List<AttachmentDTO> finalAttachmentList = new ArrayList<>();
-                        if (attachmentList != null && attachmentList.size() > 0) {
-                            if (Files.exists(executionAttachmentMappedFile)) {
-                                try {
-                                    List<String> mappedServerToCloudExecutionAttachmentMap = FileUtils.readExecutionAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
-                                    if (!mappedServerToCloudExecutionAttachmentMap.isEmpty()) {
-                                        for (AttachmentDTO executionAttachment : attachmentList) {
-                                            if (!mappedServerToCloudExecutionAttachmentMap.contains(executionAttachment.getFileId())) {
-                                                finalAttachmentList.add(executionAttachment);
+                    Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
+                    String projectName = null;
+                    if (project != null) {
+                        projectName = project.getName();
+                    }
+                    List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList = new ArrayList<>();
+                    Path executionAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                    if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                        mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+                            //Read the execution mapping file and start processing it.
+                            List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
+                            List<AttachmentDTO> finalAttachmentList = new ArrayList<>();
+                            if (attachmentList != null && attachmentList.size() > 0) {
+                                if (Files.exists(executionAttachmentMappedFile)) {
+                                    try {
+                                        List<String> mappedServerToCloudExecutionAttachmentMap = FileUtils.readExecutionAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                                        if (!mappedServerToCloudExecutionAttachmentMap.isEmpty()) {
+                                            for (AttachmentDTO executionAttachment : attachmentList) {
+                                                if (!mappedServerToCloudExecutionAttachmentMap.contains(executionAttachment.getFileId())) {
+                                                    finalAttachmentList.add(executionAttachment);
+                                                }
                                             }
                                         }
+                                    } catch (IOException e) {
+                                        log.error("Error while reading execution attachment mapping file", e);
                                     }
-                                } catch (IOException e) {
-                                    log.error("Error while reading execution attachment mapping file", e);
+                                } else {
+                                    finalAttachmentList.addAll(attachmentList);
                                 }
-                            } else {
-                                finalAttachmentList.addAll(attachmentList);
-                            }
-                            List<AttachmentDTO> executionAttachments = finalAttachmentList.stream()
-                                    .filter(Objects::nonNull).collect(Collectors.toList());
-                            List<File> filesToDelete = new ArrayList<>();
-                            List<String> attachmentFileId = new ArrayList<>();
-                            executionAttachments.forEach(attachment -> {
-                                if (attachment != null) {
-                                    try {
-                                        File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
-                                        if (executionAttachmentFile != null) {
-                                            filesToDelete.add(executionAttachmentFile);
-                                            attachmentFileId.add(attachment.getFileId());
-                                        }
-                                    } catch (Exception e) {
-                                        log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
-                                    }
-                                }
-                            });
-                            if (!filesToDelete.isEmpty()) {
-                                int fileCount = 0;
-                                for (File file : filesToDelete) {
-                                    if (file.exists()) {
+                                List<AttachmentDTO> executionAttachments = finalAttachmentList.stream()
+                                        .filter(Objects::nonNull).collect(Collectors.toList());
+                                List<File> filesToDelete = new ArrayList<>();
+                                List<String> attachmentFileId = new ArrayList<>();
+                                executionAttachments.forEach(attachment -> {
+                                    if (attachment != null) {
                                         try {
-                                            ZfjCloudAttachmentBean zfjCloudAttachmentBean = attachmentService.addAttachmentInCloud(file, cloudExecutionId, projectId + "", ApplicationConstants.EXECUTION_ENTITY, cloudExecutionId);
-                                            if (zfjCloudAttachmentBean != null) {
-                                                zfjCloudAttachmentBean.setServerExecutionId(serverExecutionId);
-                                                zfjCloudAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
-                                                zfjCloudAttachmentBeanList.add(zfjCloudAttachmentBean);
+                                            File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                                            if (executionAttachmentFile != null) {
+                                                filesToDelete.add(executionAttachmentFile);
+                                                attachmentFileId.add(attachment.getFileId());
                                             }
                                         } catch (Exception e) {
-                                            log.error("Error while adding attachment for issue", e);
+                                            log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
                                         }
-                                        file.delete();
-                                        ++fileCount;
+                                    }
+                                });
+                                if (!filesToDelete.isEmpty()) {
+                                    int fileCount = 0;
+                                    for (File file : filesToDelete) {
+                                        if (file.exists()) {
+                                            try {
+                                                ZfjCloudAttachmentBean zfjCloudAttachmentBean = attachmentService.addAttachmentInCloud(file, cloudExecutionId, projectId + "", ApplicationConstants.EXECUTION_ENTITY, cloudExecutionId);
+                                                if (zfjCloudAttachmentBean != null) {
+                                                    zfjCloudAttachmentBean.setServerExecutionId(serverExecutionId);
+                                                    zfjCloudAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
+                                                    zfjCloudAttachmentBeanList.add(zfjCloudAttachmentBean);
+                                                }
+                                            } catch (Exception e) {
+                                                log.error("Error while adding attachment for issue", e);
+                                            }
+                                            file.delete();
+                                            ++fileCount;
+                                        }
                                     }
                                 }
                             }
+                        });
+                    }
+
+                    if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                        migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap, projectId+"", projectName);
+                    }
+
+                    if (Files.exists(executionAttachmentMappedFile) && !zfjCloudAttachmentBeanList.isEmpty()) {
+                        progressQueue.put("Updating the mapping file for execution attachment migration for project : " + projectId);
+                        migrationMappingFileGenerationUtil.updateExecutionAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                    } else {
+                        if (!zfjCloudAttachmentBeanList.isEmpty()) {
+                            progressQueue.put("Creating the mapping file for execution attachment migration for project : " + projectId);
+                            migrationMappingFileGenerationUtil.generateExecutionAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
                         }
-                    });
-                }
-
-                if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
-                    migrateStepResultLevelAttachments(mappedServerToCloudExecutionIdMap, projectId+"", projectName);
-                }
-
-                if (Files.exists(executionAttachmentMappedFile) && !zfjCloudAttachmentBeanList.isEmpty()) {
-                    progressQueue.put("Updating the mapping file for execution attachment migration for project : " + projectId);
-                    migrationMappingFileGenerationUtil.updateExecutionAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
-                } else {
-                    if (!zfjCloudAttachmentBeanList.isEmpty()) {
-                        progressQueue.put("Creating the mapping file for execution attachment migration for project : " + projectId);
-                        migrationMappingFileGenerationUtil.generateExecutionAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
                     }
                 }
+            } else {
+                log.warn("Execution mapping file either not created or empty.");
             }
+
         }catch (Exception ex) {
             log.error("Error while creating attachment for issue", ex);
         }
