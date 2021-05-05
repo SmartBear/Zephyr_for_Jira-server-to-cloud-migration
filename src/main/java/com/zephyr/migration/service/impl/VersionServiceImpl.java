@@ -77,6 +77,7 @@ public class VersionServiceImpl implements VersionService {
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
         try {
             String response = restTemplate.postForObject(createUnscheduledVersionsUrl, entity, String.class);
+            log.info("Response received from cloud endpoint: "+response);
         } catch (Exception e) {
             log.error("Error while creating unscheduled version " + e.getMessage());
         }
@@ -104,9 +105,9 @@ public class VersionServiceImpl implements VersionService {
         versionDTO.setProjectId(projectId);
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(versionDTO), headers);
         JsonNode response = null;
-        String res = null;
         try {
             response = restTemplate.postForObject(createCloudVersionsUrl, entity, JsonNode.class);
+            log.info("Version creation response from cloud endpoint:: "+response);
         } catch (Exception e) {
             log.error("Error while creating version in cloud " + e.getMessage());
         }
