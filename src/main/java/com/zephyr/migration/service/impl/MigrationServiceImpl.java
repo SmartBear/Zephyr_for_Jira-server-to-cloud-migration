@@ -359,6 +359,7 @@ public class MigrationServiceImpl implements MigrationService {
         HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
         try {
             String response = restTemplate.postForObject(triggerProjectMetaReindexUrl, entity, String.class);
+            log.info("Trigger project meta reindex call is completed.");
         } catch (Exception ex) {
             log.error("Error while calling project meta reindex api call " + ex.fillInStackTrace());
         }
@@ -381,7 +382,7 @@ public class MigrationServiceImpl implements MigrationService {
                     progressQueue.put("Version Details : "+ jiraServerVersion.getName());
                     String versionId = Objects.nonNull(jiraServerVersion.getId()) ? Long.toString(jiraServerVersion.getId()) : null;
                     if(!mappedServerToCloudVersionList.contains(versionId)) {
-                        log.info("Version Details doesn't exist in cloud, creating the version in cloud instance: \"+ jiraServerVersion.getName()");
+                        log.info("Version Details doesn't exist in cloud, creating the version in cloud instance:"+ jiraServerVersion.getName());
                         progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());
                         JsonNode versionCreatedInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);
                         if(Objects.nonNull(versionCreatedInCloud) && versionCreatedInCloud.has("id")) {
