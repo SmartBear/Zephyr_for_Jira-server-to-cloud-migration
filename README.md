@@ -51,7 +51,8 @@ It will have the mapping file created for the migration project.
     
 4. Save the application.properties file after making the necessary changes.
 5. Run the below command to launch the application and it will launch the application at mentioned port.
-   java -jar Zephyr_for_Jira-server-to-cloud-migration-1.0.jar --spring.config.location=file:./application.properties
+
+java -jar Zephyr_for_Jira-server-to-cloud-migration-1.0.jar --spring.config.location=file:./application.properties
 
 #### Pre checkup list before triggering the migration. ####
 1. Uninstall the ZSquad plugin from the manage Apps if you have.
