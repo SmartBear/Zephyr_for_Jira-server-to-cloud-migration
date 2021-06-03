@@ -35,7 +35,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private static final Logger log = LoggerFactory.getLogger(ExecutionServiceImpl.class);
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     @Autowired
     @Qualifier(value = "zapiHttpClient")
