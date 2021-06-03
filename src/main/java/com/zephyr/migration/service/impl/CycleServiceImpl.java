@@ -31,7 +31,7 @@ public class CycleServiceImpl implements CycleService {
     private static final Logger log = LoggerFactory.getLogger(CycleServiceImpl.class);
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     @Autowired
     @Qualifier(value = "zapiHttpClient")
