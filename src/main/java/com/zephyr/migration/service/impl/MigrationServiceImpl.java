@@ -271,19 +271,23 @@ public class MigrationServiceImpl implements MigrationService {
             if(mappedServerToCloudCycleMap.size() > 0) {
                     List<String> listOfServerCycles = new ArrayList<>(mappedServerToCloudCycleMap.keySet());
                     Map<String, List<FolderDTO>> zephyrServerCycleFolderMap = new HashMap<>();
-                    listOfServerCycles.parallelStream().forEachOrdered(serverCycleId -> {
+                    listOfServerCycles.parallelStream().forEachOrdered(cycleId -> {
                         try {
-                            progressQueue.put("fetching folders from zephyr server instance for cycle :: " + serverCycleId);
-                            log.info("Fetching folders from server for cycleId :: " + serverCycleId);
-                            SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(serverCycleId);
-                            if(null != searchFolderRequest) {
-                                log.info("Fetching cycles from server with details :: "+ searchFolderRequest.toString());
-                                if(!serverCycleId.equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
-                                    List<FolderDTO> foldersListFromServer = folderService.fetchFoldersFromZephyrServer(Long.parseLong(serverCycleId),
-                                            searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
-                                    zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
-                                    log.info("Fetched folders from server for version :: "+ serverCycleId);
-                                    progressQueue.put("Fetched folders from server for version -> "+serverCycleId);
+                            String serverCycleId = "";
+                            if(cycleId.contains("_")) {
+                                serverCycleId = cycleId.substring(0,cycleId.indexOf("_"));
+                                progressQueue.put("fetching folders from zephyr server instance for cycle :: " + serverCycleId);
+                                log.info("Fetching folders from server for cycleId :: " + serverCycleId);
+                                SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(cycleId);
+                                if(null != searchFolderRequest) {
+                                    log.info("Fetching cycles from server with details :: "+ searchFolderRequest.toString());
+                                    if(!serverCycleId.equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                                        List<FolderDTO> foldersListFromServer = folderService.fetchFoldersFromZephyrServer(Long.parseLong(serverCycleId),
+                                                searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
+                                        zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
+                                        log.info("Fetched folders from server for version :: "+ serverCycleId);
+                                        progressQueue.put("Fetched folders from server for version -> "+serverCycleId);
+                                    }
                                 }
                             }
                         } catch (Exception ex) {
@@ -292,31 +296,37 @@ public class MigrationServiceImpl implements MigrationService {
                     });
 
                 String finalProjectName = projectName;
-                mappedServerToCloudCycleMap.forEach((serverCycleId, searchFolderRequest) -> {
+                mappedServerToCloudCycleMap.forEach((cycleId, searchFolderRequest) -> {
                         try {
-                            progressQueue.put("creating folders from zephyr server instance for cycle :: "+ serverCycleId);
-                            log.info("fetching folder list from map for cycle id :: "+ serverCycleId);
-                            if(!serverCycleId.equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
-                                List<FolderDTO> foldersListFromServer = zephyrServerCycleFolderMap.get(serverCycleId);
-                                log.info("fetching folder list from map for cycle id with size :: "+ foldersListFromServer.size());
-                                if (!Files.exists(folderMappedFile)) {
-                                    foldersListFromServer.parallelStream().forEachOrdered(folderDTO -> {
-                                        try {
-                                            progressQueue.put("creating folder in zephyr cloud instance with name :: " + folderDTO.getFolderName());
-                                            progressQueue.put("creating folder in zephyr cloud instance for cycle :: " + searchFolderRequest.getCloudCycleId());
-                                            log.info("creating folder in zephyr cloud instance with name :: " + folderDTO.getFolderName());
-                                            log.info("creating folder in zephyr cloud instance for cycle :: " + searchFolderRequest.getCloudCycleId());
-                                        } catch (InterruptedException ex) {
-                                            log.error("InterruptedException ", ex.fillInStackTrace());
-                                        }
-                                        ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO, searchFolderRequest);
-                                        if (Objects.nonNull(cloudFolderBean)) {
-                                            zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
-                                        }
-                                    });
-                                }else {
-                                    progressQueue.put("Folder mapping file exists for the project, creating unmapped folders in cloud.");
-                                    createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath);
+                            String serverCycleId = "";
+                            if(cycleId.contains("_")) {
+                                serverCycleId = cycleId.substring(0, cycleId.indexOf("_"));
+                                if(!serverCycleId.equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+
+                                    progressQueue.put("creating folders from zephyr server instance for cycle :: "+ serverCycleId);
+                                    log.info("fetching folder list from map for cycle id :: "+ serverCycleId);
+
+                                    List<FolderDTO> foldersListFromServer = zephyrServerCycleFolderMap.get(serverCycleId);
+                                    log.info("fetching folder list from map for cycle id with size :: "+ foldersListFromServer.size());
+                                    if (!Files.exists(folderMappedFile)) {
+                                        foldersListFromServer.parallelStream().forEachOrdered(folderDTO -> {
+                                            try {
+                                                progressQueue.put("creating folder in zephyr cloud instance with name :: " + folderDTO.getFolderName());
+                                                progressQueue.put("creating folder in zephyr cloud instance for cycle :: " + searchFolderRequest.getCloudCycleId());
+                                                log.info("creating folder in zephyr cloud instance with name :: " + folderDTO.getFolderName());
+                                                log.info("creating folder in zephyr cloud instance for cycle :: " + searchFolderRequest.getCloudCycleId());
+                                            } catch (InterruptedException ex) {
+                                                log.error("InterruptedException ", ex.fillInStackTrace());
+                                            }
+                                            ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO, searchFolderRequest);
+                                            if (Objects.nonNull(cloudFolderBean)) {
+                                                zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
+                                            }
+                                        });
+                                    }else {
+                                        progressQueue.put("Folder mapping file exists for the project, creating unmapped folders in cloud.");
+                                        createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath);
+                                    }
                                 }
                             }
                         } catch (Exception ex) {
@@ -462,7 +472,9 @@ public class MigrationServiceImpl implements MigrationService {
             Map<FolderDTO, ZfjCloudFolderBean> zephyrServerCloudFolderMappingMap = new HashMap<>();
             foldersListFromServer.forEach(folderDTO -> {
                 log.info("search folder request for folder. [" + folderDTO.getCycleId());
-                SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(folderDTO.getCycleId());
+                String mapKey = folderDTO.getCycleId() + "_" +folderDTO.getVersionId();
+                log.info("search folder request with key. [" + mapKey);
+                SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(mapKey);
                 try {
                     Boolean folderMoved = FileUtils.readFolderMappingFile(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
                             searchFolderRequest.getCloudCycleId(), folderDTO.getFolderId());
@@ -511,11 +523,15 @@ public class MigrationServiceImpl implements MigrationService {
             Set<String> uniqueVersionIds = new HashSet<>();
 
             //create cycle level executions
-            mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
-                log.info("Fetching executions for cycle with id:: "+serverCycleId + " for version ::"+searchRequest.getVersionId());
+            mappedServerToCloudCycleMap.forEach((cycleId, searchRequest) -> {
+                log.info("Fetching executions for cycle with id:: "+cycleId + " for version ::"+searchRequest.getVersionId());
                 uniqueVersionIds.add(searchRequest.getVersionId());
+                String serverCycleId = "";
+                if(cycleId.contains("_")) {
+                    serverCycleId = cycleId.substring(0,cycleId.indexOf("_"));
+                }
 
-                if(!serverCycleId.equals(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                if(StringUtils.isNotBlank(serverCycleId) && !serverCycleId.equals(ApplicationConstants.AD_HOC_CYCLE_ID)) {
                     List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(searchRequest.getProjectId(), searchRequest.getVersionId(), serverCycleId, 0, 3000);
 
                     if (Files.exists(executionMappedFile)) {
@@ -569,37 +585,63 @@ public class MigrationServiceImpl implements MigrationService {
                 //create execution for Adhoc cycle per version.
                 uniqueVersionIds.forEach(versionId -> {
                     List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(projectId.toString(), versionId, ApplicationConstants.AD_HOC_CYCLE_ID, 0, 3000);
-                    finalResponse.putAll(createExecutionsForAdhocCycle(executionList,projectId,versionId,fetchedTestStepsFromServer,executionMappedFile));
+                    Map<ExecutionDTO, ZfjCloudExecutionBean> adhocCycleData = createExecutionsForAdhocCycle(executionList,projectId,versionId,fetchedTestStepsFromServer,executionMappedFile);
+                    log.info("Adhoc cycle executions size for version : "+versionId + " is "+adhocCycleData.size());
+                    finalResponse.putAll(adhocCycleData);
                 });
-
             }
 
             if (Files.exists(folderMappedFile)) {
-                mappedServerToCloudCycleMap.forEach((serverCycleId, searchRequest) -> {
-                    Map<String,String> mappedServerCloudFolderIds = FileUtils.getServerCloudFolderMapping(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
-                            searchRequest.getCloudCycleId(), serverCycleId);
+                mappedServerToCloudCycleMap.forEach((cycleId, searchRequest) -> {
+                    String serverCycleId = "";
+                    if(cycleId.contains("_")) {
+                        serverCycleId = cycleId.substring(0,cycleId.indexOf("_"));
 
-                    if (!((mappedServerCloudFolderIds != null) && (mappedServerCloudFolderIds.size() > 0))) return;
+                        Map<String,String> mappedServerCloudFolderIds = FileUtils.getServerCloudFolderMapping(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS,
+                                searchRequest.getCloudCycleId(), serverCycleId);
 
-                    // submit this list to executor service
-                    mappedServerCloudFolderIds.forEach((serverFolderId, cloudFolderId) -> {
-                        log.info("Fetching executions from server with folder id:: ["+ serverFolderId + "]");
-                        searchRequest.setCloudFolderId(cloudFolderId);
-                        List<ExecutionDTO> folderExecutionList = executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
-                                serverCycleId, serverFolderId, 0, 3000);
-                        // futures.add(scheduledExecutorService.schedule(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService),5,TimeUnit.SECONDS));
+                        if (!((mappedServerCloudFolderIds != null) && (mappedServerCloudFolderIds.size() > 0))) return;
 
-                        if (Files.exists(executionMappedFile)) {
-                            if (folderExecutionList != null && !folderExecutionList.isEmpty()) {
-                                List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
-                                        null, searchRequest.getCloudFolderId(), folderExecutionList, ApplicationConstants.FOLDER_LEVEL_EXECUTION);
-                                log.info("Final list to be processed for serverFolderId : "+ serverFolderId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
-                                if(finalExecutionsListToBeProcessed.size() >0) {
-                                    finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+                        final String server_CycleId = cycleId.substring(0,cycleId.indexOf("_"));;
+                        // submit this list to executor service
+                        mappedServerCloudFolderIds.forEach((serverFolderId, cloudFolderId) -> {
+                            log.info("Fetching executions from server with folder id:: ["+ serverFolderId + "]" + " belongs to Cycle "+server_CycleId);
+                            searchRequest.setCloudFolderId(cloudFolderId);
+                            List<ExecutionDTO> folderExecutionList = executionService.getExecutionsFromZFJByVersionCycleAndFolderName(searchRequest.getProjectId(), searchRequest.getVersionId(),
+                                    server_CycleId, serverFolderId, 0, 3000);
+                            // futures.add(scheduledExecutorService.schedule(new ExecutionCreationTask(folderExecutionList, searchRequest, cloudAccountId, executionService),5,TimeUnit.SECONDS));
+
+                            if (Files.exists(executionMappedFile)) {
+                                if (folderExecutionList != null && !folderExecutionList.isEmpty()) {
+                                    List<ExecutionDTO> finalExecutionsListToBeProcessed = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLS,
+                                            null, searchRequest.getCloudFolderId(), folderExecutionList, ApplicationConstants.FOLDER_LEVEL_EXECUTION);
+                                    log.info("Final list to be processed for serverFolderId : "+ serverFolderId + " is " + finalExecutionsListToBeProcessed.size() +" executions.");
+                                    if(finalExecutionsListToBeProcessed.size() >0) {
+                                        finalExecutionsListToBeProcessed.forEach(serverExecution -> {
+
+                                            if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
+                                                List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
+                                                // create steps in zephyr cloud.
+                                                createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
+                                                // add the created steps in map
+                                                fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
+                                            }
+
+                                            ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
+                                            if(Objects.nonNull(zfjCloudExecutionBean)) {
+                                                if(zfjCloudExecutionBean.getId() != null) {
+                                                    finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            } else {
+                                if(null != folderExecutionList && folderExecutionList.size() >0) {
+                                    folderExecutionList.forEach(serverExecution -> {
 
                                         if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
                                             List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                            // create steps in zephyr cloud.
                                             createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
                                             // add the created steps in map
                                             fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
@@ -614,27 +656,9 @@ public class MigrationServiceImpl implements MigrationService {
                                     });
                                 }
                             }
-                        } else {
-                            if(null != folderExecutionList && folderExecutionList.size() >0) {
-                                folderExecutionList.forEach(serverExecution -> {
+                        });
 
-                                    if(!fetchedTestStepsFromServer.containsKey(serverExecution.getIssueId())) {
-                                        List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(serverExecution.getIssueId());
-                                        createTestStepInJiraCloud(projectId, serverExecution.getIssueId(), testStepDTOList);
-                                        // add the created steps in map
-                                        fetchedTestStepsFromServer.put(serverExecution.getIssueId(), testStepDTOList);
-                                    }
-
-                                    ZfjCloudExecutionBean zfjCloudExecutionBean = executionService.createExecutionInJiraCloud(prepareRequestForCloud(serverExecution, searchRequest, cloudAccountId));
-                                    if(Objects.nonNull(zfjCloudExecutionBean)) {
-                                        if(zfjCloudExecutionBean.getId() != null) {
-                                            finalResponse.put(serverExecution,zfjCloudExecutionBean);
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    });
+                    }
                 });
             }
 

@@ -381,6 +381,7 @@ public class FileUtils {
             Cell cycleNameCellVal = r.getCell(cycleNameIndex);
 
             if (Objects.nonNull(cloudIdCellVal) && Objects.nonNull(serverIdCellVal)) {
+                String mapKey = serverIdCellVal.getStringCellValue() + "_" + serverVersionCellVal.getStringCellValue();
                 SearchRequest searchRequest = new SearchRequest();
                 searchRequest.setProjectId(projectIdCellVal.getStringCellValue());
                 searchRequest.setVersionId(serverVersionCellVal.getStringCellValue());
@@ -388,7 +389,7 @@ public class FileUtils {
                 searchRequest.setCloudCycleId(cloudIdCellVal.getStringCellValue());
                 searchRequest.setCloudVersionId(cloudVersionIdCellVal.getStringCellValue());
                 searchRequest.setCycleName(cycleNameCellVal.getStringCellValue());
-                serverCloudIdsMapping.put(serverIdCellVal.getStringCellValue(), searchRequest);
+                serverCloudIdsMapping.put(mapKey, searchRequest);
             }
         }
         return serverCloudIdsMapping;
