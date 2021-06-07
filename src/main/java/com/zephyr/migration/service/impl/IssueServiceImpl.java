@@ -1,10 +1,9 @@
 package com.zephyr.migration.service.impl;
 
-import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.google.common.collect.Lists;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
-import com.zephyr.migration.client.JiraServerClient;
+import com.zephyr.migration.model.Issue;
 import com.zephyr.migration.model.TestCaseBean;
 import com.zephyr.migration.service.IssueService;
 import com.zephyr.migration.utils.ApplicationConstants;
@@ -83,6 +82,7 @@ public class IssueServiceImpl implements IssueService {
     @Override
     public Integer getTotalTestCountPerProjectFromJira(String projectId) {
 
+        log.info("Serving --> {}", "getTotalTestCountPerProjectFromJira()");
         String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE_JQL,projectId,0);
 
         jiraHttpClient.setResourceName(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE + resourceName);

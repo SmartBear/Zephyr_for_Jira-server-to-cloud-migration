@@ -11,7 +11,10 @@ import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.*;
 import com.zephyr.migration.service.*;
-import com.zephyr.migration.utils.*;
+import com.zephyr.migration.utils.ApplicationConstants;
+import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.FileUtils;
+import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -32,7 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -43,31 +46,34 @@ public class MigrationServiceImpl implements MigrationService {
     private static final Logger log = LoggerFactory.getLogger(MigrationServiceImpl.class);
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     @Autowired
-    ProjectService projectService;
+    private ProjectService projectService;
 
     @Autowired
-    VersionService versionService;
+    private VersionService versionService;
 
     @Autowired
-    CycleService cycleService;
+    private CycleService cycleService;
 
     @Autowired
-     FolderService folderService;
+    private FolderService folderService;
 
     @Autowired
-    ExecutionService executionService;
+    private ExecutionService executionService;
 
     @Autowired
-    AttachmentService attachmentService;
+    private AttachmentService attachmentService;
 
     @Autowired
-    TestStepService testStepService;
+    private TestStepService testStepService;
 
     @Autowired
-    MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
+    private IssueService issueService;
+
+    @Autowired
+    private MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Value("${migrationFilePath}")
     private String migrationFilePath;
@@ -75,6 +81,10 @@ public class MigrationServiceImpl implements MigrationService {
     @Autowired
     @Qualifier(value = "zapiHttpClient")
     private HttpClient zapiHttpClient;
+
+    @Autowired
+    @Qualifier(value = "jiraHttpClient")
+    private HttpClient jiraHttpClient;
 
     private final ArrayBlockingQueue<String> progressQueue = new ArrayBlockingQueue<>(10000);
 
@@ -102,7 +112,12 @@ public class MigrationServiceImpl implements MigrationService {
             }
         }
 
-        beginTestStepsMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,fetchedTestStepsFromServer);
+        try{
+            beginTestStepsMigration(projectId,fetchedTestStepsFromServer);
+        }catch (Exception ex) {
+            log.info("Error occurred while migrating test steps.");
+        }
+
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
         log.info("Migration of project [" + projectId+ "] completed.");
@@ -119,6 +134,7 @@ public class MigrationServiceImpl implements MigrationService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+        jiraHttpClient.init();
     }
 
     ///////////////////////////////// Private method goes below ///////////////////////////////////////////////////////
@@ -1116,7 +1132,25 @@ public class MigrationServiceImpl implements MigrationService {
         return createdExecutionResponse;
     }
 
-    private void beginTestStepsMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer) {
+    private void beginTestStepsMigration(Long projectId, Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer) {
+        //Get the total issue count using JQL
+        //Fetch the records using based on total count.
+        //create the test steps accordingly
+        String _projectId = projectId.toString();
+        Integer totalIssueCount = issueService.getTotalTestCountPerProjectFromJira(_projectId);
+        Integer offset = 0;
+        Integer limit = 50;
+        do{
+            List<Issue> zephyrTests = issueService.getIssueDetailsFromJira(_projectId,offset,limit);
+            zephyrTests.forEach(issue -> {
+                int issueId = issue.getId();
+                if(!fetchedTestStepsFromServer.containsKey(issueId)) {
+                    List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(issueId);
+                    testStepService.createTestStepInJiraCloud(testStepDTOList,issueId,projectId);
+                }
+            });
+            offset +=limit;
+        }while (offset < totalIssueCount);
 
     }
 }

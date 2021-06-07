@@ -1,7 +1,8 @@
 package com.zephyr.migration.service;
 
-import com.atlassian.jira.rest.client.api.domain.Issue;
-import com.zephyr.migration.client.JiraServerClient;
+
+
+import com.zephyr.migration.model.Issue;
 
 import java.util.List;
 

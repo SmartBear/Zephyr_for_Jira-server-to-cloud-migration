@@ -14,7 +14,7 @@ public class JIRAHTTPClient extends HttpClient{
     @Autowired
     private ConfigProperties configProperties;
 
-    private static final String API_URL = "/rest/api/2/";
+    private static final String API_URL = "rest/api/2/";
 
 
     public JIRAHTTPClient() {
