@@ -521,11 +521,16 @@ public class MigrationServiceImpl implements MigrationService {
             log.info("cloudAccountId ::: ["+cloudAccountId+"]");
             Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
             Set<String> uniqueVersionIds = new HashSet<>();
+            Map<String,String> uniqueVersionMap = new HashMap<>();
 
             //create cycle level executions
             mappedServerToCloudCycleMap.forEach((cycleId, searchRequest) -> {
                 log.info("Fetching executions for cycle with id:: "+cycleId + " for version ::"+searchRequest.getVersionId());
-                uniqueVersionIds.add(searchRequest.getVersionId());
+
+                if(!uniqueVersionMap.containsKey(searchRequest.getVersionId())) {
+                    uniqueVersionMap.put(searchRequest.getVersionId(),searchRequest.getCloudVersionId());
+                }
+
                 String serverCycleId = "";
                 if(cycleId.contains("_")) {
                     serverCycleId = cycleId.substring(0,cycleId.indexOf("_"));
@@ -581,15 +586,16 @@ public class MigrationServiceImpl implements MigrationService {
                 }
             });
 
-            if(!uniqueVersionIds.isEmpty()) {
+            if(!uniqueVersionMap.isEmpty()) {
                 //create execution for Adhoc cycle per version.
-                uniqueVersionIds.forEach(versionId -> {
-                    List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(projectId.toString(), versionId, ApplicationConstants.AD_HOC_CYCLE_ID, 0, 3000);
-                    Map<ExecutionDTO, ZfjCloudExecutionBean> adhocCycleData = createExecutionsForAdhocCycle(executionList,projectId,versionId,fetchedTestStepsFromServer,executionMappedFile);
-                    log.info("Adhoc cycle executions size for version : "+versionId + " is "+adhocCycleData.size());
+                uniqueVersionMap.forEach((serverVersionId,cloudVersionId) -> {
+                    List<ExecutionDTO> executionList = executionService.getExecutionsFromZFJByVersionAndCycleName(projectId.toString(), serverVersionId, ApplicationConstants.AD_HOC_CYCLE_ID, 0, 3000);
+                    Map<ExecutionDTO, ZfjCloudExecutionBean> adhocCycleData = createExecutionsForAdhocCycle(executionList,projectId,cloudVersionId,fetchedTestStepsFromServer,executionMappedFile);
+                    log.info("Adhoc cycle executions size for version : "+serverVersionId + " is "+adhocCycleData.size());
                     finalResponse.putAll(adhocCycleData);
                 });
             }
+
 
             if (Files.exists(folderMappedFile)) {
                 mappedServerToCloudCycleMap.forEach((cycleId, searchRequest) -> {
@@ -1003,7 +1009,7 @@ public class MigrationServiceImpl implements MigrationService {
         return zfjCloudExecutionBean;
     }
 
-    public void createTestStepInJiraCloud(Long projectId, Integer issueId, List<TestStepDTO> testStepDTOList) {
+    private void createTestStepInJiraCloud(Long projectId, Integer issueId, List<TestStepDTO> testStepDTOList) {
         List<JiraCloudTestStepDTO> createdCloudTestStepList = null;
         Path testStepMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLS);
         if (Files.exists(testStepMappedFile)) {
@@ -1052,13 +1058,13 @@ public class MigrationServiceImpl implements MigrationService {
         return zfjCloudStepResultUpdateBean;
     }
 
-    private Map<ExecutionDTO, ZfjCloudExecutionBean> createExecutionsForAdhocCycle(List<ExecutionDTO> executionList, Long projectId, String versionId, Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer, Path executionMappedFile) {
+    private Map<ExecutionDTO, ZfjCloudExecutionBean> createExecutionsForAdhocCycle(List<ExecutionDTO> executionList, Long projectId, String cloudVersionId, Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer, Path executionMappedFile) {
         Map<ExecutionDTO, ZfjCloudExecutionBean> createdExecutionResponse = new HashMap<>();
         final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
 
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.setProjectId(projectId+"");
-        searchRequest.setCloudVersionId(versionId);
+        searchRequest.setCloudVersionId(cloudVersionId);
         searchRequest.setCloudCycleId(ApplicationConstants.AD_HOC_CYCLE_ID);
 
         if (Files.exists(executionMappedFile)) {
