@@ -52,19 +52,19 @@ public class TestServiceImpl implements TestService {
     private static final Logger log = LoggerFactory.getLogger(TestServiceImpl.class);
 
     @Autowired
-    VersionService versionService;
+    private VersionService versionService;
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     @Autowired
-    MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
+    private MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Autowired
-    CycleService cycleService;
+    private CycleService cycleService;
 
     @Autowired
-    AttachmentService attachmentService;
+    private AttachmentService attachmentService;
 
     @Autowired
     @Qualifier(value = "zapiHttpClient")

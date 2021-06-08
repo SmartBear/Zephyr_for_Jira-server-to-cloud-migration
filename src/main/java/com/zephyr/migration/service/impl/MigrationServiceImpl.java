@@ -11,7 +11,10 @@ import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.*;
 import com.zephyr.migration.service.*;
-import com.zephyr.migration.utils.*;
+import com.zephyr.migration.utils.ApplicationConstants;
+import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.FileUtils;
+import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -32,7 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -43,31 +47,34 @@ public class MigrationServiceImpl implements MigrationService {
     private static final Logger log = LoggerFactory.getLogger(MigrationServiceImpl.class);
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     @Autowired
-    ProjectService projectService;
+    private ProjectService projectService;
 
     @Autowired
-    VersionService versionService;
+    private VersionService versionService;
 
     @Autowired
-    CycleService cycleService;
+    private CycleService cycleService;
 
     @Autowired
-     FolderService folderService;
+    private FolderService folderService;
 
     @Autowired
-    ExecutionService executionService;
+    private ExecutionService executionService;
 
     @Autowired
-    AttachmentService attachmentService;
+    private AttachmentService attachmentService;
 
     @Autowired
-    TestStepService testStepService;
+    private TestStepService testStepService;
 
     @Autowired
-    MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
+    private IssueService issueService;
+
+    @Autowired
+    private MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Value("${migrationFilePath}")
     private String migrationFilePath;
@@ -75,6 +82,10 @@ public class MigrationServiceImpl implements MigrationService {
     @Autowired
     @Qualifier(value = "zapiHttpClient")
     private HttpClient zapiHttpClient;
+
+    @Autowired
+    @Qualifier(value = "jiraHttpClient")
+    private HttpClient jiraHttpClient;
 
     private final ArrayBlockingQueue<String> progressQueue = new ArrayBlockingQueue<>(10000);
 
@@ -89,20 +100,25 @@ public class MigrationServiceImpl implements MigrationService {
         progressQueue.put("Started Migration For project : -> project id: " + projectId + ", date/Time -> " + new Date());
 
         boolean migrateVersions = beginVersionMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
-
+        Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
         if(migrateVersions) {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
                 if (migrateFolders) {
-                    boolean migrateExecutions = beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
-                    if(migrateExecutions) {
-                        beginAttachmentsEntityMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
-                    }
+                    fetchedTestStepsFromServer = beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    beginAttachmentsEntityMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
                 }
             }
         }
+
+        try{
+            beginTestStepsMigration(projectId,fetchedTestStepsFromServer);
+        }catch (Exception ex) {
+            log.info("Error occurred while migrating test steps.");
+        }
+
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
         log.info("Migration of project [" + projectId+ "] completed.");
@@ -119,6 +135,7 @@ public class MigrationServiceImpl implements MigrationService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+        jiraHttpClient.init();
     }
 
     ///////////////////////////////// Private method goes below ///////////////////////////////////////////////////////
@@ -500,14 +517,15 @@ public class MigrationServiceImpl implements MigrationService {
     /**
      * execution migration
      */
-    private boolean beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
+    private Map<Integer, List<TestStepDTO>> beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
         Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
         String projectName = null;
         if (project != null) {
             projectName = project.getName();
         }
 
-         Map<ExecutionDTO, ZfjCloudExecutionBean> finalResponse = new HashMap<>();
+        Map<ExecutionDTO, ZfjCloudExecutionBean> finalResponse = new HashMap<>();
+        Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
 
         Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
 
@@ -519,7 +537,7 @@ public class MigrationServiceImpl implements MigrationService {
             Map<String, SearchRequest> mappedServerToCloudCycleMap = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
             log.info("cloudAccountId ::: ["+cloudAccountId+"]");
-            Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
+
             Set<String> uniqueVersionIds = new HashSet<>();
             Map<String,String> uniqueVersionMap = new HashMap<>();
 
@@ -671,14 +689,14 @@ public class MigrationServiceImpl implements MigrationService {
             if (Files.exists(executionMappedFile)) {
                 progressQueue.put("Updating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.updateExecutionMappingFile(projectId+"", projectName, migrationFilePath, finalResponse);
-                return true;
+                return fetchedTestStepsFromServer;
             }else if(finalResponse.size() > 0) {
                 progressQueue.put("Creating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
-                return true;
+                return fetchedTestStepsFromServer;
             }
         }
-        return true;
+        return fetchedTestStepsFromServer;
     }
 
     private void beginAttachmentsEntityMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
@@ -888,88 +906,95 @@ public class MigrationServiceImpl implements MigrationService {
 
     private void importTestStepsAttachmentMigration(String projectId, String projectName, String cloudExecutionId, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
         try {
-            Map<String, ArrayList<String>> mappedServerToCloudTestStepsIdMap = FileUtils.readTestStepIdsMappingFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLS);
-            if (!mappedServerToCloudTestStepsIdMap.isEmpty()) {
-                List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList = new ArrayList<>();
-                Path testStepsAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+            Path testStepMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLS);
+
+            if (Files.exists(testStepMappedFile)) {
+                Map<String, ArrayList<String>> mappedServerToCloudTestStepsIdMap = FileUtils.readTestStepIdsMappingFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLS);
                 if (!mappedServerToCloudTestStepsIdMap.isEmpty()) {
-                    List<String> mappedServerToCloudTestStepAttachmentList = new ArrayList<>();
-                    if (Files.exists(testStepsAttachmentMappedFile)) {
-                        mappedServerToCloudTestStepAttachmentList = FileUtils.readTestStepsAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                    List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList = new ArrayList<>();
+                    Path testStepsAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                    if (!mappedServerToCloudTestStepsIdMap.isEmpty()) {
+                        List<String> mappedServerToCloudTestStepAttachmentList = new ArrayList<>();
+                        if (Files.exists(testStepsAttachmentMappedFile)) {
+                            mappedServerToCloudTestStepAttachmentList = FileUtils.readTestStepsAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
 
-                    }
+                        }
 
-                    final List<String> finalMappedServerToCloudTestStepAttachmentList = mappedServerToCloudTestStepAttachmentList;
-                    mappedServerToCloudTestStepsIdMap.forEach((serverStepId, cloudRequestDetails) -> {
-                        //Read the execution mapping file and start processing it.
-                        List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverStepId), ApplicationConstants.ENTITY_TYPE.TESTSTEP);
-                        List<AttachmentDTO> finalAttachmentList = new ArrayList<>();
-                        if (attachmentList != null && attachmentList.size() > 0) {
-                            if (Files.exists(testStepsAttachmentMappedFile)) {
-                                try {
-                                    if (!finalMappedServerToCloudTestStepAttachmentList.isEmpty()) {
-                                        for (AttachmentDTO testStepAttachment : attachmentList) {
-                                            if (!finalMappedServerToCloudTestStepAttachmentList.contains(testStepAttachment.getFileId())) {
-                                                finalAttachmentList.add(testStepAttachment);
-                                            }
-                                        }
-                                    }
-                                } catch (Exception e) {
-                                    log.error("Error while reading execution attachment mapping file", e);
-                                }
-                            } else {
-                                finalAttachmentList.addAll(attachmentList);
-                            }
-                            List<AttachmentDTO> testStepAttachments = finalAttachmentList.stream().filter(Objects::nonNull).collect(Collectors.toList());
-                            List<File> filesToDelete = new ArrayList<>();
-                            List<String> attachmentFileId = new ArrayList<>();
-                            testStepAttachments.forEach(attachment -> {
-                                if (attachment != null) {
+                        final List<String> finalMappedServerToCloudTestStepAttachmentList = mappedServerToCloudTestStepAttachmentList;
+                        mappedServerToCloudTestStepsIdMap.forEach((serverStepId, cloudRequestDetails) -> {
+                            //Read the execution mapping file and start processing it.
+                            List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverStepId), ApplicationConstants.ENTITY_TYPE.TESTSTEP);
+                            List<AttachmentDTO> finalAttachmentList = new ArrayList<>();
+                            if (attachmentList != null && attachmentList.size() > 0) {
+                                if (Files.exists(testStepsAttachmentMappedFile)) {
                                     try {
-                                        File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
-                                        if (executionAttachmentFile != null) {
-                                            filesToDelete.add(executionAttachmentFile);
-                                            attachmentFileId.add(attachment.getFileId());
+                                        if (!finalMappedServerToCloudTestStepAttachmentList.isEmpty()) {
+                                            for (AttachmentDTO testStepAttachment : attachmentList) {
+                                                if (!finalMappedServerToCloudTestStepAttachmentList.contains(testStepAttachment.getFileId())) {
+                                                    finalAttachmentList.add(testStepAttachment);
+                                                }
+                                            }
                                         }
                                     } catch (Exception e) {
-                                        log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
+                                        log.error("Error while reading execution attachment mapping file", e);
                                     }
+                                } else {
+                                    finalAttachmentList.addAll(attachmentList);
                                 }
-                            });
-                            if (!filesToDelete.isEmpty()) {
-                                int fileCount = 0;
-                                String cloudStepId = cloudRequestDetails.get(0);
-                                for (File file : filesToDelete) {
-                                    if (file.exists()) {
+                                List<AttachmentDTO> testStepAttachments = finalAttachmentList.stream().filter(Objects::nonNull).collect(Collectors.toList());
+                                List<File> filesToDelete = new ArrayList<>();
+                                List<String> attachmentFileId = new ArrayList<>();
+                                testStepAttachments.forEach(attachment -> {
+                                    if (attachment != null) {
                                         try {
-                                            ZfjCloudAttachmentBean zfjCloudAttachmentBean = attachmentService.addAttachmentInCloud(file, cloudExecutionId, projectId + "", ApplicationConstants.TEST_STEP_ENTITY, cloudStepId);
-                                            if (zfjCloudAttachmentBean != null) {
-                                                zfjCloudAttachmentBean.setServerTestStepId(serverStepId);
-                                                zfjCloudAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
-                                                zfjCloudAttachmentBeanList.add(zfjCloudAttachmentBean);
+                                            File executionAttachmentFile = attachmentService.downloadExecutionAttachmentFileFromZFJ(attachment.getFileId(), attachment.getFileName());
+                                            if (executionAttachmentFile != null) {
+                                                filesToDelete.add(executionAttachmentFile);
+                                                attachmentFileId.add(attachment.getFileId());
                                             }
                                         } catch (Exception e) {
-                                            log.error("Error while adding attachment for issue", e);
+                                            log.error("Error while downloading the Testcase Execution Attachment for Execution -> " + attachment.getFileId(), e);
                                         }
-                                        file.delete();
-                                        ++fileCount;
+                                    }
+                                });
+                                if (!filesToDelete.isEmpty()) {
+                                    int fileCount = 0;
+                                    String cloudStepId = cloudRequestDetails.get(0);
+                                    for (File file : filesToDelete) {
+                                        if (file.exists()) {
+                                            try {
+                                                ZfjCloudAttachmentBean zfjCloudAttachmentBean = attachmentService.addAttachmentInCloud(file, cloudExecutionId, projectId + "", ApplicationConstants.TEST_STEP_ENTITY, cloudStepId);
+                                                if (zfjCloudAttachmentBean != null) {
+                                                    zfjCloudAttachmentBean.setServerTestStepId(serverStepId);
+                                                    zfjCloudAttachmentBean.setServerExecutionAttachmentId(attachmentFileId.get(fileCount));
+                                                    zfjCloudAttachmentBeanList.add(zfjCloudAttachmentBean);
+                                                }
+                                            } catch (Exception e) {
+                                                log.error("Error while adding attachment for issue", e);
+                                            }
+                                            file.delete();
+                                            ++fileCount;
+                                        }
                                     }
                                 }
                             }
-                        }
-                    });
-                }
-
-                if (Files.exists(testStepsAttachmentMappedFile) && !zfjCloudAttachmentBeanList.isEmpty()) {
-                    progressQueue.put("Updating the mapping file for test steps attachment migration for project : " + projectId);
-                    migrationMappingFileGenerationUtil.updateTestStepAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
-                } else {
-                    if (!zfjCloudAttachmentBeanList.isEmpty()) {
-                        progressQueue.put("Creating the mapping file for test steps attachment migration for project : " + projectId);
-                        migrationMappingFileGenerationUtil.generateTestStepAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                        });
                     }
+
+                    if (Files.exists(testStepsAttachmentMappedFile) && !zfjCloudAttachmentBeanList.isEmpty()) {
+                        progressQueue.put("Updating the mapping file for test steps attachment migration for project : " + projectId);
+                        migrationMappingFileGenerationUtil.updateTestStepAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                    } else {
+                        if (!zfjCloudAttachmentBeanList.isEmpty()) {
+                            progressQueue.put("Creating the mapping file for test steps attachment migration for project : " + projectId);
+                            migrationMappingFileGenerationUtil.generateTestStepAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                        }
+                    }
+                }else {
+                    log.info("Test steps mapped file not created.");
                 }
             }
+
         }catch (Exception ex) {
             log.error("Error while creating attachment for issue", ex);
         }
@@ -1112,5 +1137,35 @@ public class MigrationServiceImpl implements MigrationService {
             }
         }
         return createdExecutionResponse;
+    }
+
+    private void beginTestStepsMigration(Long projectId, Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer) {
+        //Get the total issue count using JQL
+        //Fetch the records using based on total count.
+        //create the test steps accordingly
+        String _projectId = projectId.toString();
+        Integer totalIssueCount = issueService.getTotalTestCountPerProjectFromJira(_projectId);
+        log.error("Total issue count received from jira ::: "+totalIssueCount);
+        Integer offset = 0;
+        Integer limit = 50;
+        AtomicInteger counter = new AtomicInteger(1);
+        do{
+            List<Issue> zephyrTests = issueService.getIssueDetailsFromJira(_projectId,offset,limit);
+            zephyrTests.forEach(issue -> {
+                int issueId = issue.getId();
+                log.info("Fetching test steps for issue counter:: ["+counter.get()+"]");
+                if(!fetchedTestStepsFromServer.containsKey(issueId)) {
+                    try{
+                        List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(issueId);
+                        createTestStepInJiraCloud(projectId,issueId,testStepDTOList);
+                    }catch (Exception ex) {
+                        log.error("Error occurred while migrating test steps from server to cloud for issue id ["+issueId+"]",ex.fillInStackTrace());
+                    }
+                }
+                counter.addAndGet(1);
+            });
+            offset +=limit;
+        }while (offset < totalIssueCount);
+
     }
 }
