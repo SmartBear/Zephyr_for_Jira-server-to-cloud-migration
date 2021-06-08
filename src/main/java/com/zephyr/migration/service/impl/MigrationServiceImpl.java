@@ -1147,7 +1147,7 @@ public class MigrationServiceImpl implements MigrationService {
             List<Issue> zephyrTests = issueService.getIssueDetailsFromJira(_projectId,offset,limit);
             zephyrTests.forEach(issue -> {
                 int issueId = issue.getId();
-                log.info("Fetching test steps for issue counter:: "+counter.get());
+                log.info("Fetching test steps for issue counter:: ["+counter.get()+"]");
                 if(!fetchedTestStepsFromServer.containsKey(issueId)) {
                     try{
                         List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(issueId);
