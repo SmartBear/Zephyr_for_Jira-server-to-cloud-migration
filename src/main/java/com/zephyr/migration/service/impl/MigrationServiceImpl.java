@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -1138,16 +1139,24 @@ public class MigrationServiceImpl implements MigrationService {
         //create the test steps accordingly
         String _projectId = projectId.toString();
         Integer totalIssueCount = issueService.getTotalTestCountPerProjectFromJira(_projectId);
+        log.error("Total issue count received from jira ::: "+totalIssueCount);
         Integer offset = 0;
         Integer limit = 50;
+        AtomicInteger counter = new AtomicInteger(1);
         do{
             List<Issue> zephyrTests = issueService.getIssueDetailsFromJira(_projectId,offset,limit);
             zephyrTests.forEach(issue -> {
                 int issueId = issue.getId();
+                log.info("Fetching test steps for issue counter:: "+counter.get());
                 if(!fetchedTestStepsFromServer.containsKey(issueId)) {
-                    List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(issueId);
-                    testStepService.createTestStepInJiraCloud(testStepDTOList,issueId,projectId);
+                    try{
+                        List<TestStepDTO> testStepDTOList = testStepService.fetchTestStepsFromZFJ(issueId);
+                        createTestStepInJiraCloud(projectId,issueId,testStepDTOList);
+                    }catch (Exception ex) {
+                        log.error("Error occurred while migrating test steps from server to cloud for issue id ["+issueId+"]",ex.fillInStackTrace());
+                    }
                 }
+                counter.addAndGet(1);
             });
             offset +=limit;
         }while (offset < totalIssueCount);
