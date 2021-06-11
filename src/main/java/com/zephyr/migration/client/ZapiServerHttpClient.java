@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class ZapiServerHttpClient extends HttpClient {
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     public ZapiServerHttpClient() {
     }
