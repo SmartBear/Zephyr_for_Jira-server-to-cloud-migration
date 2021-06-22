@@ -59,7 +59,7 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public List<Issue> getIssueDetailsFromJira(String projectId, int startIndex, int limit) {
-        String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE_JQL,projectId,0);
+        String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE_JQL,projectId,startIndex);
 
         jiraHttpClient.setResourceName(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE + resourceName);
 
