@@ -113,11 +113,11 @@ public class MigrationServiceImpl implements MigrationService {
             }
         }
 
-        try{
+        /*try{
             beginTestStepsMigration(projectId,fetchedTestStepsFromServer);
         }catch (Exception ex) {
             log.info("Error occurred while migrating test steps.");
-        }
+        }*/
 
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
@@ -689,11 +689,17 @@ public class MigrationServiceImpl implements MigrationService {
             if (Files.exists(executionMappedFile)) {
                 progressQueue.put("Updating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.updateExecutionMappingFile(projectId+"", projectName, migrationFilePath, finalResponse);
-                return fetchedTestStepsFromServer;
+               // return fetchedTestStepsFromServer;
             }else if(finalResponse.size() > 0) {
                 progressQueue.put("Creating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
-                return fetchedTestStepsFromServer;
+                // return fetchedTestStepsFromServer;
+            }
+
+            try{
+                beginTestStepsMigration(projectId,fetchedTestStepsFromServer);
+            }catch (Exception ex) {
+                log.info("Error occurred while migrating test steps.");
             }
         }
         return fetchedTestStepsFromServer;
@@ -713,7 +719,17 @@ public class MigrationServiceImpl implements MigrationService {
                     }
                     List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList = new ArrayList<>();
                     Path executionAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                    List<String> mappedServerToCloudExecutionAttachmentMap = new ArrayList<>();
+                    if (Files.exists(executionAttachmentMappedFile)) {
+                        try {
+                            mappedServerToCloudExecutionAttachmentMap = FileUtils.readExecutionAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+                        } catch (IOException e) {
+                            log.error("Error while reading execution attachment mapping file", e);
+                        }
+                    }
+
                     if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                        final List<String> finalMappedServerToCloudExecutionAttachmentMap = mappedServerToCloudExecutionAttachmentMap;
                         mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
                             //Read the execution mapping file and start processing it.
                             List<AttachmentDTO> attachmentList = attachmentService.getAttachmentResponse(Integer.parseInt(serverExecutionId), ApplicationConstants.ENTITY_TYPE.EXECUTION);
@@ -721,15 +737,14 @@ public class MigrationServiceImpl implements MigrationService {
                             if (attachmentList != null && attachmentList.size() > 0) {
                                 if (Files.exists(executionAttachmentMappedFile)) {
                                     try {
-                                        List<String> mappedServerToCloudExecutionAttachmentMap = FileUtils.readExecutionAttachmentMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
-                                        if (!mappedServerToCloudExecutionAttachmentMap.isEmpty()) {
+                                        if (!finalMappedServerToCloudExecutionAttachmentMap.isEmpty()) {
                                             for (AttachmentDTO executionAttachment : attachmentList) {
-                                                if (!mappedServerToCloudExecutionAttachmentMap.contains(executionAttachment.getFileId())) {
+                                                if (!finalMappedServerToCloudExecutionAttachmentMap.contains(executionAttachment.getFileId())) {
                                                     finalAttachmentList.add(executionAttachment);
                                                 }
                                             }
                                         }
-                                    } catch (IOException e) {
+                                    } catch (Exception e) {
                                         log.error("Error while reading execution attachment mapping file", e);
                                     }
                                 } else {
@@ -1071,6 +1086,7 @@ public class MigrationServiceImpl implements MigrationService {
             }
         }
     }
+
 
     private ZfjCloudStepResultUpdateBean prepareRequestForStepResult(ZfjCloudStepResultBean zfjCloudStepResultBean, TestStepResultDTO testStepResult) {
         ZfjCloudStepResultUpdateBean zfjCloudStepResultUpdateBean = new ZfjCloudStepResultUpdateBean();

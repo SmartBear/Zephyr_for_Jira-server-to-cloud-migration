@@ -1,6 +1,7 @@
 package com.zephyr.migration.controllers;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.google.common.collect.Lists;
 import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.SearchRequest;
@@ -46,33 +47,45 @@ public class TestController {
     private String migrationFilePath;
 
     @Autowired
-    TestService testService;
+    private TestService testService;
 
     @Autowired
-    MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
+    private MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Autowired
-    ConfigProperties configProp;
+    private ConfigProperties configProp;
 
     @Autowired
-    FolderService folderService;
+    private FolderService folderService;
 
     @Autowired
-    ExecutionService executionService;
+    private ExecutionService executionService;
 
     @Autowired
-    AttachmentService attachmentService;
+    private AttachmentService attachmentService;
 
     @Autowired
-    TestStepService testStepService;
+    private TestStepService testStepService;
 
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
         log.info("Serving --> {}", "sayHello()");
         log.error("Serving --> {}", "sayHello()");
 
+        List<Integer> list = Lists.newArrayList(1,2,3,4,5,6,7,8,9,10);
+        List<List<Integer>> partitionList = Lists.partition(list,25);
+
+        System.out.println("Size of partitionList is :"+partitionList.size());
+
+        int counter =1;
+        for(List<Integer> subList : partitionList) {
+            System.out.println("counter :"+counter++);
+            for(Integer i : subList)
+                System.out.println("Number is i:"+i);
+        }
+
         String portNumber = configProp.getConfigValue("server.port");
-        return String.format("Hello %s!", name +portNumber);
+        return String.format("Hello %s!", name + " "+portNumber);
     }
 
     @GetMapping("/getIssueDescription")
