@@ -12,6 +12,9 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -256,12 +259,12 @@ public class MigrationMappingFileGenerationUtil {
     }
 
     public void updateExecutionMappingFile(String projectId, String projectName, String migrationFilePath, Map<ExecutionDTO, ZfjCloudExecutionBean> dtoZfjCloudExecutionBeanMap) {
-        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_EXECUTION_FILE_NAME+projectId+".xls";
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_EXECUTION_FILE_NAME+projectId+ ApplicationConstants.XLSX;
         try {
             if(dtoZfjCloudExecutionBeanMap.size() > 0) {
                 FileInputStream inputStream = new FileInputStream(excelFilePath);
-                HSSFWorkbook wb=new HSSFWorkbook(inputStream);
-                HSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+                XSSFWorkbook wb=new XSSFWorkbook(inputStream);
+                XSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
 
                 Object[][] rowDataSet = new Object[dtoZfjCloudExecutionBeanMap.size()][11];
                 int rowCount = sheet.getLastRowNum();
@@ -295,12 +298,14 @@ public class MigrationMappingFileGenerationUtil {
     }
 
     public void updateTestStepMappingFile(String projectId, String issueId, String migrationFilePath, List<TestStepDTO> testStepDTOList, List<JiraCloudTestStepDTO> createdCloudTestStepReList) {
-        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME+projectId+".xls";
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME+projectId+ ApplicationConstants.XLSX;
         try {
             if(testStepDTOList.size() > 0) {
                 FileInputStream inputStream = new FileInputStream(excelFilePath);
-                HSSFWorkbook wb=new HSSFWorkbook(inputStream);
-                HSSFSheet sheet=wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+               // HSSFWorkbook wb=new HSSFWorkbook(inputStream);
+                XSSFWorkbook wb = new XSSFWorkbook(inputStream);
+                XSSFSheet sheet = wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+                //HSSFSheet sheet=wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
 
                 Object[][] rowDataSet = new Object[testStepDTOList.size()][11];
                 int rowCount = sheet.getLastRowNum();
@@ -730,7 +735,7 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
-    public List<List<String>> testStepDataToPrintInExcel(String projectId, String issueId, List<TestStepDTO> serverTestStepList, List<JiraCloudTestStepDTO> cloudTestStepMapList) throws Exception {
+    private List<List<String>> testStepDataToPrintInExcel(String projectId, String issueId, List<TestStepDTO> serverTestStepList, List<JiraCloudTestStepDTO> cloudTestStepMapList) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateTestStepHeader());
         List<String> testStepMappingList;
@@ -745,7 +750,7 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
-    public List<List<String>> executionAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) throws Exception {
+    private List<List<String>> executionAttachmentDataToPrintInExcel(String projectId, String projectName, List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateExecutionAttachmentHeader());
         List<String> executionAttachmentMappingList;

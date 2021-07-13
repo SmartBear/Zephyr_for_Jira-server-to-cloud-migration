@@ -23,6 +23,7 @@ public class ApplicationConstants {
 
     /******* General constants *********/
     public static final String XLS = ".xls";
+    public static final String XLSX = ".xlsx";
     public static final String CLOUD_UNSCHEDULED_VERSION_ID = "-1";
     public static final String AD_HOC_CYCLE_ID = "-1";
     public static final String AD_HOC_CYCLE_NAME = "Ad Hoc";

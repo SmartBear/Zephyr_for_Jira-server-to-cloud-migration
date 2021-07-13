@@ -10,6 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -178,10 +180,10 @@ public class FileUtils {
 
     public static List<ExecutionDTO> readExecutionMappingFile(String nDataDir, String filename, String cloudCycleId, String cloudFolderId, List<ExecutionDTO> executionList, String executionLevel)  {
         try (FileInputStream fis=new FileInputStream(nDataDir+"/"+filename)) {
-            //creating workbook instance that refers to .xls file
-            HSSFWorkbook wb=new HSSFWorkbook(fis);
+            //creating workbook instance that refers to .xlsx file
+            XSSFWorkbook wb=new XSSFWorkbook(fis);
             //creating a Sheet object to retrieve the object
-            HSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+            XSSFSheet sheet=wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
 
             int cloudCycleIdIdx = 0;
             int cloudFolderIdIdx = 0;
@@ -275,14 +277,15 @@ public class FileUtils {
     public static List<Integer> readTestStepMappingFile(String directory, String filename, String issueId) throws IOException {
         //obtaining input bytes from a file
         HSSFSheet sheet;
+        XSSFSheet xssfSheet;
         FileInputStream fis = new FileInputStream(directory + "/" + filename);
         List<Integer> mappedTestStepId = new ArrayList<>();
-        //creating workbook instance that refers to .xls file
-        try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+        //creating workbook instance that refers to .xlsx file
+        try (XSSFWorkbook wb = new XSSFWorkbook(fis)) {
             //creating a Sheet object to retrieve the object
-            sheet = wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+            xssfSheet = wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
             int serverIdColIndex = 0, issueIdColIndex=0;
-            Row row = sheet.getRow(0);
+            Row row = xssfSheet.getRow(0);
             for (Cell cell : row) {
                 // Column header names.
                 if (ISSUE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
@@ -291,7 +294,7 @@ public class FileUtils {
                     serverIdColIndex = cell.getColumnIndex();
                 }
             }
-            for (Row r : sheet) {
+            for (Row r : xssfSheet) {
                 if (r.getRowNum()==0) continue;//headers
 
                 Cell serverIdCellVal = r.getCell(serverIdColIndex);
@@ -463,17 +466,51 @@ public class FileUtils {
         return false;
     }
 
+    public static List<String> readStepResultAttachmentMappingFileAndReturnList(String directory, String filename) throws IOException {
+
+        List<String> stepResultAttachmentList = new ArrayList<>();
+        //obtaining input bytes from a file
+        HSSFSheet sheet;
+        //creating workbook instance that refers to .xls file
+        try (FileInputStream fis = new FileInputStream(directory + "/" + filename); HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+            //creating a Sheet object to retrieve the object
+            sheet = wb.getSheet(ApplicationConstants.STEP_RESULT_ATTACHMENT_MAPPING_SHEET_NAME);
+            int serverStepResultIDColIndex = 0, serverStepResultAttachmentIDColIndex = 0;
+            Row row = sheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if (SERVER_STEP_RESULT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverStepResultIDColIndex = cell.getColumnIndex();
+                } else if (SERVER_STEP_RESULT_ATTACHMENT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverStepResultAttachmentIDColIndex = cell.getColumnIndex();
+                }
+            }
+            for (Row r : sheet) {
+                if (r.getRowNum() == 0) continue;//headers
+
+                Cell serverStepResultIDCellVal = r.getCell(serverStepResultIDColIndex);
+                Cell serverStepResultAttachmentIDCellVal = r.getCell(serverStepResultAttachmentIDColIndex);
+
+                if (Objects.nonNull(serverStepResultIDCellVal) && Objects.nonNull(serverStepResultAttachmentIDCellVal)) {
+                    stepResultAttachmentList.add(serverStepResultAttachmentIDCellVal.getStringCellValue());
+                }
+            }
+        }
+        return stepResultAttachmentList;
+    }
+
     public static Map<String, String> readExecutionMappingFile(String directory, String filename) throws IOException {
         //obtaining input bytes from a file
         FileInputStream fis = new FileInputStream(directory + "/" + filename);
         Map<String, String> serverCloudIdsMapping = new HashMap<>();
-        HSSFSheet sheet;
+        //HSSFSheet sheet;
+        XSSFSheet xssfSheet;
         //creating workbook instance that refers to .xls file
-        try (HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+        try (XSSFWorkbook wb = new XSSFWorkbook(fis)) {
             //creating a Sheet object to retrieve the object
-            sheet = wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+            xssfSheet = wb.getSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
             int cloudExecutionIdIndex=0, serverExecutionIdIndex=0;
-            Row row = sheet.getRow(0);
+            Row row = xssfSheet.getRow(0);
             for (Cell cell : row) {
                 // Column header names.
                 if(CLOUD_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
@@ -482,7 +519,7 @@ public class FileUtils {
                     serverExecutionIdIndex = cell.getColumnIndex();
                 }
             }
-            for (Row r : sheet) {
+            for (Row r : xssfSheet) {
                 if (r.getRowNum()==0) continue;//headers
 
                 Cell cloudExecutionIdCellVal = r.getCell(cloudExecutionIdIndex);
@@ -553,12 +590,13 @@ public class FileUtils {
         Map<String,ArrayList<String>> testStepIdsMap = new HashMap<>();
 
         HSSFSheet sheet;
-        //creating workbook instance that refers to .xls file
-        try (FileInputStream fis = new FileInputStream(migrationFilePath + "/" + fileName); HSSFWorkbook wb = new HSSFWorkbook(fis)) {
+        XSSFSheet xssfSheet;
+        //creating workbook instance that refers to .xlsx file
+        try (FileInputStream fis = new FileInputStream(migrationFilePath + "/" + fileName); XSSFWorkbook wb = new XSSFWorkbook(fis)) {
             //creating a Sheet object to retrieve the object
-            sheet = wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+            xssfSheet = wb.getSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
             int serverIdColIndex = 0, cloudStepIdColIndex = 0, issueIdColIndex =0;
-            Row row = sheet.getRow(0);
+            Row row = xssfSheet.getRow(0);
             for (Cell cell : row) {
                 // Column header names.
                 if (CLOUD_TEST_STEP_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
@@ -569,7 +607,7 @@ public class FileUtils {
                     issueIdColIndex = cell.getColumnIndex();
                 }
             }
-            for (Row r : sheet) {
+            for (Row r : xssfSheet) {
                 if (r.getRowNum() == 0) continue;//headers
 
                 Cell serverIdCellVal = r.getCell(serverIdColIndex);
