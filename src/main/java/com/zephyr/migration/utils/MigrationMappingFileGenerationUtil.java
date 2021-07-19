@@ -3,10 +3,7 @@ package com.zephyr.migration.utils;
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.*;
-import com.zephyr.migration.model.ZfjCloudAttachmentBean;
-import com.zephyr.migration.model.ZfjCloudCycleBean;
-import com.zephyr.migration.model.ZfjCloudExecutionBean;
-import com.zephyr.migration.model.ZfjCloudFolderBean;
+import com.zephyr.migration.model.*;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -31,7 +28,7 @@ public class MigrationMappingFileGenerationUtil {
     /*
     * Generate Excel File For Migration Report
     * */
-    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) {
+    public void generateVersionMappingReportExcel(String migrationFilePath, String projectId, Iterable<JiraVersion> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) {
         try {
             List<List<String>> responseList = versionDataToPrintInExcel(projectId, versionsFromZephyrServer, versionsFromZephyrCloud);
             ExcelUtils excelUtils = new ExcelUtils();
@@ -44,7 +41,7 @@ public class MigrationMappingFileGenerationUtil {
     /**
      * Header Creator
      */
-    public static List<String> generateHeader()  throws Exception {
+    private static List<String> generateHeader()  throws Exception {
         List<String> header1 = new ArrayList<String>();
         header1.add("Project Id");
         header1.add("Server Version Id");
@@ -57,11 +54,11 @@ public class MigrationMappingFileGenerationUtil {
      * @return
      * @throws Exception
      */
-    public List<List<String>> versionDataToPrintInExcel(String projectId, Iterable<Version> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
+    private List<List<String>> versionDataToPrintInExcel(String projectId, Iterable<JiraVersion> versionsFromZephyrServer, JsonNode versionsFromZephyrCloud) throws Exception {
         List<List<String>> recordToAdd = new ArrayList<>();
         recordToAdd.add(generateHeader());
 
-        Map<Long, Version> serverVersionMap = new HashMap<>();
+        Map<String, JiraVersion> serverVersionMap = new HashMap<>();
         if(Objects.nonNull(versionsFromZephyrServer)) {
             versionsFromZephyrServer.forEach(version -> {
                 //serverVersionIdList.add(version.getId());
@@ -70,7 +67,7 @@ public class MigrationMappingFileGenerationUtil {
         }
 
         List versionMappingList;
-        int count = -1;
+
         for (JsonNode jn : versionsFromZephyrCloud) {
             versionMappingList = new ArrayList<>();
             Long cloudVersionId = Long.parseLong(jn.findValue("versionId").toString());

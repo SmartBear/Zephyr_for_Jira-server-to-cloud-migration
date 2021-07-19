@@ -1,5 +1,6 @@
 package com.zephyr.migration.model;
 
+import com.atlassian.jira.rest.client.api.domain.Version;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 import java.util.Date;

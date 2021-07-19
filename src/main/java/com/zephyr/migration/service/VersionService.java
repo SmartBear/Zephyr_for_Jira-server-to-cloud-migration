@@ -2,6 +2,7 @@ package com.zephyr.migration.service;
 
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.zephyr.migration.model.JiraVersion;
 
 public interface VersionService {
 
@@ -11,5 +12,7 @@ public interface VersionService {
 
     void createUnscheduledVersionInZephyrCloud(String projectId);
 
-    JsonNode createVersionInZephyrCloud(Version jiraServerVersion, Long projectId);
+    JsonNode createVersionInZephyrCloud(JiraVersion jiraServerVersion, Long projectId);
+
+    Iterable<JiraVersion> getVersionListFromServer(String projectId);
 }
