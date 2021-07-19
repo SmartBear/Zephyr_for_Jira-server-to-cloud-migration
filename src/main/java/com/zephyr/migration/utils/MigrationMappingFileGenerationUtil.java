@@ -500,16 +500,20 @@ public class MigrationMappingFileGenerationUtil {
 
     private void populateTestStepRowDataSet(Object[][] rowDataSet, String projectId, String issueId, List<TestStepDTO> testStepDTOList, List<JiraCloudTestStepDTO> createdCloudTestStepList) {
         AtomicInteger row = new AtomicInteger();
-        for (int i = 0; i <= testStepDTOList.size()-1; i++) {
-            int column = 0;
-            rowDataSet[row.get()][column] = projectId + "";
-            ++column;
-            rowDataSet[row.get()][column] = issueId + "";
-            ++column;
-            rowDataSet[row.get()][column] = testStepDTOList.get(i).getId() + "";
-            ++column;
-            rowDataSet[row.get()][column] = createdCloudTestStepList.get(i).getId() + "";
-            row.incrementAndGet();
+        try{
+            for (int i = 0; i <= testStepDTOList.size()-1; i++) {
+                int column = 0;
+                rowDataSet[row.get()][column] = projectId + "";
+                ++column;
+                rowDataSet[row.get()][column] = issueId + "";
+                ++column;
+                rowDataSet[row.get()][column] = testStepDTOList.get(i).getId() + "";
+                ++column;
+                rowDataSet[row.get()][column] = createdCloudTestStepList.get(i).getId() + "";
+                row.incrementAndGet();
+            }
+        }catch (Exception exception) {
+            log.error("Exception occurred while preparing the file data.");
         }
     }
 

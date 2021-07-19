@@ -1,5 +1,6 @@
 package com.zephyr.migration.service.impl;
 
+import com.google.common.collect.Lists;
 import com.google.gson.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
@@ -34,13 +35,14 @@ import java.util.*;
 public class TestStepServiceImpl implements TestStepService {
 
     private static final Logger log = LoggerFactory.getLogger(TestStepServiceImpl.class);
+    private static final int TEST_STEP_PARTITION_LIST_SIZE = 50;
 
     @Autowired
     @Qualifier(value = "zapiHttpClient")
     private HttpClient zapiHttpClient;
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
 
     @Override
     public List<TestStepResultDTO> getTestStepsResultFromZFJ(String executionId) {
@@ -157,33 +159,74 @@ public class TestStepServiceImpl implements TestStepService {
         }
         createUrl = createUrl + queryParams;
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
+
         createCloudBulkTestStepUrl = createCloudBulkTestStepUrl + "?projectId=" + projectId + "&issueId=" + issueId;
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, jwt);
         headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
-        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testSteps), headers);
-        String response;
-        List<JiraCloudTestStepDTO> testStepList = new ArrayList<>();
-        try {
-            log.info("request to cloud for create bulk test step for this issue id ::: "+ issueId.toString());
-            response = restTemplate.postForObject(createCloudBulkTestStepUrl, entity, String.class);
-            if (response != null && !response.isEmpty()) {
-                JsonParser parser = new JsonParser();
-                JsonElement element = parser.parse(response);
-                JsonObject object = element.getAsJsonObject();
-                JsonArray testStepsArray = object.getAsJsonArray("teststepList");
+        headers.set(HttpHeaders.CONTENT_LENGTH,String.valueOf(1048576));
+        List<JiraCloudTestStepDTO> finalProcessedTestStepList = new ArrayList<>();
 
-                TypeReference<List<JiraCloudTestStepDTO>> reference = new TypeReference<List<JiraCloudTestStepDTO>>() {};
-                if (Objects.nonNull(testStepsArray)) {
-                    testStepList = JsonUtil.readValue(testStepsArray.toString(), reference);
+        if(CollectionUtils.isNotEmpty(testSteps) && testSteps.size() > TEST_STEP_PARTITION_LIST_SIZE) {
+            /**
+             * Partition the list into size of 100 & process the list.
+             */
+            List<List<TestStepDTO>> partitionTestStepsList = Lists.partition(testSteps,TEST_STEP_PARTITION_LIST_SIZE);
+            log.info("Size of partitionTestStepsList is :"+partitionTestStepsList.size() + " for issueId: "+issueId);
+
+            int counter =1;
+            for(List<TestStepDTO> testStepDTOList : partitionTestStepsList) {
+                log.debug("processing sub list counter :"+counter++);
+
+                HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testStepDTOList), headers);
+                String response;
+                List<JiraCloudTestStepDTO> testStepList = new ArrayList<>();
+                try {
+                    log.info("request to cloud for create bulk test step for this issue id ::: "+ issueId.toString());
+                    response = restTemplate.postForObject(createCloudBulkTestStepUrl, entity, String.class);
+                    if (response != null && !response.isEmpty()) {
+                        JsonParser parser = new JsonParser();
+                        JsonElement element = parser.parse(response);
+                        JsonObject object = element.getAsJsonObject();
+                        JsonArray testStepsArray = object.getAsJsonArray("teststepList");
+
+                        TypeReference<List<JiraCloudTestStepDTO>> reference = new TypeReference<List<JiraCloudTestStepDTO>>() {};
+                        if (Objects.nonNull(testStepsArray)) {
+                            testStepList = JsonUtil.readValue(testStepsArray.toString(), reference);
+                            finalProcessedTestStepList.addAll(testStepList);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error while creating test step in cloud for" + issueId.toString() + "this issue id " + e.fillInStackTrace());
                 }
             }
-        } catch (Exception e) {
-            log.error("Error while creating test step in cloud for" + issueId.toString() + "this issue id " + e.fillInStackTrace());
+            return finalProcessedTestStepList;
+        }else {
+
+            HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(testSteps), headers);
+            String response;
+            List<JiraCloudTestStepDTO> testStepList = new ArrayList<>();
+            try {
+                log.info("request to cloud for create bulk test step for this issue id ::: "+ issueId.toString());
+                response = restTemplate.postForObject(createCloudBulkTestStepUrl, entity, String.class);
+                if (response != null && !response.isEmpty()) {
+                    JsonParser parser = new JsonParser();
+                    JsonElement element = parser.parse(response);
+                    JsonObject object = element.getAsJsonObject();
+                    JsonArray testStepsArray = object.getAsJsonArray("teststepList");
+
+                    TypeReference<List<JiraCloudTestStepDTO>> reference = new TypeReference<List<JiraCloudTestStepDTO>>() {};
+                    if (Objects.nonNull(testStepsArray)) {
+                        testStepList = JsonUtil.readValue(testStepsArray.toString(), reference);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error while creating test step in cloud for" + issueId.toString() + "this issue id " + e.fillInStackTrace());
+            }
+            return testStepList;
         }
-        return testStepList;
     }
 
     @Override
