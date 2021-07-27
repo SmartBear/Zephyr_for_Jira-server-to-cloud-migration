@@ -827,14 +827,22 @@ public class MigrationServiceImpl implements MigrationService {
         }
 
         AtomicReference<String> dummyCloudExecutionId = new AtomicReference<>();
-        List<String> finalServerStepResultAttachmentList = serverStepResultAttachmentList;
-        mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
-            List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
-            if(CollectionUtils.isNotEmpty(testStepResults) && testStepResults.size() > 0) {
-                   importStepResultLevelAttachmentsAndResults(testStepResults, projectId, projectName, cloudExecutionId, finalServerStepResultAttachmentList);
-                   dummyCloudExecutionId.set(cloudExecutionId);
-            }
-        });
+        final String MIGRATE_UPDATE_STEP_RESULTS_FLAG = configProperties.getConfigValue("migrate.update.step.results");
+        boolean isMigrateStepResultsAndAttachment = Boolean.parseBoolean(MIGRATE_UPDATE_STEP_RESULTS_FLAG);
+
+        log.info("Step results update migration flag set to : "+isMigrateStepResultsAndAttachment);
+
+        if(isMigrateStepResultsAndAttachment) {
+            List<String> finalServerStepResultAttachmentList = serverStepResultAttachmentList;
+            mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+                List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
+                if(CollectionUtils.isNotEmpty(testStepResults) && testStepResults.size() > 0) {
+                    importStepResultLevelAttachmentsAndResults(testStepResults, projectId, projectName, cloudExecutionId, finalServerStepResultAttachmentList);
+                    dummyCloudExecutionId.set(cloudExecutionId);
+                }
+            });
+        }
+
         try {
             final String MIGRATE_TEST_STEPS_ATTACHMENT_FLAG = configProperties.getConfigValue("migrate.test.steps.attachment");
             boolean isMigrateTestStepsAttachment = Boolean.parseBoolean(MIGRATE_TEST_STEPS_ATTACHMENT_FLAG);
@@ -865,13 +873,13 @@ public class MigrationServiceImpl implements MigrationService {
 
         for (TestStepResultDTO testStepResult : testStepResultNewList) {
             try {
-                log.info("Step level status for id:: "+ testStepResult.getStatus());
                 //Update the step result data in cloud instance.
                 ZfjCloudStepResultBean zfjCloudStepResultBean = stepResultBeanMap.get(testStepResult.getOrderId());
                 if(Objects.nonNull(zfjCloudStepResultBean)) {
                     if(StringUtils.isNotBlank(testStepResult.getStatus()) &&
                             !testStepResult.getStatus().equalsIgnoreCase(UNEXECUTED_STATUS)) {
-                        log.info("Step level status for id:: "+ testStepResult.getStatus());
+                        log.info("Step level status to update:: "+ testStepResult.getStatus());
+                        log.info("Step level status for id:: "+ testStepResult.getId());
                         testStepService.updateStepResult(prepareRequestForStepResult(zfjCloudStepResultBean,testStepResult));
                     }
                 }
