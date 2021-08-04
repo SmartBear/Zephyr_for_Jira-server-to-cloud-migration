@@ -146,7 +146,14 @@ public class MigrationServiceImpl implements MigrationService {
      */
     private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
 
-        Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
+       // Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
+
+        Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
+
+        versionsFromZephyrServer.forEach(v -> {
+            log.info("Version name:: "+v.getName() + " id:"+v.getId());
+        });
+
 
         Path path = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
         if(Files.exists(path)){
@@ -401,14 +408,14 @@ public class MigrationServiceImpl implements MigrationService {
      * @param migrationFilePath
      * @throws InterruptedException
      */
-    private void createUnmappedVersionInCloud(Iterable<Version> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId, String migrationFilePath) throws InterruptedException {
+    private void createUnmappedVersionInCloud(Iterable<JiraVersion> versionsFromZephyrServer, List<String> mappedServerToCloudVersionList, Long projectId, String migrationFilePath) throws InterruptedException {
         if(Objects.nonNull(versionsFromZephyrServer)) {
             progressQueue.put("Got the versions from JIRA Server.");
             Map<String, Long> serverCloudVersionMapping = new HashMap<>();
             versionsFromZephyrServer.forEach(jiraServerVersion -> {
                 try {
                     progressQueue.put("Version Details : "+ jiraServerVersion.getName());
-                    String versionId = Objects.nonNull(jiraServerVersion.getId()) ? Long.toString(jiraServerVersion.getId()) : null;
+                    String versionId = Objects.nonNull(jiraServerVersion.getId()) ? jiraServerVersion.getId() : null;
                     if(!mappedServerToCloudVersionList.contains(versionId)) {
                         log.info("Version Details doesn't exist in cloud, creating the version in cloud instance:"+ jiraServerVersion.getName());
                         progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());

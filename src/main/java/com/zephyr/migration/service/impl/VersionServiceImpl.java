@@ -3,15 +3,22 @@ package com.zephyr.migration.service.impl;
 import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
+import com.sun.jersey.api.client.ClientResponse;
+import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
 import com.zephyr.migration.dto.VersionDTO;
+import com.zephyr.migration.model.JiraVersion;
+import com.zephyr.migration.model.VersionWrapper;
 import com.zephyr.migration.service.VersionService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.JsonUtil;
+import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -19,13 +26,19 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+
 @Service
 public class VersionServiceImpl implements VersionService {
 
     private static final Logger log = LoggerFactory.getLogger(VersionServiceImpl.class);
 
     @Autowired
-    ConfigProperties configProperties;
+    private ConfigProperties configProperties;
+
+    @Autowired
+    @Qualifier(value = "jiraHttpClient")
+    private HttpClient jiraHttpClient;
 
     public JsonNode getVersionsFromZephyrCloud(String projectId) {
         log.info("Serving --> {}", "getVersions()");
@@ -84,7 +97,7 @@ public class VersionServiceImpl implements VersionService {
     }
 
     @Override
-    public JsonNode createVersionInZephyrCloud(Version jiraServerVersion, Long projectId) {
+    public JsonNode createVersionInZephyrCloud(JiraVersion jiraServerVersion, Long projectId) {
         log.info("Serving --> {}", "createVersionInZephyrCloud()");
         final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
@@ -112,5 +125,24 @@ public class VersionServiceImpl implements VersionService {
             log.error("Error while creating version in cloud " + e.getMessage());
         }
         return response;
+    }
+
+    @Override
+    public Iterable<JiraVersion> getVersionListFromServer(String projectId) {
+
+        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
+
+        ClientResponse response = jiraHttpClient.get();
+
+        TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
+        VersionWrapper versions;
+        Iterable<JiraVersion> versionList = null;
+        try {
+            versions = JsonUtil.readValue(response.getEntity(String.class), ref);
+            versionList = versions.getValues();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return versionList;
     }
 }
