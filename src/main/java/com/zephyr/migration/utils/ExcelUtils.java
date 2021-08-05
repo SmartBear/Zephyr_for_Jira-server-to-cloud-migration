@@ -4,6 +4,9 @@ import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,21 +109,21 @@ public class ExcelUtils {
 
     public void writeExecutionDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
         int rowNum = 0;
-        HSSFSheet secondSheet;
-        HSSFWorkbook workbook;
+        XSSFSheet xssfSheet;
+        XSSFWorkbook workbook;
         FileOutputStream fos;
-        workbook = new HSSFWorkbook();
-        HSSFCellStyle hsfStyle = workbook.createCellStyle();
-        hsfStyle.setBorderBottom(BorderStyle.THICK);
-        hsfStyle.setFillBackgroundColor((short)245);
-        secondSheet = workbook.createSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
-        Row headerRow = secondSheet.createRow(rowNum);
+        workbook = new XSSFWorkbook();
+        XSSFCellStyle xssfCellStyle = workbook.createCellStyle();
+        xssfCellStyle.setBorderBottom(BorderStyle.THICK);
+        xssfCellStyle.setFillBackgroundColor((short)245);
+        xssfSheet = workbook.createSheet(ApplicationConstants.EXECUTION_MAPPING_SHEET_NAME);
+        Row headerRow = xssfSheet.createRow(rowNum);
         headerRow.setHeightInPoints(40);
-        fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName + ApplicationConstants.XLSX);
         try {
 
             for (List<String> record : recordList) {
-                Row row = secondSheet.createRow(rowNum);
+                Row row = xssfSheet.createRow(rowNum);
                 for (int k = 0; k < record.size(); k++) {
                     Cell cell = row.createCell(k);
                     cell.setCellValue(record.get(k));
@@ -143,35 +146,41 @@ public class ExcelUtils {
     public void writeTestStepDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> recordList) throws Exception {
         int rowNum = 0;
         HSSFSheet secondSheet;
-        HSSFWorkbook workbook;
+        XSSFSheet xssfSheet;
+       // HSSFWorkbook workbook;
+        XSSFWorkbook xssfWorkbook;
         FileOutputStream fos;
-        workbook = new HSSFWorkbook();
-        HSSFCellStyle hsfStyle = workbook.createCellStyle();
-        hsfStyle.setBorderBottom(BorderStyle.THICK);
-        hsfStyle.setFillBackgroundColor((short)245);
-        secondSheet = workbook.createSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
-        Row headerRow = secondSheet.createRow(rowNum);
+        //workbook = new HSSFWorkbook();
+        xssfWorkbook = new XSSFWorkbook();
+
+        XSSFCellStyle xssfCellStyle = xssfWorkbook.createCellStyle();
+        xssfCellStyle.setBorderBottom(BorderStyle.THICK);
+        xssfCellStyle.setFillBackgroundColor((short)245);
+
+        xssfSheet = xssfWorkbook.createSheet(ApplicationConstants.TEST_STEP_MAPPING_SHEET_NAME);
+
+        Row headerRow = xssfSheet.createRow(rowNum);
         headerRow.setHeightInPoints(40);
-        fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        //fos=new FileOutputStream(migrationFilePath+"/"+ fileName +".xls");
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName + ApplicationConstants.XLSX);
         try {
 
             for (List<String> record : recordList) {
-                Row row = secondSheet.createRow(rowNum);
+                Row row = xssfSheet.createRow(rowNum);
                 for (int k = 0; k < record.size(); k++) {
                     Cell cell = row.createCell(k);
                     cell.setCellValue(record.get(k));
                 }
                 rowNum++;
             }
-
-            workbook.write(fos);
+            xssfWorkbook.write(fos);
 
         } catch (Exception e) {
             log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
         } finally {
             //fis.close();
             fos.close();
-            workbook.close();
+            xssfWorkbook.close();
         }
 
     }

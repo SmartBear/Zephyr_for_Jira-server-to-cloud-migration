@@ -23,6 +23,7 @@ public class ApplicationConstants {
 
     /******* General constants *********/
     public static final String XLS = ".xls";
+    public static final String XLSX = ".xlsx";
     public static final String CLOUD_UNSCHEDULED_VERSION_ID = "-1";
     public static final String AD_HOC_CYCLE_ID = "-1";
     public static final String AD_HOC_CYCLE_NAME = "Ad Hoc";
@@ -60,6 +61,7 @@ public class ApplicationConstants {
     public static final String JIRA_RESOURCE_SEARCH_ISSUE_JQL = "jql=project=%s+and+issuetype=Test&startAt=%s";
     public static final String JIRA_RESOURCE_SEARCH_ISSUE_KEY_JQL = "jql=issue=%s";
     public static final String JIRA_RESOURCE_ISSUE = "issue/%s";
+    public static final String JIRA_RESOURCE_VERSION = "project/%s/version";
 
     public static final String CYCLE_LEVEL_EXECUTION = "Cycle Level Execution";
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";

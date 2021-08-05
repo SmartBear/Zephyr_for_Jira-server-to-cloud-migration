@@ -15,6 +15,7 @@ import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.AttachmentDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
+import com.zephyr.migration.model.JiraVersion;
 import com.zephyr.migration.model.ZfjCloudAttachmentBean;
 import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.AttachmentService;
@@ -110,7 +111,7 @@ public class TestServiceImpl implements TestService {
         final String SERVER_USER_NAME = configProperties.getConfigValue("zfj.server.username");
         final String SERVER_USER_PASS = configProperties.getConfigValue("zfj.server.password");
         final String SERVER_BASE_URL = configProperties.getConfigValue("zfj.server.baseUrl");
-        Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS);
+        Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(projectId+"");
         Map<String, Long> serverCloudVersionMapping = new HashMap<>();
 
         versionsFromZephyrServer.forEach(version -> {
@@ -119,7 +120,7 @@ public class TestServiceImpl implements TestService {
                 log.info("created version in cloud : " + new ObjectMapper().writeValueAsString(versionNode));
 
                 if(Objects.nonNull(versionNode) && versionNode.has("id")) {
-                    String versionId = Objects.nonNull(version.getId()) ? Long.toString(version.getId()) : null;
+                    String versionId = Objects.nonNull(version.getId()) ? version.getId() : null;
                     Long cloudVersionId = versionNode.findValue("id").asLong();
                     serverCloudVersionMapping.put(versionId, cloudVersionId);
                 }
