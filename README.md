@@ -1,11 +1,27 @@
 # Zephyr_for_Jira-server-to-cloud-migration
 #### Zephyr for Jira Server to Cloud Migration
 
+### <i>Major upgrade</i>
+As part of latest release we have updated the mapping file creation of test steps and execution in <b>.xlsx</b> format.
+The new build will not work with already migrated projects since earlier the tool was creating <b>.xls</b> format file and it
+will not be able to read the .xls format files.
+Use the latest build for new projects.
+Keep the old precompiled jars for already migrated project(s).
+
+### <i>New properties added to improve migration process time.</i>
+#### By default the properties are set to <i>'true'</i>
+1. <b>migrate.step.results.attachment</b> : If there are no step results attachment in the server instance, then this property 
+can be set to <i>'false'</i> to avoid fetching data from Zephyr Server.
+2. <b>migrate.test.steps.attachment</b> : If there are no test steps level attachment in the server instance, then this property 
+can be set to <i>'false'</i> to avoid fetching data from Zephyr Server.
+3. <b>migrate.update.step.results</b> : If user wish not to update the step results status in cloud instance, then this property 
+can be set to <i>'false'</i> to avoid fetching data from Zephyr Server & uploading the data in zephyr cloud.
+
 ###### Please read the below instructions to setup the configuration
-1. Run ‘mvn clean install’ command to build the package.
-2. Run ‘mvn spring-boot:run’ command to run the application. 
+1. Run <b>‘mvn clean install’</b> command to build the package.
+2. Run <b>‘mvn spring-boot:run’</b> command to run the application. 
 This will launch the spring boot server at default port 8080.
-3. The default properties can be updated in application.properties file.
+3. The default properties can be updated in <i>application.properties</i> file.
 
 ###### Prerequisite for the application.
 1) Server Base Url
@@ -29,7 +45,7 @@ This will launch the spring boot server at default port 8080.
 
 ###### **To Trigger the migration**
 
-Launch the application at http://{localhost:port}/beginMigration   
+Launch the application at <b>http://{localhost:port}/beginMigration</b>   
 
 Provide the project id & begin the process.
 
