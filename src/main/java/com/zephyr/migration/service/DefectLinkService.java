@@ -1,2 +1,4 @@
-package com.zephyr.migration.service;public interface DefectLinkService {
+package com.zephyr.migration.service;
+
+public interface DefectLinkService {
 }
