@@ -54,6 +54,8 @@ public class ApplicationConstants {
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION = "attachment/%s/file";
     public static final String ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID = "stepResult?executionId=%s&expand=executionStatus";
     public static final String ZAPI_RESOURCE_GET_TEST_STEP = "teststep/%s";
+    public static final String ZAPI_RESOURCE_GET_DEFECTS_BY_EXECUTION_ID = "execution/%s/defects";
+    public static final String ZAPI_RESOURCE_GET_STEP_DEFECTS_BY_EXECUTION_ID = "stepResult/stepDefects?executionId=%s";
 
     /******* JIRA SERVER API endpoint URL *********/
     public static final String JIRA_RESOURCE_SEARCH_ISSUE = "search?";
