@@ -3,14 +3,13 @@ package com.zephyr.migration.controllers;
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.google.common.collect.Lists;
 import com.zephyr.migration.dto.*;
-import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.model.SearchRequest;
-import com.zephyr.migration.model.ZfjCloudStepResultBean;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.ApplicationConstants;
+import com.zephyr.migration.utils.ConfigProperties;
 import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
-import com.zephyr.migration.utils.ConfigProperties;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,16 +246,30 @@ public class TestController {
             if(issueId == null) {
                 issueId = 10003;
             }
-            List<ZfjCloudStepResultBean> stepResultBeans = testStepService.getTestStepResultsFromZFJCloud(executionId);
-            log.info("step result beans "+stepResultBeans.toString());
 
-            String serverExecutionId = "757";
+            String serverExecutionId = "37307";
             List<TestStepResultDTO> testStepResults = testStepService.getTestStepsResultFromZFJ(serverExecutionId);
-            if(CollectionUtils.isNotEmpty(testStepResults)) {
-                TestStepResultDTO testStepResultDTO = testStepResults.get(0);
-                Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = stepResultBeans.stream().collect(Collectors.toMap(ZfjCloudStepResultBean::getOrderId, c -> c));
-                testService.importStepResultLevelAttachments(testStepResults,stepResultBeanMap);
+
+            for (TestStepResultDTO stepResults: testStepResults) {
+                log.info("defects :: "+stepResults.getDefects().toString());
+                List<Map<String,String>> defects = stepResults.getDefects();
+                List<String> issueKeys = new ArrayList<>();
+                if(CollectionUtils.isNotEmpty(defects)) {
+                    for (Map<String,String> map:  defects) {
+                        issueKeys = new ArrayList<>();
+                        for (Map.Entry<String,String> entry: map.entrySet()) {
+                            if(entry.getKey().equalsIgnoreCase("key")) {
+                                issueKeys.add(entry.getValue());
+                                break;
+                            }
+                        }
+                        System.out.println("issue keys:: "+ issueKeys + " for step result id "+stepResults.getId());
+
+                    }
+                }
+
             }
+
             return "Step results found";
         }
         return "Not Found";

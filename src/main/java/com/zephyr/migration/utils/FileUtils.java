@@ -2,14 +2,14 @@ package com.zephyr.migration.utils;
 
 import com.google.common.collect.Lists;
 import com.zephyr.migration.dto.ExecutionDTO;
-import com.zephyr.migration.dto.TestStepDTO;
 import com.zephyr.migration.exception.NDataException;
 import com.zephyr.migration.model.SearchRequest;
-import com.zephyr.migration.model.ZfjCloudExecutionBean;
+import com.zephyr.migration.model.StepResultFileResponseBean;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -18,13 +18,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by Himanshu Singhal on 18-11-2020.
@@ -51,6 +49,7 @@ public class FileUtils {
     private static final String SERVER_TEST_STEP_ID_COLUMN_NAME = "server-teststep-id";
     private static final String CLOUD_TEST_STEP_ID_COLUMN_NAME = "cloud-teststep-id";
     private static final String SERVER_TEST_STEP_ATTACHMENT_ID_COLUMN_NAME = "server-attachment-id";
+    private static final String CLOUD_STEP_RESULT_ID_COLUMN_NAME = "cloud-stepresult-id";
 
     public static File createFile(String nDataDir, String filename) {
         //  nDataDir = doPreProcessing(nDataDir);
@@ -657,5 +656,63 @@ public class FileUtils {
             }
         }
         return mappedServerTestStepAttachmentIds;
+    }
+
+    public static Map<String, Map<String, StepResultFileResponseBean>> readStepResultsMappingFile(String migrationFilePath, String fileName) throws IOException {
+        //obtaining input bytes from a file
+        FileInputStream fis = new FileInputStream(migrationFilePath + "/" + fileName);
+        Map<String, Map<String,StepResultFileResponseBean>> serverCloudIdsMapping = new HashMap<>();
+
+        XSSFSheet xssfSheet;
+        try (XSSFWorkbook wb = new XSSFWorkbook(fis)) {
+            //creating a Sheet object to retrieve the object
+            xssfSheet = wb.getSheet(ApplicationConstants.STEP_RESULTS_MAPPING_SHEET_NAME);
+            int cloudExecutionIdIndex=0, serverExecutionIdIndex=0, serverStepResultIdIndex=0, cloudStepResultIdIndex=0;
+            Row row = xssfSheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if(CLOUD_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudExecutionIdIndex = cell.getColumnIndex();
+                }else if(SERVER_EXECUTION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverExecutionIdIndex = cell.getColumnIndex();
+                }else if(SERVER_STEP_RESULT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    serverStepResultIdIndex = cell.getColumnIndex();
+                }else if(CLOUD_STEP_RESULT_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    cloudStepResultIdIndex = cell.getColumnIndex();
+                }
+            }
+            for (Row r : xssfSheet) {
+                if (r.getRowNum()==0) continue;//headers
+
+                Cell cloudExecutionIdCellVal = r.getCell(cloudExecutionIdIndex);
+                Cell serverExecutionIdCellVal = r.getCell(serverExecutionIdIndex);
+                Cell cloudStepResultIdCellVal = r.getCell(cloudStepResultIdIndex);
+                Cell serverStepResultIdCellVal = r.getCell(serverStepResultIdIndex);
+
+                if (Objects.nonNull(serverExecutionIdCellVal) && Objects.nonNull(cloudExecutionIdCellVal)
+                        && Objects.nonNull(cloudStepResultIdCellVal) && Objects.nonNull(serverStepResultIdCellVal)) {
+                    String serverExecutionId_Val = serverExecutionIdCellVal.getStringCellValue();
+                    String cloudExecutionId_Val = cloudExecutionIdCellVal.getStringCellValue();
+                    String serverStepResultId_Val = serverStepResultIdCellVal.getStringCellValue();
+                    String cloudStepResultId_Val = cloudStepResultIdCellVal.getStringCellValue();
+                    StepResultFileResponseBean responseBean = new StepResultFileResponseBean(serverExecutionId_Val,
+                            cloudExecutionId_Val,serverStepResultId_Val,cloudStepResultId_Val);
+
+                    if(serverCloudIdsMapping.containsKey(serverExecutionId_Val)) {
+                        Map<String,StepResultFileResponseBean> existingData = serverCloudIdsMapping.get(serverExecutionId_Val);
+                        existingData.put(serverStepResultId_Val,responseBean);
+                        serverCloudIdsMapping.put(serverExecutionId_Val,existingData);
+                    }else {
+                        Map<String,StepResultFileResponseBean> data = new HashMap<>();
+                        data.put(serverStepResultId_Val, responseBean);
+                        serverCloudIdsMapping.put(serverExecutionId_Val,data);
+                    }
+
+                }
+            }
+        }finally {
+            fis.close();
+        }
+        return serverCloudIdsMapping;
     }
 }

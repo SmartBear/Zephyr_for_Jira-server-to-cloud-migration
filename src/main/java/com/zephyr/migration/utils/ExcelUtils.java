@@ -324,4 +324,113 @@ public class ExcelUtils {
             workbook.close();
         }
     }
+
+    public void writeStepResultsMigrationDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> responseList) throws IOException {
+        int rowNum = 0;
+        XSSFSheet xssfSheet;
+        XSSFWorkbook xssfWorkbook;
+        FileOutputStream fos;
+        xssfWorkbook = new XSSFWorkbook();
+
+        XSSFCellStyle xssfCellStyle = xssfWorkbook.createCellStyle();
+        xssfCellStyle.setBorderBottom(BorderStyle.THICK);
+        xssfCellStyle.setFillBackgroundColor((short)245);
+
+        xssfSheet = xssfWorkbook.createSheet(ApplicationConstants.STEP_RESULTS_MAPPING_SHEET_NAME);
+
+        Row headerRow = xssfSheet.createRow(rowNum);
+        headerRow.setHeightInPoints(40);
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName + ApplicationConstants.XLSX);
+        try {
+
+            for (List<String> record : responseList) {
+                Row row = xssfSheet.createRow(rowNum);
+                for (int k = 0; k < record.size(); k++) {
+                    Cell cell = row.createCell(k);
+                    cell.setCellValue(record.get(k));
+                }
+                rowNum++;
+            }
+            xssfWorkbook.write(fos);
+
+        } catch (Exception e) {
+            log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+        } finally {
+            //fis.close();
+            fos.close();
+            xssfWorkbook.close();
+        }
+    }
+
+    public void writeExecutionLevelDefectMigrationDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> responseList) throws IOException {
+            int rowNum = 0;
+            XSSFSheet xssfSheet;
+            XSSFWorkbook xssfWorkbook;
+            FileOutputStream fos;
+            xssfWorkbook = new XSSFWorkbook();
+
+            XSSFCellStyle xssfCellStyle = xssfWorkbook.createCellStyle();
+            xssfCellStyle.setBorderBottom(BorderStyle.THICK);
+            xssfCellStyle.setFillBackgroundColor((short)245);
+
+            xssfSheet = xssfWorkbook.createSheet(ApplicationConstants.EXECUTION_LEVEL_DEFECT_SHEET_NAME);
+
+            Row headerRow = xssfSheet.createRow(rowNum);
+            headerRow.setHeightInPoints(40);
+            fos=new FileOutputStream(migrationFilePath+"/"+ fileName + ApplicationConstants.XLSX);
+            try {
+
+                for (List<String> record : responseList) {
+                    Row row = xssfSheet.createRow(rowNum);
+                    for (int k = 0; k < record.size(); k++) {
+                        Cell cell = row.createCell(k);
+                        cell.setCellValue(record.get(k));
+                    }
+                    rowNum++;
+                }
+                xssfWorkbook.write(fos);
+
+            } catch (Exception e) {
+                log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+            } finally {
+                fos.close();
+                xssfWorkbook.close();
+            }
+    }
+
+    public void writeStepResultsDefectMigrationDataToExcelFile(String migrationFilePath, String fileName, List<List<String>> responseList) throws IOException {
+        int rowNum = 0;
+        XSSFSheet xssfSheet;
+        XSSFWorkbook xssfWorkbook;
+        FileOutputStream fos;
+        xssfWorkbook = new XSSFWorkbook();
+
+        XSSFCellStyle xssfCellStyle = xssfWorkbook.createCellStyle();
+        xssfCellStyle.setBorderBottom(BorderStyle.THICK);
+        xssfCellStyle.setFillBackgroundColor((short)245);
+
+        xssfSheet = xssfWorkbook.createSheet(ApplicationConstants.STEP_RESULTS_DEFECT_SHEET_NAME);
+
+        Row headerRow = xssfSheet.createRow(rowNum);
+        headerRow.setHeightInPoints(40);
+        fos=new FileOutputStream(migrationFilePath+"/"+ fileName + ApplicationConstants.XLSX);
+        try {
+
+            for (List<String> record : responseList) {
+                Row row = xssfSheet.createRow(rowNum);
+                for (int k = 0; k < record.size(); k++) {
+                    Cell cell = row.createCell(k);
+                    cell.setCellValue(record.get(k));
+                }
+                rowNum++;
+            }
+            xssfWorkbook.write(fos);
+
+        } catch (Exception e) {
+            log.error("Error occurred while writing to the excel file", e.fillInStackTrace());
+        } finally {
+            fos.close();
+            xssfWorkbook.close();
+        }
+    }
 }

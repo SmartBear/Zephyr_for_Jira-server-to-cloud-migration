@@ -1,17 +1,16 @@
 package com.zephyr.migration.service;
 
-import com.zephyr.migration.client.JIRAHTTPClient;
-import com.zephyr.migration.client.ZapiServerHttpClient;
 import com.zephyr.migration.model.Defect;
 import com.zephyr.migration.model.Issue;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DefectLinkService {
 
-    List<Issue> getExecutionLevelDefectFromServer(Integer executionId, JIRAHTTPClient jirahttpClient, ZapiServerHttpClient zapiHttpClient);
+    List<Issue> getExecutionLevelDefectFromServer(Integer executionId, Map<String, Issue> processedIssueMap);
 
-    List<Issue> getStepLevelDefectFromZfj(Integer executionId, JIRAHTTPClient jirahttpClient, ZapiServerHttpClient zapiHttpClient);
+    Map<String, List<Issue>> getStepLevelDefectFromZfj(Integer executionId, Map<String, Issue> processedIssueMap);
     
     void createExecutionLevelDefectInZephyrCloud(String executionId, List<Defect> defects);
 

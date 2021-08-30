@@ -1,37 +1,26 @@
 package com.zephyr.migration.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
-import com.zephyr.migration.client.JIRAHTTPClient;
+import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
-import com.zephyr.migration.client.ZapiServerHttpClient;
-import com.zephyr.migration.dto.JiraCloudTestStepDTO;
-import com.zephyr.migration.dto.TestStepDTO;
+import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.Defect;
 import com.zephyr.migration.model.Issue;
-import com.zephyr.migration.model.ZfjCloudFolderBean;
 import com.zephyr.migration.service.DefectLinkService;
 import com.zephyr.migration.service.IssueService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
 import com.zephyr.migration.utils.JsonUtil;
-
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.type.TypeReference;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -39,13 +28,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class DefectLinkServiceImpl implements DefectLinkService {
@@ -61,8 +48,16 @@ public class DefectLinkServiceImpl implements DefectLinkService {
     @Autowired
     ConfigProperties configProperties;
 
+    @Autowired
+    @Qualifier(value = "zapiHttpClient")
+    private HttpClient zapiHttpClient;
+
+    @Autowired
+    @Qualifier(value = "jiraHttpClient")
+    private HttpClient jiraHttpClient;
+
     @Override
-    public List<Issue> getExecutionLevelDefectFromServer(Integer executionId, JIRAHTTPClient jirahttpClient, ZapiServerHttpClient zapiHttpClient) {
+    public List<Issue> getExecutionLevelDefectFromServer(Integer executionId, Map<String, Issue> processedIssueMap) {
         if (null == zapiHttpClient)
             throw new IllegalStateException("HTTP Client not Initialized");
 
@@ -86,8 +81,16 @@ public class DefectLinkServiceImpl implements DefectLinkService {
                     if(MapUtils.isNotEmpty(defectMap)) {
                         for(Map.Entry defect : defects.entrySet()) {
                             String issueKey = (String) defect.getKey();
-                            Issue issue = issueService.getIssueFromJira(issueKey);
-                            issueList.add(issue);
+                            if(processedIssueMap.containsKey(issueKey)) {
+                                Issue issue = processedIssueMap.get(issueKey);
+                                if(Objects.nonNull(issue)) {
+                                    issueList.add(issue);
+                                }
+                            }else {
+                                Issue issue = issueService.getIssueFromJira(issueKey);
+                                issueList.add(issue);
+                                processedIssueMap.putIfAbsent(issueKey, issue);
+                            }
                         }
                     }
                 }
@@ -98,53 +101,68 @@ public class DefectLinkServiceImpl implements DefectLinkService {
     }
 
     @Override
-    public List<Issue> getStepLevelDefectFromZfj(Integer executionId, JIRAHTTPClient jirahttpClient, ZapiServerHttpClient zapiHttpClient) {
+    public Map<String, List<Issue>> getStepLevelDefectFromZfj(Integer executionId, Map<String, Issue> processedIssueMap) {
         if (null == zapiHttpClient)
             throw new IllegalStateException("HTTP Client not Initialized");
 
         ClientResponse response;
-        String content;
-        List<Issue> issueList = new ArrayList<>();
+        List<Issue> issueList;
+        Map<String, List<Issue>> stepLevelDefectsList = new HashMap<>();
+        try{
+                List<String> issueKeys;
+                List<TestStepResultDTO> responseList = new ArrayList<>();
+                TypeReference<List<TestStepResultDTO>> reference = new TypeReference<List<TestStepResultDTO>>() {};
+                try {
+                    zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID,executionId));
+                    response = zapiHttpClient.get();
+                    String content = response.getEntity(String.class);
+                    if(StringUtils.isNotBlank(content)) {
+                        log.debug("Test Step Content=="+content);
+                        responseList = JsonUtil.readValue(content, reference);
+                    }
+                } catch (IOException ex) {
+                    log.error("Exception occurred while fetching the test step results :", ex);
+                }
+                if(CollectionUtils.isNotEmpty(responseList)) {
+                    Collections.sort(responseList);
 
-        zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_STEP_DEFECTS_BY_EXECUTION_ID, executionId));
-
-        response = zapiHttpClient.get();
-        content = response.getEntity(String.class);
-        if (StringUtils.isNotBlank(content)) {
-
-            JSONObject jsonObject = new JSONObject(content);
-            JSONObject stepDefects = jsonObject.getJSONObject(STEP_DEFECTS_KEY);
-            List<String> issueKeys = new ArrayList<>();
-            for (Object key : stepDefects.keySet()) {
-                String stepId = (String) key;
-                JSONObject stepDefect = (JSONObject) stepDefects.get(stepId);
-                //Print key and value
-                log.info("key: " + stepId + " value: " + stepDefect.toMap());
-
-                if (Objects.nonNull(stepDefect) && StringUtils.contains(stepDefect.toString(), STEP_DEFECTS_KEY)) {
-                    JSONArray jsonArray = stepDefect.getJSONArray(STEP_DEFECTS_KEY);
-
-                    if (Objects.nonNull(jsonArray) && jsonArray.length() > 0) {
-
-                        for (int i = 0, size = jsonArray.length(); i < size; i++) {
-                            JSONObject defectObject = jsonArray.getJSONObject(i);
-                            if (defectObject.toMap().containsKey(KEY)) {
-                                issueKeys.add((String) defectObject.toMap().get(KEY));
+                    for (TestStepResultDTO stepResults: responseList) {
+                        List<Map<String,String>> defects = stepResults.getDefects();
+                        issueKeys = new ArrayList<>();
+                        issueList = new ArrayList<>();
+                        if(CollectionUtils.isNotEmpty(defects)) {
+                            for (Map<String,String> map:  defects) {
+                                issueKeys = new ArrayList<>();
+                                for (Map.Entry<String,String> entry: map.entrySet()) {
+                                    if(entry.getKey().equalsIgnoreCase("key")) {
+                                        issueKeys.add(entry.getValue());
+                                        break;
+                                    }
+                                }
+                                for (String issueKey : issueKeys) {
+                                    if (processedIssueMap.containsKey(issueKey)) {
+                                        Issue issue = processedIssueMap.get(issueKey);
+                                        if (Objects.nonNull(issue)) {
+                                            issueList.add(issue);
+                                        }
+                                    } else {
+                                        Issue issue = issueService.getIssueFromJira(issueKey);
+                                        issueList.add(issue);
+                                        processedIssueMap.putIfAbsent(issueKey, issue);
+                                    }
+                                }
+                                if (CollectionUtils.isNotEmpty(issueList)) {
+                                    stepLevelDefectsList.put(String.valueOf(stepResults.getId()), issueList);
+                                }
+                                log.info("issue keys:: "+ issueKeys + " for step result id "+stepResults.getId());
                             }
                         }
                     }
                 }
-            }
-
-            if (CollectionUtils.isNotEmpty(issueKeys)) {
-                issueKeys.parallelStream().forEach(issueKey -> {
-                            Issue issue = issueService.getIssueFromJira(issueKey);
-                            issueList.add(issue);
-                        }
-                );
-            }
+        } catch (Exception ex) {
+            log.info("Exception occurred while fetching the step level defects from server.", ex.fillInStackTrace());
         }
-        return issueList;
+        return stepLevelDefectsList;
     }
     
     @Override
@@ -181,6 +199,9 @@ public class DefectLinkServiceImpl implements DefectLinkService {
         try {
         	log.info("request to cloud for create execution level defect for this execution id ::: "+ executionId);
             response = restTemplate.postForObject(createCloudExecutionLevelDefectUrl, entity, String.class);
+            if(Objects.nonNull(response)) {
+
+            }
         } catch (Exception e) {
             log.error("Error while creating execution level defect in cloud for" + executionId + "this execution id " + e.fillInStackTrace());
         }
