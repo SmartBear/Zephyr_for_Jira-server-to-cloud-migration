@@ -228,7 +228,7 @@ public class DefectLinkServiceImpl implements DefectLinkService {
         createUrl = createUrl + queryParams;
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
 
-        createCloudStepResultLevelDefectUrl = createCloudStepResultLevelDefectUrl + "stepResultId=" + stepResultId + "&executionId=" + executionId;
+        createCloudStepResultLevelDefectUrl = createCloudStepResultLevelDefectUrl + "?stepResultId=" + stepResultId + "&executionId=" + executionId;
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
