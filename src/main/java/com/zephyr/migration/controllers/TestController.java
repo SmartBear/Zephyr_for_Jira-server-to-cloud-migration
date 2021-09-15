@@ -266,14 +266,14 @@ public class TestController {
     public String getTestSteps(@RequestParam("issueId") Integer issueId) {
 
         testService.initializeHttpClientDetails();
-
-
             List<TestStepDTO> testStepDTOS = testStepService.fetchTestStepsFromZFJ(issueId);
             log.info("step result beans "+testStepDTOS.toString());
-
-
-
             return "Step results found "+ testStepDTOS.toString();
+    }
 
+    @GetMapping("/versions/byjira/{projectId}")
+    public String getVersionsFromJiraCloud(@PathVariable Long projectId) {
+        testService.getVersionsFromJiraCloud(projectId);
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 }

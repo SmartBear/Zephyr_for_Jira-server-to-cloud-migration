@@ -20,6 +20,7 @@ public class ApplicationConstants {
     public static final String CLOUD_GET_TEST_STEP_RESULTS_URL = "/public/rest/api/1.0/migration/getStepResults";
     public static final String CLOUD_CREATE_BULK_TEST_STEP_URL = "/public/rest/api/1.0/migration/create/bulk/teststep";
     public static final String CLOUD_UPDATE_STEP_RESULT_URL = "/public/rest/api/1.0/migration/update/stepResult";
+    public static final String CLOUD_FETCH_VERSION_BY_JIRA_URL = "/public/rest/api/1.0/migration/fetch/versionsFromJira";
 
     /******* General constants *********/
     public static final String XLS = ".xls";

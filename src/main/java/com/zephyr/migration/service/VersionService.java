@@ -15,4 +15,6 @@ public interface VersionService {
     JsonNode createVersionInZephyrCloud(JiraVersion jiraServerVersion, Long projectId);
 
     Iterable<JiraVersion> getVersionListFromServer(String projectId);
+
+    JsonNode getVersionsByJiraFromZephyrCloud(String projectId);
 }

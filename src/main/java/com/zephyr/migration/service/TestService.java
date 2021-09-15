@@ -26,4 +26,5 @@ public interface TestService {
 
     void importStepResultLevelAttachments(List<TestStepResultDTO> testStepResults, Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap);
 
+    void getVersionsFromJiraCloud(Long projectId);
 }

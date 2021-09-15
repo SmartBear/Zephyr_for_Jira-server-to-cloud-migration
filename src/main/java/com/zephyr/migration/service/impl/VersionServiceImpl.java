@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @Service
 public class VersionServiceImpl implements VersionService {
@@ -144,5 +145,35 @@ public class VersionServiceImpl implements VersionService {
             e.printStackTrace();
         }
         return versionList;
+    }
+
+    @Override
+    public JsonNode getVersionsByJiraFromZephyrCloud(String projectId) {
+        log.info("Serving --> {}", "getVersions()");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
+        final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
+        final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
+
+        JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
+        String getVersionsUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_FETCH_VERSION_BY_JIRA_URL;
+        String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, getVersionsUrl);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, jwt);
+        headers.set(ApplicationConstants.ZAPI_ACCESS_KEY, CLOUD_ACCESS_KEY);
+        HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(projectId), headers);
+        JsonNode response = null;
+        try {
+            response = restTemplate.postForObject(getVersionsUrl, entity, JsonNode.class);
+
+            if(Objects.nonNull(response)) {
+                log.info("Version data retrieved from Jira cloud: "+response.toString());
+            }
+        } catch (Exception e) {
+            log.error("Error while fetching version list " + e.getMessage());
+        }
+        return response;
     }
 }
