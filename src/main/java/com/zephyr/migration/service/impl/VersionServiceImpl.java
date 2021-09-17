@@ -157,6 +157,7 @@ public class VersionServiceImpl implements VersionService {
 
         JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
         String getVersionsUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_FETCH_VERSION_BY_JIRA_URL;
+        log.info("Get version URL: "+getVersionsUrl);
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, getVersionsUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();

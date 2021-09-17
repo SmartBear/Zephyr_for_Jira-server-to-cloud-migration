@@ -237,6 +237,10 @@ public class TestServiceImpl implements TestService {
         if(null != response){
             log.info("Versions from Jira :: "+ response.toString());
         }
+        response = versionService.getVersionsFromZephyrCloud(projectId+"");
+        if(null != response){
+            log.info("Versions from ES :: "+ response);
+        }
     }
 
     private JiraIssueDTO prepareRequestObject(Issue issue) {

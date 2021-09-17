@@ -78,15 +78,14 @@ public class MigrationMappingFileGenerationUtil {
                 versionMappingList.add(serverVersionMap.get(cloudVersionId).getId() + "");
                 versionMappingList.add(cloudVersionId + "");
                 recordToAdd.add(versionMappingList);
-            }else {
-                if(cloudVersionId.equals(UNSCHEDULED_VERSION_ID)) {
-                    versionMappingList.add(projectId);
-                    versionMappingList.add(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID);
-                    versionMappingList.add(cloudVersionId + "");
-                    recordToAdd.add(versionMappingList);
-                }
             }
         }
+        /*Adding Unscheduled version in first trigger*/
+        versionMappingList = new ArrayList();
+        versionMappingList.add(projectId);
+        versionMappingList.add(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID);
+        versionMappingList.add(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID);
+        recordToAdd.add(versionMappingList);
         return recordToAdd;
     }
 

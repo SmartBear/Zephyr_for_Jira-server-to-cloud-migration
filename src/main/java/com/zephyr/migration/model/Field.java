@@ -1,6 +1,6 @@
 package com.zephyr.migration.model;
 
-import com.atlassian.jira.rest.client.api.domain.Version;
+
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 import java.util.Date;
@@ -14,7 +14,7 @@ public class Field {
     private List<Component> components;
     private String description;
     private Project project;
-    private List<Version> fixVersions;
+    private List<JiraVersion> fixVersions;
     private JiraUser creator;
     private JiraUser reporter;
     private Priority priority;
@@ -56,11 +56,11 @@ public class Field {
         this.project = project;
     }
 
-    public List<Version> getFixVersions() {
+    public List<JiraVersion> getFixVersions() {
         return fixVersions;
     }
 
-    public void setFixVersions(List<Version> fixVersions) {
+    public void setFixVersions(List<JiraVersion> fixVersions) {
         this.fixVersions = fixVersions;
     }
 

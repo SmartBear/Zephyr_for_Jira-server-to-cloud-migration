@@ -421,7 +421,7 @@ public class MigrationServiceImpl implements MigrationService {
                     }
                 }
             }catch (Exception ex) {
-                log.info("Exception occurred while creating cloud version list.",ex.fillInStackTrace());
+                log.info("Exception occurred while creating cloud version list from JsonNode.",ex.fillInStackTrace());
             }
             versionsFromZephyrServer.forEach(jiraServerVersion -> {
                 try {
