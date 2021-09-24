@@ -64,6 +64,7 @@ public class ApplicationConstants {
     public static final String JIRA_RESOURCE_SEARCH_ISSUE_KEY_JQL = "jql=issue=%s";
     public static final String JIRA_RESOURCE_ISSUE = "issue/%s";
     public static final String JIRA_RESOURCE_VERSION = "project/%s/version";
+    public static final String JIRA_RESOURCE_VERSION_START_AT = "project/%s/version?startAt=%s";
 
     public static final String CYCLE_LEVEL_EXECUTION = "Cycle Level Execution";
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";

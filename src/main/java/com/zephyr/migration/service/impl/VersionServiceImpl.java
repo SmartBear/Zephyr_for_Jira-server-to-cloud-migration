@@ -28,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.List;
 
 @Service
 public class VersionServiceImpl implements VersionService {
@@ -157,7 +158,7 @@ public class VersionServiceImpl implements VersionService {
 
         JiraCloudClient jiraCloudClient = new JiraCloudClient(CLOUD_ACCOUNT_ID, CLOUD_ACCESS_KEY, CLOUD_SECRET_KEY, CLOUD_BASE_URL);
         String getVersionsUrl = CLOUD_BASE_URL + ApplicationConstants.CLOUD_FETCH_VERSION_BY_JIRA_URL;
-        log.info("Get version URL: "+getVersionsUrl);
+        log.info("Get version URL: " + getVersionsUrl);
         String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, getVersionsUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -169,12 +170,50 @@ public class VersionServiceImpl implements VersionService {
         try {
             response = restTemplate.postForObject(getVersionsUrl, entity, JsonNode.class);
 
-            if(Objects.nonNull(response)) {
-                log.info("Version data retrieved from Jira cloud: "+response.toString());
+            if (Objects.nonNull(response)) {
+                log.info("Version data retrieved from Jira cloud: " + response.toString());
             }
         } catch (Exception e) {
             log.error("Error while fetching version list " + e.getMessage());
         }
         return response;
+    }
+
+    @Override
+    public List<JiraVersion> getVersionListFromJiraServer(String projectId, int startIndex, int limit) {
+
+        String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_VERSION_START_AT,projectId,startIndex);
+
+        jiraHttpClient.setResourceName(resourceName);
+
+        ClientResponse response = jiraHttpClient.get();
+
+        TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
+        VersionWrapper versions;
+        List<JiraVersion> versionList = null;
+        try {
+            versions = JsonUtil.readValue(response.getEntity(String.class), ref);
+            versionList = versions.getValues();
+        } catch (IOException e) {
+            log.error("Error occurred while fetching the versions from server.", e.fillInStackTrace());
+        }
+        return versionList;
+    }
+
+    @Override
+    public Integer getTotalVersionCountPerProjectFromJira(String projectId) {
+        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
+
+        ClientResponse response = jiraHttpClient.get();
+
+        TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
+        VersionWrapper versions;
+        try {
+            versions = JsonUtil.readValue(response.getEntity(String.class), ref);
+            return versions.getTotal();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return 0;
+        }
     }
 }

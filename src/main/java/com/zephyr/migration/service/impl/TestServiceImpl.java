@@ -67,6 +67,10 @@ public class TestServiceImpl implements TestService {
     @Value("${migrationFilePath}")
     private String migrationFilePath;
 
+    @Autowired
+    @Qualifier(value = "jiraHttpClient")
+    private HttpClient jiraHttpClient;
+
     @Override
     public Issue getIssueDetailsFromServer(String issueKey) {
         log.info("Serving --> {}", "getIssueDetailsFromServer()");
@@ -156,6 +160,7 @@ public class TestServiceImpl implements TestService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+        jiraHttpClient.init();
     }
 
     @Override

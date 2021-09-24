@@ -145,11 +145,21 @@ public class MigrationServiceImpl implements MigrationService {
      */
     private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
 
-       // Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
-
         Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
+        Integer offset = 0, limit = 50;
+        String _projectId = projectId.toString();
+        Integer totalVersionCount = versionService.getTotalVersionCountPerProjectFromJira(_projectId);
+        log.info("Total version count received from jira ::: "+totalVersionCount);
+        List<JiraVersion> versionListFromServer = new ArrayList<>();
+        do{
+            List<JiraVersion> versionList = versionService.getVersionListFromJiraServer(_projectId,offset,limit);
+            if(CollectionUtils.isNotEmpty(versionList)) {
+                versionListFromServer.addAll(versionList);
+            }
+            offset +=limit;
+        }while (offset < totalVersionCount);
 
-        versionsFromZephyrServer.forEach(v -> {
+        versionListFromServer.forEach(v -> {
             log.info("Version name:: "+v.getName() + " id:"+v.getId());
         });
 
@@ -166,7 +176,7 @@ public class MigrationServiceImpl implements MigrationService {
                 versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
-            createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+            createUnmappedVersionInCloud(versionListFromServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
             return true;
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
