@@ -145,7 +145,7 @@ public class MigrationServiceImpl implements MigrationService {
      */
     private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
 
-        Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
+       // Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
         Integer offset = 0, limit = 50;
         String _projectId = projectId.toString();
         Integer totalVersionCount = versionService.getTotalVersionCountPerProjectFromJira(_projectId);
@@ -189,9 +189,9 @@ public class MigrationServiceImpl implements MigrationService {
                  * 3. Update the xls mapping file.
                  * 4. trigger the project meta data.
                  */
-                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionListFromServer,versionsFromZephyrCloud);
                 List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
-                createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+                createUnmappedVersionInCloud(versionListFromServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
                 return true;
             }else {
