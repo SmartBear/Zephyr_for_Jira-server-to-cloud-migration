@@ -1,5 +1,6 @@
 package com.zephyr.migration.model;
 
+
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 

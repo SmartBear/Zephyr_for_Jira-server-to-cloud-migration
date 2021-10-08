@@ -1,7 +1,6 @@
 package com.zephyr.migration.service.impl;
 
 import com.atlassian.jira.rest.client.api.domain.Project;
-import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -146,11 +145,21 @@ public class MigrationServiceImpl implements MigrationService {
      */
     private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
 
-       // Iterable<Version> versionsFromZephyrServer = versionService.getVersionsFromZephyrServer(projectId, server_base_url, server_user_name, server_user_pass);
+       // Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
+        Integer offset = 0, limit = 50;
+        String _projectId = projectId.toString();
+        Integer totalVersionCount = versionService.getTotalVersionCountPerProjectFromJira(_projectId);
+        log.info("Total version count received from jira ::: "+totalVersionCount);
+        List<JiraVersion> versionListFromServer = new ArrayList<>();
+        do{
+            List<JiraVersion> versionList = versionService.getVersionListFromJiraServer(_projectId,offset,limit);
+            if(CollectionUtils.isNotEmpty(versionList)) {
+                versionListFromServer.addAll(versionList);
+            }
+            offset +=limit;
+        }while (offset < totalVersionCount);
 
-        Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
-
-        versionsFromZephyrServer.forEach(v -> {
+        versionListFromServer.forEach(v -> {
             log.info("Version name:: "+v.getName() + " id:"+v.getId());
         });
 
@@ -167,11 +176,11 @@ public class MigrationServiceImpl implements MigrationService {
                 versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
-            createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+            createUnmappedVersionInCloud(versionListFromServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
             return true;
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
-            JsonNode versionsFromZephyrCloud = versionService.getVersionsFromZephyrCloud(Long.toString(projectId));
+            JsonNode versionsFromZephyrCloud = versionService.getVersionsByJiraFromZephyrCloud(Long.toString(projectId));
             if(Objects.nonNull(versionsFromZephyrCloud)) {
                 /*
                  * 1. Validate the version from server & cloud. If id matches then it's a like copy.
@@ -180,9 +189,9 @@ public class MigrationServiceImpl implements MigrationService {
                  * 3. Update the xls mapping file.
                  * 4. trigger the project meta data.
                  */
-                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionsFromZephyrServer,versionsFromZephyrCloud);
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionListFromServer,versionsFromZephyrCloud);
                 List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
-                createUnmappedVersionInCloud(versionsFromZephyrServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+                createUnmappedVersionInCloud(versionListFromServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
                 return true;
             }else {
@@ -412,20 +421,36 @@ public class MigrationServiceImpl implements MigrationService {
         if(Objects.nonNull(versionsFromZephyrServer)) {
             progressQueue.put("Got the versions from JIRA Server.");
             Map<String, Long> serverCloudVersionMapping = new HashMap<>();
+            JsonNode versionsFromZephyrCloud = versionService.getVersionsByJiraFromZephyrCloud(Long.toString(projectId));
+            Map<String, Long> cloudVersionMap = new HashMap<>();
+            try {
+                if(Objects.nonNull(versionsFromZephyrCloud)) {
+                    for (JsonNode jn : versionsFromZephyrCloud) {
+                        String cloudVersionId = jn.findValue("id").toString();
+                        cloudVersionMap.put(cloudVersionId, Long.parseLong(cloudVersionId));
+                    }
+                }
+            }catch (Exception ex) {
+                log.info("Exception occurred while creating cloud version list from JsonNode.",ex.fillInStackTrace());
+            }
             versionsFromZephyrServer.forEach(jiraServerVersion -> {
                 try {
                     progressQueue.put("Version Details : "+ jiraServerVersion.getName());
                     String versionId = Objects.nonNull(jiraServerVersion.getId()) ? jiraServerVersion.getId() : null;
                     if(!mappedServerToCloudVersionList.contains(versionId)) {
-                        log.info("Version Details doesn't exist in cloud, creating the version in cloud instance:"+ jiraServerVersion.getName());
-                        progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());
-                        JsonNode versionCreatedInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);
-                        if(Objects.nonNull(versionCreatedInCloud) && versionCreatedInCloud.has("id")) {
+                        if(cloudVersionMap.containsKey(versionId)) {
+                            serverCloudVersionMapping.put(versionId, cloudVersionMap.get(versionId));
+                        }else {
+                            log.info("Version Details doesn't exist in cloud, creating the version in cloud instance:"+ jiraServerVersion.getName());
+                            progressQueue.put("Version Details doesn't exist in cloud, creating the version in cloud instance: "+ jiraServerVersion.getName());
+                            JsonNode versionCreatedInCloud = versionService.createVersionInZephyrCloud(jiraServerVersion, projectId);
+                            if(Objects.nonNull(versionCreatedInCloud) && versionCreatedInCloud.has("id")) {
 
-                            Long cloudVersionId = versionCreatedInCloud.findValue("id").asLong();
-                            log.info("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
-                            progressQueue.put("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
-                            serverCloudVersionMapping.put(versionId, cloudVersionId);
+                                Long cloudVersionId = versionCreatedInCloud.findValue("id").asLong();
+                                log.info("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
+                                progressQueue.put("Version successfully created in cloud instance: "+ new ObjectMapper().writeValueAsString(versionCreatedInCloud));
+                                serverCloudVersionMapping.put(versionId, cloudVersionId);
+                            }
                         }
                     }
                 } catch (InterruptedException | JsonProcessingException e) {

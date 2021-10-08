@@ -1,6 +1,5 @@
 package com.zephyr.migration.utils;
 
-import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.*;
@@ -9,7 +8,6 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -73,21 +71,21 @@ public class MigrationMappingFileGenerationUtil {
 
         for (JsonNode jn : versionsFromZephyrCloud) {
             versionMappingList = new ArrayList<>();
-            Long cloudVersionId = Long.parseLong(jn.findValue("versionId").toString());
+            Long cloudVersionId = Long.parseLong(jn.findValue("id").toString());
+            log.debug("Version Id retrieved from cloud: "+cloudVersionId);
             if(serverVersionMap.containsKey(cloudVersionId)) {
                 versionMappingList.add(projectId);
                 versionMappingList.add(serverVersionMap.get(cloudVersionId).getId() + "");
                 versionMappingList.add(cloudVersionId + "");
                 recordToAdd.add(versionMappingList);
-            }else {
-                if(cloudVersionId.equals(UNSCHEDULED_VERSION_ID)) {
-                    versionMappingList.add(projectId);
-                    versionMappingList.add("-1");
-                    versionMappingList.add(cloudVersionId + "");
-                    recordToAdd.add(versionMappingList);
-                }
             }
         }
+        /*Adding Unscheduled version in first trigger*/
+        versionMappingList = new ArrayList();
+        versionMappingList.add(projectId);
+        versionMappingList.add(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID);
+        versionMappingList.add(ApplicationConstants.CLOUD_UNSCHEDULED_VERSION_ID);
+        recordToAdd.add(versionMappingList);
         return recordToAdd;
     }
 
