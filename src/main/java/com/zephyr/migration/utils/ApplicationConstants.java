@@ -72,7 +72,7 @@ public class ApplicationConstants {
     public enum ENTITY_TYPE { EXECUTION, TESTSTEP, TESTSTEPRESULT }
 
     public static final String EXECUTION_ENTITY = "execution";
-    public static final String STEP_RESULT_ENTITY = "stepresult";
+    public static final String STEP_RESULT_ENTITY = "stepResult";
     public static final String TEST_STEP_ENTITY = "teststep";
 
 }
