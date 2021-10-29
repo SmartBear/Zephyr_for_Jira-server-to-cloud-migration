@@ -130,6 +130,7 @@ public class AttachmentServiceImpl implements AttachmentService {
             createUrl = createUrl + queryParams;
             String jwt = jiraCloudClient.createJWTToken(HttpMethod.POST, createUrl);
             addAttachmentUrl = addAttachmentUrl + "?entityName=" + entityName + "&entityId=" + entityId + "&projectId=" + projectId + "&comment=updated by migration" + "&executionId=" + cloudExecutionId ;
+            log.debug("addAttachmentUrl :"+addAttachmentUrl);
             MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
 
             map.add("file", new FileSystemResource(attachment));
