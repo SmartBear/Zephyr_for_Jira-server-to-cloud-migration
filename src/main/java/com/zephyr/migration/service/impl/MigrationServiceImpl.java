@@ -127,7 +127,7 @@ public class MigrationServiceImpl implements MigrationService {
         final String MIGRATE_STEP_RESULT_LEVEL_DEFECT_FLAG = configProperties.getConfigValue("migrate.step.result.level.defect");
         boolean isMigrateStepResultLevelDefect = Boolean.parseBoolean(MIGRATE_STEP_RESULT_LEVEL_DEFECT_FLAG);
 
-        if(isMigrateExecutionLevelDefect) {
+        if(isMigrateStepResultLevelDefect) {
             beginStepResultLevelDefectMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS);
         }
 
@@ -1255,7 +1255,7 @@ public class MigrationServiceImpl implements MigrationService {
                     Map<String,Issue> processedIssueMap = new ConcurrentHashMap<>();
 
 
-                    mappedServerToCloudExecutionIdMap.entrySet().parallelStream().forEach((entry) -> {
+                    mappedServerToCloudExecutionIdMap.entrySet().forEach((entry) -> {
                         String serverExecutionId = entry.getKey();
                         String cloudExecutionId = entry.getValue();
                         List<Issue> defectList = defectLinkService.getExecutionLevelDefectFromServer(Integer.parseInt(serverExecutionId),processedIssueMap);
@@ -1303,7 +1303,7 @@ public class MigrationServiceImpl implements MigrationService {
                     Map<String,Issue> processedIssueMap = new ConcurrentHashMap<>();
 
 
-                    mappedServerToCloudStepResultsIdMap.entrySet().parallelStream().forEach((entry) -> {
+                    mappedServerToCloudStepResultsIdMap.entrySet().forEach((entry) -> {
                         String serverExecutionId = entry.getKey();
                         Map<String,StepResultFileResponseBean> stepResultFileResponseBeanMap = entry.getValue();
                         Map<String, List<Issue>> stepLevelDefectMap = defectLinkService.getStepLevelDefectFromZfj
