@@ -197,7 +197,9 @@ public class MigrationServiceImpl implements MigrationService {
             }else {
                 progressQueue.put("Version list from cloud is empty");
                 log.warn("Version list from cloud is empty");
-                return false;
+                progressQueue.put("Initiate the migration with Unscheduled version.");
+                migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionListFromServer,versionsFromZephyrCloud);
+                return true;
             }
         }
     }
