@@ -69,15 +69,17 @@ public class MigrationMappingFileGenerationUtil {
 
         List versionMappingList;
 
-        for (JsonNode jn : versionsFromZephyrCloud) {
-            versionMappingList = new ArrayList<>();
-            Long cloudVersionId = Long.parseLong(jn.findValue("id").toString());
-            log.debug("Version Id retrieved from cloud: "+cloudVersionId);
-            if(serverVersionMap.containsKey(cloudVersionId)) {
-                versionMappingList.add(projectId);
-                versionMappingList.add(serverVersionMap.get(cloudVersionId).getId() + "");
-                versionMappingList.add(cloudVersionId + "");
-                recordToAdd.add(versionMappingList);
+        if(Objects.nonNull(versionsFromZephyrCloud)) {
+            for (JsonNode jn : versionsFromZephyrCloud) {
+                versionMappingList = new ArrayList<>();
+                Long cloudVersionId = Long.parseLong(jn.findValue("id").toString());
+                log.debug("Version Id retrieved from cloud: "+cloudVersionId);
+                if(serverVersionMap.containsKey(cloudVersionId)) {
+                    versionMappingList.add(projectId);
+                    versionMappingList.add(serverVersionMap.get(cloudVersionId).getId() + "");
+                    versionMappingList.add(cloudVersionId + "");
+                    recordToAdd.add(versionMappingList);
+                }
             }
         }
         /*Adding Unscheduled version in first trigger*/
