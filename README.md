@@ -1,6 +1,12 @@
 # Zephyr_for_Jira-server-to-cloud-migration
 #### Zephyr for Jira Server to Cloud Migration
 
+### <i>Latest Update - Version 2.0</i>
+As part of this release, we have released migration of defect links from Zephyr Squad server/DC to Zephyr Squad Cloud.
+To enable this use the below properties from application.properties file.
+1. <b>migrate.execution.level.defect</b> : To migrate the defect links at execution level.
+2. <b>migrate.step.result.level.defect</b> : To migrate the defect links at step results level.
+
 ### <i>Major upgrade</i>
 As part of latest release we have updated the mapping file creation of test steps and execution in <b>.xlsx</b> format.
 The new build will not work with already migrated projects since earlier the tool was creating <b>.xls</b> format file and it
@@ -68,7 +74,7 @@ It will have the mapping file created for the migration project.
 4. Save the application.properties file after making the necessary changes.
 5. Run the below command to launch the application and it will launch the application at mentioned port.
 
-java -jar Zephyr_for_Jira-server-to-cloud-migration-1.0.jar --spring.config.location=file:./application.properties
+java -jar Zephyr_for_Jira-server-to-cloud-migration-2.0.jar --spring.config.location=file:./application.properties
 
 #### Pre checkup list before triggering the migration. ####
 1. Uninstall the ZSquad plugin from the manage Apps if you have.
