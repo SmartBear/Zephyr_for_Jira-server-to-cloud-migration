@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -74,6 +75,9 @@ public class MigrationServiceImpl implements MigrationService {
     private IssueService issueService;
 
     @Autowired
+    private DefectLinkService defectLinkService;
+
+    @Autowired
     private MigrationMappingFileGenerationUtil migrationMappingFileGenerationUtil;
 
     @Value("${migrationFilePath}")
@@ -100,25 +104,32 @@ public class MigrationServiceImpl implements MigrationService {
         progressQueue.put("Started Migration For project : -> project id: " + projectId + ", date/Time -> " + new Date());
 
         boolean migrateVersions = beginVersionMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
-        Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
+
         if(migrateVersions) {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
 
                 if (migrateFolders) {
-                    fetchedTestStepsFromServer = beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
+                    beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
                     beginAttachmentsEntityMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
                 }
             }
         }
 
-        /*try{
-            beginTestStepsMigration(projectId,fetchedTestStepsFromServer);
-        }catch (Exception ex) {
-            log.info("Error occurred while migrating test steps.");
-        }*/
+        final String MIGRATE_EXECUTION_LEVEL_DEFECT_FLAG = configProperties.getConfigValue("migrate.execution.level.defect");
+        boolean isMigrateExecutionLevelDefect = Boolean.parseBoolean(MIGRATE_EXECUTION_LEVEL_DEFECT_FLAG);
 
+        if(isMigrateExecutionLevelDefect) {
+            beginExecutionLevelDefectMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS);
+        }
+
+        final String MIGRATE_STEP_RESULT_LEVEL_DEFECT_FLAG = configProperties.getConfigValue("migrate.step.result.level.defect");
+        boolean isMigrateStepResultLevelDefect = Boolean.parseBoolean(MIGRATE_STEP_RESULT_LEVEL_DEFECT_FLAG);
+
+        if(isMigrateStepResultLevelDefect) {
+            beginStepResultLevelDefectMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS);
+        }
 
         progressQueue.put("Migration of project [" + projectId+ "] completed.");
         log.info("Migration of project [" + projectId+ "] completed.");
@@ -894,6 +905,8 @@ public class MigrationServiceImpl implements MigrationService {
     private void importStepResultLevelAttachmentsAndResults(List<TestStepResultDTO> testStepResults, String projectId, String projectName, String cloudExecutionId, List<String> finalServerStepResultAttachmentList) {
         List<ZfjCloudAttachmentBean> zfjCloudAttachmentBeanList = new ArrayList<>();
         Path stepResultAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
+        Path stepResultsMigrationMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_FILE_NAME + projectId + ApplicationConstants.XLSX);
+
         List<TestStepResultDTO> testStepResultNewList = testStepResults.stream().filter(Objects::nonNull).collect(Collectors.toList());
         Map<Integer, ZfjCloudStepResultBean> stepResultBeanMap = new HashMap<>();
 
@@ -905,6 +918,8 @@ public class MigrationServiceImpl implements MigrationService {
         boolean isMigrateStepResultsAttachment = Boolean.parseBoolean(MIGRATE_STEP_RESULTS_ATTACHMENT_FLAG);
         log.info("Step level attachment flag set to : "+isMigrateStepResultsAttachment);
 
+        List<StepResultFileResponseBean> stepResultFileResponseBeanList = new LinkedList<>();
+
         for (TestStepResultDTO testStepResult : testStepResultNewList) {
             try {
                 //Update the step result data in cloud instance.
@@ -915,6 +930,9 @@ public class MigrationServiceImpl implements MigrationService {
                         log.info("Step level status to update:: "+ testStepResult.getStatus());
                         log.info("Step level status for id:: "+ testStepResult.getId());
                         testStepService.updateStepResult(prepareRequestForStepResult(zfjCloudStepResultBean,testStepResult));
+                        StepResultFileResponseBean responseBean = new StepResultFileResponseBean(String.valueOf(testStepResult.getExecutionId()),
+                                zfjCloudStepResultBean.getExecutionId(), String.valueOf(testStepResult.getId()), zfjCloudStepResultBean.getId());
+                        stepResultFileResponseBeanList.add(responseBean);
                     }
                 }
                 if(isMigrateStepResultsAttachment) {
@@ -975,6 +993,11 @@ public class MigrationServiceImpl implements MigrationService {
         }
         if (!zfjCloudAttachmentBeanList.isEmpty() && !Files.exists(stepResultAttachmentMappedFile)) {
             migrationMappingFileGenerationUtil.generateStepResultAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+        }
+        if (!stepResultFileResponseBeanList.isEmpty() && Files.exists(stepResultsMigrationMappedFile)) {
+            migrationMappingFileGenerationUtil.updateStepResultsMigrationMappingFile(projectId + "", projectName, migrationFilePath, stepResultFileResponseBeanList);
+        }else if (!stepResultFileResponseBeanList.isEmpty() && !Files.exists(stepResultsMigrationMappedFile)) {
+            migrationMappingFileGenerationUtil.generateStepResultsMigrationMappingFile(projectId + "", projectName, migrationFilePath, stepResultFileResponseBeanList);
         }
     }
 
@@ -1241,5 +1264,163 @@ public class MigrationServiceImpl implements MigrationService {
             offset +=limit;
         }while (offset < totalIssueCount);
 
+    }
+
+    private void beginExecutionLevelDefectMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass) {
+        try {
+            Path executionMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLSX);
+            Path executionLevelDefectMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_LEVEL_DEFECT_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLSX);
+
+            if (Files.exists(executionMappedFile)) {
+                Map<String, String> mappedServerToCloudExecutionIdMap = FileUtils.readExecutionMappingFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLSX);
+                if (!mappedServerToCloudExecutionIdMap.isEmpty()) {
+                    Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
+                    String projectName = null;
+                    if (project != null) {
+                        projectName = project.getName();
+                    }
+                    Map<String,DefectLinkResponseBean> finalResponse = new ConcurrentHashMap<>();
+                    Map<String,Issue> processedIssueMap = new ConcurrentHashMap<>();
+
+
+                    mappedServerToCloudExecutionIdMap.entrySet().forEach((entry) -> {
+                        String serverExecutionId = entry.getKey();
+                        String cloudExecutionId = entry.getValue();
+                        List<Issue> defectList = defectLinkService.getExecutionLevelDefectFromServer(Integer.parseInt(serverExecutionId),processedIssueMap);
+
+                        if(CollectionUtils.isNotEmpty(defectList)) {
+                            finalResponse.putAll(createExecutionLevelDefectInCloud(serverExecutionId,cloudExecutionId,defectList));
+                        }
+                    });
+
+                    if(finalResponse.size() > 0 ) {
+                        //call method to create file once the processing is completed.
+                        if(Files.exists(executionLevelDefectMappedFile)) {
+                            log.info("Execution level defect mapping file exists, updating the file.");
+                             migrationMappingFileGenerationUtil.updateExecutionLevelDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                        }else {
+                            log.info("Creating the execution level defect mapping after migration.");
+                            migrationMappingFileGenerationUtil.generateExecutionLevelDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                        }
+                    }
+                }
+
+            } else {
+                    log.warn("Execution mapping file either not created or empty, hence execution level defect will not be migrated.");
+            }
+
+        }catch (Exception ex) {
+                log.error("Error while migrating defect links for issue", ex);
+        }
+    }
+
+    private void beginStepResultLevelDefectMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass) {
+        try {
+            Path stepResultsMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_FILE_NAME + projectId + ApplicationConstants.XLSX);
+            Path stepResultsDefectMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_DEFECT_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLSX);
+
+            if (Files.exists(stepResultsMappedFile)) {
+                Map<String, Map<String,StepResultFileResponseBean>> mappedServerToCloudStepResultsIdMap = FileUtils.readStepResultsMappingFile(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_FILE_NAME + projectId + ApplicationConstants.XLSX);
+                if (!mappedServerToCloudStepResultsIdMap.isEmpty()) {
+                    Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
+                    String projectName = null;
+                    if (project != null) {
+                        projectName = project.getName();
+                    }
+                    Map<String,DefectLinkResponseBean> finalResponse = new ConcurrentHashMap<>();
+                    Map<String,Issue> processedIssueMap = new ConcurrentHashMap<>();
+
+
+                    mappedServerToCloudStepResultsIdMap.entrySet().forEach((entry) -> {
+                        String serverExecutionId = entry.getKey();
+                        Map<String,StepResultFileResponseBean> stepResultFileResponseBeanMap = entry.getValue();
+                        Map<String, List<Issue>> stepLevelDefectMap = defectLinkService.getStepLevelDefectFromZfj
+                                (Integer.parseInt(serverExecutionId), processedIssueMap);
+
+                      if(stepLevelDefectMap.size() > 0) {
+                            finalResponse.putAll(createStepLevelDefectInCloud(stepResultFileResponseBeanMap, stepLevelDefectMap));
+                      }
+                    });
+
+                    if(finalResponse.size() > 0 ) {
+                        //call method to create file once the processing is completed.
+                        if(Files.exists(stepResultsDefectMappedFile)) {
+                            log.info("Step results defect mapping file exists, updating the file.");
+                            migrationMappingFileGenerationUtil.updateStepResultsDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                        }else {
+                            log.info("Creating the step results defect mapping after migration.");
+                            migrationMappingFileGenerationUtil.generateStepResultsDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                        }
+                    }
+                }
+
+            } else {
+                log.warn("Execution mapping file either not created or empty, hence execution level defect mapping is .");
+            }
+
+        }catch (Exception ex) {
+            log.error("Error occurred while creating step level defects for issue", ex);
+        }
+    }
+
+    private Map<String,DefectLinkResponseBean> createExecutionLevelDefectInCloud(String serverExecutionId, String cloudExecutionId, List<Issue> defectList) {
+        Map<String,DefectLinkResponseBean> responseBeanMap = new HashMap<>();
+        DefectLinkResponseBean responseBean = new DefectLinkResponseBean();
+        List<Defect> cloudDefectCreationList = new ArrayList<>();
+        StringBuffer sb = new StringBuffer();
+        defectList.forEach(defectId -> {
+            cloudDefectCreationList.add(new Defect(new Long(defectId.getId())));
+            sb.append(defectId.getId()+",");
+        });
+
+        responseBean.setServerExecutionId(serverExecutionId);
+        responseBean.setCloudExecutionId(cloudExecutionId);
+
+        defectLinkService.createExecutionLevelDefectInZephyrCloud(cloudExecutionId,cloudDefectCreationList);
+
+        responseBean.setServerDefectLinks(sb.toString());
+        responseBean.setCloudDefectLinks(sb.toString());
+
+        responseBeanMap.putIfAbsent(serverExecutionId,responseBean);
+
+        return responseBeanMap;
+    }
+
+    private Map<String,DefectLinkResponseBean> createStepLevelDefectInCloud(Map<String, StepResultFileResponseBean> stepResultFileResponseBeanMap,
+                                                                            Map<String, List<Issue>> stepLevelDefectMap) {
+        Map<String,DefectLinkResponseBean> responseBeanMap = new ConcurrentHashMap<>();
+
+        if(stepResultFileResponseBeanMap.size() > 0) {
+            stepResultFileResponseBeanMap.entrySet().parallelStream().forEach(entry -> {
+                String serverStepId = entry.getKey();
+                StepResultFileResponseBean stepResultDetails = entry.getValue();
+                List<Issue> defectList = stepLevelDefectMap.get(serverStepId);
+
+                if(CollectionUtils.isNotEmpty(defectList)) {
+                    DefectLinkResponseBean responseBean = new DefectLinkResponseBean();
+                    List<Defect> cloudDefectCreationList = new ArrayList<>();
+                    StringBuffer sb = new StringBuffer();
+                    defectList.forEach(defectId -> {
+                        cloudDefectCreationList.add(new Defect(new Long(defectId.getId())));
+                        sb.append(defectId.getId()+",");
+                    });
+
+                    responseBean.setServerExecutionId(stepResultDetails.getServerExecutionId());
+                    responseBean.setCloudExecutionId(stepResultDetails.getCloudExecutionId());
+
+                    defectLinkService.createStepResultLevelDefectInZephyrCloud(stepResultDetails.getCloudExecutionId(),
+                            stepResultDetails.getCloudStepResultId(), cloudDefectCreationList);
+
+                    responseBean.setServerStepResultId(serverStepId);
+                    responseBean.setCloudStepResultId(stepResultDetails.getCloudStepResultId());
+                    responseBean.setServerDefectLinks(sb.toString());
+                    responseBean.setCloudDefectLinks(sb.toString());
+
+                    responseBeanMap.putIfAbsent(stepResultDetails.getServerExecutionId(),responseBean);
+                }
+            });
+        }
+
+        return responseBeanMap;
     }
 }

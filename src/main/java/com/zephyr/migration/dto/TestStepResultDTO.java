@@ -134,4 +134,16 @@ public class TestStepResultDTO implements Comparable<TestStepResultDTO> {
         //Ascending order sorting.
         return this.id - stepResult.id;
     }
+
+    @Override
+    public String toString() {
+        return "TestStepResultDTO{" +
+                "id=" + id +
+                ", executionId=" + executionId +
+                ", stepId=" + stepId +
+                ", defectList=" + defectList +
+                ", issueId=" + issueId +
+                ", defects=" + defects +
+                '}';
+    }
 }

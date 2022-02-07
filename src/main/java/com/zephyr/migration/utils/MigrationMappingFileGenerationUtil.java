@@ -820,6 +820,96 @@ public class MigrationMappingFileGenerationUtil {
         return recordToAdd;
     }
 
+    public void generateStepResultsMigrationMappingFile(String projectId, String projectName, String migrationFilePath, List<StepResultFileResponseBean> stepResultFileResponseBeanList) {
+        try {
+            List<List<String>> responseList = stepResultsMigrationDataToPrintInExcel(projectId, projectName, stepResultFileResponseBeanList);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeStepResultsMigrationDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    private List<List<String>> stepResultsMigrationDataToPrintInExcel(String projectId, String projectName, List<StepResultFileResponseBean> stepResultFileResponseBeanList) {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateStepResultsHeader());
+        List<String> stepResultsMappingList;
+        for (StepResultFileResponseBean stepResult : stepResultFileResponseBeanList) {
+            stepResultsMappingList = new ArrayList<>();
+            stepResultsMappingList.add(projectId);
+            stepResultsMappingList.add(projectName);
+            stepResultsMappingList.add(stepResult.getServerExecutionId());
+            stepResultsMappingList.add(stepResult.getCloudExecutionId());
+            stepResultsMappingList.add(stepResult.getServerStepResultId());
+            stepResultsMappingList.add(stepResult.getCloudStepResultId());
+            recordToAdd.add(stepResultsMappingList);
+        }
+        return recordToAdd;
+    }
+
+
+    public void updateStepResultsMigrationMappingFile(String projectId, String projectName, String migrationFilePath, List<StepResultFileResponseBean> stepResultFileResponseBeanList) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_STEP_RESULTS_FILE_NAME+projectId+ ApplicationConstants.XLSX;
+        try {
+            if(stepResultFileResponseBeanList.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
+                XSSFWorkbook wb = new XSSFWorkbook(inputStream);
+                XSSFSheet sheet = wb.getSheet(ApplicationConstants.STEP_RESULTS_MAPPING_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[stepResultFileResponseBeanList.size()][8];
+                int rowCount = sheet.getLastRowNum();
+
+                populateStepResultsRowDataSet(rowDataSet, projectId, projectName, stepResultFileResponseBeanList);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for test step mapping file.", ex.fillInStackTrace());
+        }
+    }
+
+    private void populateStepResultsRowDataSet(Object[][] rowDataSet, String projectId, String projectName, List<StepResultFileResponseBean> stepResultFileResponseBeanList) {
+        AtomicInteger row = new AtomicInteger();
+        try{
+            for(StepResultFileResponseBean stepResults : stepResultFileResponseBeanList ) {
+                int column = 0;
+                rowDataSet[row.get()][column] = projectId;
+                ++column;
+                rowDataSet[row.get()][column] = projectName;
+                ++column;
+                rowDataSet[row.get()][column] = stepResults.getServerExecutionId();
+                ++column;
+                rowDataSet[row.get()][column] = stepResults.getCloudExecutionId();
+                ++column;
+                rowDataSet[row.get()][column] = stepResults.getServerStepResultId();
+                ++column;
+                rowDataSet[row.get()][column] = stepResults.getCloudStepResultId();
+                row.incrementAndGet();
+            }
+        }catch (Exception exception) {
+            log.error("Exception occurred while preparing the file data.");
+        }
+    }
+
     public static List<String> generateCycleHeader() {
         List<String> excelHeader = new ArrayList<String>();
         excelHeader.add("Project Id");
@@ -905,5 +995,227 @@ public class MigrationMappingFileGenerationUtil {
         return excelHeader;
     }
 
+    private List<String> generateStepResultsHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project-Id");
+        excelHeader.add("Project-Name");
+        excelHeader.add("server-execution-id");
+        excelHeader.add("cloud-execution-id");
+        excelHeader.add("server-stepresult-id");
+        excelHeader.add("cloud-stepresult-id");
+        return excelHeader;
+    }
 
+    private List<String> generateExecutionLevelDefectHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project-Id");
+        excelHeader.add("Project-Name");
+        excelHeader.add("server-execution-id");
+        excelHeader.add("cloud-execution-id");
+        excelHeader.add("server-defect-ids");
+        excelHeader.add("cloud-defect-ids");
+        return excelHeader;
+    }
+
+    private List<String> generateStepResultsDefectHeader() {
+        List<String> excelHeader = new ArrayList<String>();
+        excelHeader.add("Project-Id");
+        excelHeader.add("Project-Name");
+        excelHeader.add("server-execution-id");
+        excelHeader.add("cloud-execution-id");
+        excelHeader.add("server-step-result-id");
+        excelHeader.add("cloud-step-result-id");
+        excelHeader.add("server-defect-ids");
+        excelHeader.add("cloud-defect-ids");
+        return excelHeader;
+    }
+
+    public void generateExecutionLevelDefectMigrationMappingFile(String projectId, String projectName, String migrationFilePath, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        try {
+            List<List<String>> responseList = executionLevelDefectMigrationDataToPrintInExcel(projectId, projectName,defectLinkResponseBeanMap);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeExecutionLevelDefectMigrationDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_LEVEL_DEFECT_MAPPING_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    private List<List<String>> executionLevelDefectMigrationDataToPrintInExcel(String projectId, String projectName, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateExecutionLevelDefectHeader());
+        List<String> executionLevelDefectMappingList;
+        for (Map.Entry<String, DefectLinkResponseBean> entry: defectLinkResponseBeanMap.entrySet()) {
+            DefectLinkResponseBean responseBean = entry.getValue();
+            executionLevelDefectMappingList = new ArrayList<>();
+            executionLevelDefectMappingList.add(projectId);
+            executionLevelDefectMappingList.add(projectName);
+            executionLevelDefectMappingList.add(responseBean.getServerExecutionId());
+            executionLevelDefectMappingList.add(responseBean.getCloudExecutionId());
+            executionLevelDefectMappingList.add(responseBean.getServerDefectLinks());
+            executionLevelDefectMappingList.add(responseBean.getCloudDefectLinks());
+            recordToAdd.add(executionLevelDefectMappingList);
+        }
+        return recordToAdd;
+    }
+
+
+    public void updateExecutionLevelDefectMigrationMappingFile(String projectId, String projectName, String migrationFilePath, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_EXECUTION_LEVEL_DEFECT_MAPPING_FILE_NAME+projectId+ ApplicationConstants.XLSX;
+        try {
+            if(defectLinkResponseBeanMap.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
+                XSSFWorkbook wb = new XSSFWorkbook(inputStream);
+                XSSFSheet sheet = wb.getSheet(ApplicationConstants.EXECUTION_LEVEL_DEFECT_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[defectLinkResponseBeanMap.size()][8];
+                int rowCount = sheet.getLastRowNum();
+
+                populateExecutionDefectRowDataSet(rowDataSet, projectId, projectName, defectLinkResponseBeanMap);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for test step mapping file.", ex.fillInStackTrace());
+        }
+    }
+
+    private void populateExecutionDefectRowDataSet(Object[][] rowDataSet, String projectId, String projectName, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        AtomicInteger row = new AtomicInteger();
+        try{
+            for(Map.Entry<String,DefectLinkResponseBean> entry : defectLinkResponseBeanMap.entrySet() ) {
+                DefectLinkResponseBean responseBean = entry.getValue();
+                int column = 0;
+                rowDataSet[row.get()][column] = projectId;
+                ++column;
+                rowDataSet[row.get()][column] = projectName;
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getServerExecutionId();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getCloudExecutionId();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getServerDefectLinks();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getCloudDefectLinks();
+                row.incrementAndGet();
+            }
+        }catch (Exception exception) {
+            log.error("Exception occurred while preparing the file data.");
+        }
+    }
+
+    public void generateStepResultsDefectMigrationMappingFile(String projectId, String projectName, String migrationFilePath, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        try {
+            List<List<String>> responseList = stepResultsDefectMigrationDataToPrintInExcel(projectId, projectName,defectLinkResponseBeanMap);
+            ExcelUtils excelUtils = new ExcelUtils();
+            excelUtils.writeStepResultsDefectMigrationDataToExcelFile(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_DEFECT_MAPPING_FILE_NAME + projectId, responseList);
+        }catch (Exception e){
+            log.error("Error occurred while writing to the excel file.", e.fillInStackTrace());
+        }
+    }
+
+    private List<List<String>> stepResultsDefectMigrationDataToPrintInExcel(String projectId, String projectName, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        List<List<String>> recordToAdd = new ArrayList<>();
+        recordToAdd.add(generateStepResultsDefectHeader());
+        List<String> stepResultsDefectMappingList;
+        for (Map.Entry<String, DefectLinkResponseBean> entry: defectLinkResponseBeanMap.entrySet()) {
+            DefectLinkResponseBean responseBean = entry.getValue();
+            stepResultsDefectMappingList = new ArrayList<>();
+            stepResultsDefectMappingList.add(projectId);
+            stepResultsDefectMappingList.add(projectName);
+            stepResultsDefectMappingList.add(responseBean.getServerExecutionId());
+            stepResultsDefectMappingList.add(responseBean.getCloudExecutionId());
+            stepResultsDefectMappingList.add(responseBean.getServerStepResultId());
+            stepResultsDefectMappingList.add(responseBean.getCloudStepResultId());
+            stepResultsDefectMappingList.add(responseBean.getServerDefectLinks());
+            stepResultsDefectMappingList.add(responseBean.getCloudDefectLinks());
+            recordToAdd.add(stepResultsDefectMappingList);
+        }
+        return recordToAdd;
+    }
+
+    public void updateStepResultsDefectMigrationMappingFile(String projectId, String projectName, String migrationFilePath, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        String excelFilePath = migrationFilePath+"/"+ApplicationConstants.MAPPING_STEP_RESULTS_DEFECT_MAPPING_FILE_NAME+projectId+ ApplicationConstants.XLSX;
+        try {
+            if(defectLinkResponseBeanMap.size() > 0) {
+                FileInputStream inputStream = new FileInputStream(excelFilePath);
+                XSSFWorkbook wb = new XSSFWorkbook(inputStream);
+                XSSFSheet sheet = wb.getSheet(ApplicationConstants.STEP_RESULTS_DEFECT_SHEET_NAME);
+
+                Object[][] rowDataSet = new Object[defectLinkResponseBeanMap.size()][10];
+                int rowCount = sheet.getLastRowNum();
+
+                populateStepResultsDefectRowDataSet(rowDataSet,projectId,projectName,defectLinkResponseBeanMap);
+
+                for (Object[] rowData : rowDataSet) {
+                    Row row = sheet.createRow(++rowCount);
+                    int columnCount = 0;
+
+                    Cell cell;
+                    for (Object field : rowData) {
+                        cell = row.createCell(columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                        ++columnCount;
+                    }
+                }
+                inputStream.close();
+                FileOutputStream outputStream = new FileOutputStream(excelFilePath);
+                wb.write(outputStream);
+                wb.close();
+                outputStream.close();
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while writing the file for test step mapping file.", ex.fillInStackTrace());
+        }
+    }
+
+    private void populateStepResultsDefectRowDataSet(Object[][] rowDataSet, String projectId, String projectName, Map<String, DefectLinkResponseBean> defectLinkResponseBeanMap) {
+        AtomicInteger row = new AtomicInteger();
+        try{
+            for(Map.Entry<String,DefectLinkResponseBean> entry : defectLinkResponseBeanMap.entrySet() ) {
+                DefectLinkResponseBean responseBean = entry.getValue();
+                int column = 0;
+                rowDataSet[row.get()][column] = projectId;
+                ++column;
+                rowDataSet[row.get()][column] = projectName;
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getServerExecutionId();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getCloudExecutionId();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getServerStepResultId();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getCloudStepResultId();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getServerDefectLinks();
+                ++column;
+                rowDataSet[row.get()][column] = responseBean.getCloudDefectLinks();
+                row.incrementAndGet();
+            }
+        }catch (Exception exception) {
+            log.error("Exception occurred while preparing the file data.");
+        }
+    }
 }
