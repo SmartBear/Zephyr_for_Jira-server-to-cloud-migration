@@ -20,8 +20,11 @@ public class ApplicationConstants {
     public static final String CLOUD_GET_TEST_STEP_RESULTS_URL = "/public/rest/api/1.0/migration/getStepResults";
     public static final String CLOUD_CREATE_BULK_TEST_STEP_URL = "/public/rest/api/1.0/migration/create/bulk/teststep";
     public static final String CLOUD_UPDATE_STEP_RESULT_URL = "/public/rest/api/1.0/migration/update/stepResult";
+    public static final String CLOUD_FETCH_VERSION_BY_JIRA_URL = "/public/rest/api/1.0/migration/fetch/versionsFromJira";
+    public static final String CLOUD_FETCH_VERSION_BY_JIRA_URL_V2 = "/public/rest/api/2.0/migration/fetch/versions/jira";
     public static final String CLOUD_CREATE_EXECUTION_LEVEL_DEFECT_URL = "/public/rest/api/1.0/migration/create/execution/defects";
     public static final String CLOUD_CREATE_STEP_RESULT_LEVEL_DEFECT_URL = "/public/rest/api/1.0/migration/create/stepResult/defects";
+
 
     /******* General constants *********/
     public static final String XLS = ".xls";
@@ -59,6 +62,9 @@ public class ApplicationConstants {
     public static final String SERVER_GET_FOLDERS_URL = "cycle/%s/folders?projectId=%s&versionId=%s&offset=%s&limit=%s";
     public static final String ZAPI_RESOURCE_GET_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&offset=%s&limit=%s";
     public static final String ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS = "execution?projectId=%s&versionId=%s&cycleId=%s&folderId=%s&offset=%s&limit=%s";
+
+    public static final String ZAPI_RESOURCE_GET_EXECUTIONS_WITHOUT_OFFSET = "execution?projectId=%s&versionId=%s&cycleId=%s";
+    public static final String ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS_WITHOUT_OFFSET = "execution?projectId=%s&versionId=%s&cycleId=%s&folderId=%s";
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT = "attachment/attachmentsByEntity?entityId=%s&entityType=%s";
     public static final String ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION = "attachment/%s/file";
     public static final String ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID = "stepResult?executionId=%s&expand=executionStatus";
@@ -72,6 +78,7 @@ public class ApplicationConstants {
     public static final String JIRA_RESOURCE_SEARCH_ISSUE_KEY_JQL = "jql=issue=%s";
     public static final String JIRA_RESOURCE_ISSUE = "issue/%s";
     public static final String JIRA_RESOURCE_VERSION = "project/%s/version";
+    public static final String JIRA_RESOURCE_VERSION_START_AT = "project/%s/version?startAt=%s";
 
     public static final String CYCLE_LEVEL_EXECUTION = "Cycle Level Execution";
     public static final String FOLDER_LEVEL_EXECUTION = "Folder Level Execution";
@@ -79,7 +86,7 @@ public class ApplicationConstants {
     public enum ENTITY_TYPE { EXECUTION, TESTSTEP, TESTSTEPRESULT }
 
     public static final String EXECUTION_ENTITY = "execution";
-    public static final String STEP_RESULT_ENTITY = "stepresult";
+    public static final String STEP_RESULT_ENTITY = "stepResult";
     public static final String TEST_STEP_ENTITY = "teststep";
 
 }

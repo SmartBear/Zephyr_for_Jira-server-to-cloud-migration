@@ -5,6 +5,10 @@ import com.google.common.collect.Lists;
 import com.zephyr.migration.dto.*;
 import com.zephyr.migration.model.SearchRequest;
 import com.zephyr.migration.model.ZfjCloudExecutionBean;
+import com.zephyr.migration.model.JiraVersion;
+import com.zephyr.migration.model.SearchRequest;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
+import com.zephyr.migration.model.ZfjCloudStepResultBean;
 import com.zephyr.migration.service.*;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -66,6 +70,9 @@ public class TestController {
     @Autowired
     private TestStepService testStepService;
 
+    @Autowired
+    private VersionService versionService;
+
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
         log.info("Serving --> {}", "sayHello()");
@@ -84,6 +91,7 @@ public class TestController {
         }
 
         String portNumber = configProp.getConfigValue("server.port");
+
         return String.format("Hello %s!", name + " "+portNumber);
     }
 
@@ -279,14 +287,32 @@ public class TestController {
     public String getTestSteps(@RequestParam("issueId") Integer issueId) {
 
         testService.initializeHttpClientDetails();
-
-
             List<TestStepDTO> testStepDTOS = testStepService.fetchTestStepsFromZFJ(issueId);
             log.info("step result beans "+testStepDTOS.toString());
+        Integer offset = 0, limit = 2;
+        String _projectId = issueId.toString();
+        Integer totalVersionCount = versionService.getTotalVersionCountPerProjectFromJira(_projectId);
+        log.info("Total version count received from jira ::: "+totalVersionCount);
+        List<JiraVersion> versionListFromServer = new ArrayList<>();
+        do{
+            List<JiraVersion> versionList = versionService.getVersionListFromJiraServer(_projectId,offset,limit);
+            if(CollectionUtils.isNotEmpty(versionList)) {
+                versionListFromServer.addAll(versionList);
+            }
+            offset +=limit;
+        }while (offset < totalVersionCount);
 
+        Iterable<JiraVersion> versions = versionListFromServer;
 
-
+        versions.forEach(v -> {
+            log.info("Version name:: "+v.getName() + " id:"+v.getId());
+        });
             return "Step results found "+ testStepDTOS.toString();
+    }
 
+    @GetMapping("/versions/byjira/{projectId}")
+    public String getVersionsFromJiraCloud(@PathVariable Long projectId) {
+        testService.getVersionsFromJiraCloud(projectId);
+        return String.format("Hello Unscheduled version has been created for project %s!", projectId);
     }
 }

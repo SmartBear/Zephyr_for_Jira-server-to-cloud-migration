@@ -1,8 +1,6 @@
 package com.zephyr.migration.service.impl;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
-import com.atlassian.jira.rest.client.api.domain.Project;
-import com.atlassian.jira.rest.client.api.domain.Version;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,8 +9,8 @@ import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
 import com.zephyr.migration.client.JiraServerClient;
-import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.AttachmentDTO;
+import com.zephyr.migration.dto.CycleDTO;
 import com.zephyr.migration.dto.JiraIssueDTO;
 import com.zephyr.migration.dto.TestStepResultDTO;
 import com.zephyr.migration.model.JiraVersion;
@@ -24,7 +22,6 @@ import com.zephyr.migration.service.TestService;
 import com.zephyr.migration.service.VersionService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
-import com.zephyr.migration.utils.FileUtils;
 import com.zephyr.migration.utils.MigrationMappingFileGenerationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +36,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -73,6 +66,10 @@ public class TestServiceImpl implements TestService {
 
     @Value("${migrationFilePath}")
     private String migrationFilePath;
+
+    @Autowired
+    @Qualifier(value = "jiraHttpClient")
+    private HttpClient jiraHttpClient;
 
     @Override
     public Issue getIssueDetailsFromServer(String issueKey) {
@@ -163,6 +160,7 @@ public class TestServiceImpl implements TestService {
     @Override
     public void initializeHttpClientDetails() {
         zapiHttpClient.init();
+        jiraHttpClient.init();
     }
 
     @Override
@@ -236,6 +234,18 @@ public class TestServiceImpl implements TestService {
             }
         });
 
+    }
+
+    @Override
+    public void getVersionsFromJiraCloud(Long projectId) {
+        JsonNode response = versionService.getVersionsByJiraFromZephyrCloud(projectId+"");
+        if(null != response){
+            log.info("Versions from Jira :: "+ response.toString());
+        }
+        response = versionService.getVersionsFromZephyrCloud(projectId+"");
+        if(null != response){
+            log.info("Versions from ES :: "+ response);
+        }
     }
 
     private JiraIssueDTO prepareRequestObject(Issue issue) {

@@ -2,12 +2,11 @@ package com.zephyr.migration.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
-import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
-import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.dto.ExecutionDTO;
+import com.zephyr.migration.model.ZfjCloudExecutionBean;
 import com.zephyr.migration.service.ExecutionService;
 import com.zephyr.migration.utils.ApplicationConstants;
 import com.zephyr.migration.utils.ConfigProperties;
@@ -47,7 +46,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS, projectId, versionId, cycleId, offset, maxRecords));
+            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId));
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);
@@ -71,7 +70,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS, projectId, versionId, cycleId, folderId, offset, maxRecords));
+            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId, folderId));
             ClientResponse response = zapiHttpClient.get();
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);
