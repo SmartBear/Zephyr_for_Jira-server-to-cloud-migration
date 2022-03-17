@@ -14,8 +14,15 @@ will not be able to read the .xls format files.
 Use the latest build for new projects.
 Keep the old precompiled jars for already migrated project(s).
 
+### <i>New properties added to migrate execution level and stepResults level defect.</i>
+#### By default, the properties are set to <i>'false'</i>
+1. <b>migrate.execution.level.defect</b> : If there are execution level defect in the server instance, then this property
+   can be set to <i>'true'</i> to create defect data from Zephyr Server to Zephyr cloud.
+2. <b>migrate.step.result.level.defect</b> : If there are step results level defect in the server instance, then this property
+   can be set to <i>'true'</i> to create defect data from Zephyr Server to Zephyr cloud.
+
 ### <i>New properties added to improve migration process time.</i>
-#### By default the properties are set to <i>'true'</i>
+#### By default, the properties are set to <i>'true'</i>
 1. <b>migrate.step.results.attachment</b> : If there are no step results attachment in the server instance, then this property 
 can be set to <i>'false'</i> to avoid fetching data from Zephyr Server.
 2. <b>migrate.test.steps.attachment</b> : If there are no test steps level attachment in the server instance, then this property 

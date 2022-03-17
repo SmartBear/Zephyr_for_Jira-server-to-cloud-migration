@@ -109,7 +109,7 @@ public class MigrationServiceImpl implements MigrationService {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
             if(migrateCycles) {
                 boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
-
+                log.info("Status of migrateFolders : "+ migrateFolders);
                 if (migrateFolders) {
                     beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
                     beginAttachmentsEntityMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
@@ -246,7 +246,7 @@ public class MigrationServiceImpl implements MigrationService {
                 List<String> listOfServerVersions = new ArrayList<>(mappedServerToCloudVersionMap.keySet());
                 Map<String, List<CycleDTO>> zephyrServerCyclesMap = new HashMap<>();
                 Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new HashMap<>();
-                listOfServerVersions.parallelStream().forEachOrdered(serverVersionId -> {
+                listOfServerVersions.forEach((serverVersionId -> {
                     try {
                         progressQueue.put("Fetching cycles from server for version :: "+ serverVersionId);
                         log.info("Fetching cycles from server for version :: "+ serverVersionId);
@@ -257,7 +257,7 @@ public class MigrationServiceImpl implements MigrationService {
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());
                     }
-                });
+                }));
 
                 Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
 
@@ -316,9 +316,10 @@ public class MigrationServiceImpl implements MigrationService {
             Path folderMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS);
             Map<String, SearchRequest> mappedServerToCloudCycleMap = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
             if(mappedServerToCloudCycleMap.size() > 0) {
+                log.info("Size of mappedServerToCloudCycleMap : "+mappedServerToCloudCycleMap.size());
                     List<String> listOfServerCycles = new ArrayList<>(mappedServerToCloudCycleMap.keySet());
                     Map<String, List<FolderDTO>> zephyrServerCycleFolderMap = new HashMap<>();
-                    listOfServerCycles.parallelStream().forEachOrdered(cycleId -> {
+                    listOfServerCycles.forEach(cycleId -> {
                         try {
                             String serverCycleId = "";
                             if(cycleId.contains("_")) {
@@ -342,8 +343,11 @@ public class MigrationServiceImpl implements MigrationService {
                         }
                     });
 
+                log.info("Size of zephyrServerCycleFolderMap : "+zephyrServerCycleFolderMap.size());
                 String finalProjectName = projectName;
-                mappedServerToCloudCycleMap.forEach((cycleId, searchFolderRequest) -> {
+
+                if(zephyrServerCycleFolderMap.size() > 0 ) {
+                    mappedServerToCloudCycleMap.forEach((cycleId, searchFolderRequest) -> {
                         try {
                             String serverCycleId = "";
                             if(cycleId.contains("_")) {
@@ -380,14 +384,18 @@ public class MigrationServiceImpl implements MigrationService {
                             log.error("", ex.fillInStackTrace());
                         }
                     });
+                }
 
-                    if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
-                        progressQueue.put("Creating the mapping file for folder migration.");
-                        migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
-                        return true;
-                    }
+                log.info("Size of zephyrServerCloudFolderMappingMap ["+zephyrServerCloudFolderMappingMap.size()+"]");
+
+                if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
+                    progressQueue.put("Creating the mapping file for folder migration.");
+                    migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
+                    return true;
+                }
             }
         }
+        log.info("Returning true from begin folder migration method.");
         return true;
     }
 
@@ -572,14 +580,16 @@ public class MigrationServiceImpl implements MigrationService {
 
         Map<ExecutionDTO, ZfjCloudExecutionBean> finalResponse = new HashMap<>();
         Map<Integer, List<TestStepDTO>> fetchedTestStepsFromServer = new HashMap<>();
+        log.info("Execution migration begins.");
 
         Path cycleMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
 
         if (Files.exists(cycleMappedFile)) {
+            log.info("Getting the mapping files.");
             Path folderMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_FOLDER_FILE_NAME + projectId + ApplicationConstants.XLS);
-
+            log.info("trying to find if the folder mapping file exists.");
             Path executionMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLSX);
-
+            log.info("trying to find if the execution mapping file exists.");
             Map<String, SearchRequest> mappedServerToCloudCycleMap = FileUtils.readCycleMappingFile(migrationFilePath, ApplicationConstants.MAPPING_CYCLE_FILE_NAME + projectId + ApplicationConstants.XLS);
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
             log.info("cloudAccountId ::: ["+cloudAccountId+"]");
@@ -649,7 +659,8 @@ public class MigrationServiceImpl implements MigrationService {
                     }
                 }
             });
-
+            log.info("Size of version map ["+uniqueVersionMap.size()+"]");
+            log.info("Version map data "+uniqueVersionMap);
             if(!uniqueVersionMap.isEmpty()) {
                 //create execution for Adhoc cycle per version.
                 uniqueVersionMap.forEach((serverVersionId,cloudVersionId) -> {
