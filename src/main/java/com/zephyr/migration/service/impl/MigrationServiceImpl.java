@@ -108,8 +108,15 @@ public class MigrationServiceImpl implements MigrationService {
         if(migrateVersions) {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
             if(migrateCycles) {
-                boolean migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
-                log.info("Status of migrateFolders : "+ migrateFolders);
+
+                final String MIGRATE_FOLDERS_FLAG = configProperties.getConfigValue("migrate.folders");
+                boolean isMigrateFolders = Boolean.parseBoolean(MIGRATE_FOLDERS_FLAG);
+                boolean migrateFolders = Boolean.TRUE;
+                if(isMigrateFolders) {
+                    migrateFolders = beginFolderMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+                    log.info("Status of migrateFolders : "+ migrateFolders);
+                }
+
                 if (migrateFolders) {
                     beginExecutionMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
                     beginAttachmentsEntityMigration(projectId,SERVER_BASE_URL,SERVER_USER_NAME,SERVER_USER_PASS,progressQueue);
@@ -318,7 +325,8 @@ public class MigrationServiceImpl implements MigrationService {
             if(mappedServerToCloudCycleMap.size() > 0) {
                 log.info("Size of mappedServerToCloudCycleMap : "+mappedServerToCloudCycleMap.size());
                     List<String> listOfServerCycles = new ArrayList<>(mappedServerToCloudCycleMap.keySet());
-                    Map<String, List<FolderDTO>> zephyrServerCycleFolderMap = new HashMap<>();
+
+                    Map<String, List<FolderDTO>> zephyrServerCycleFolderMap = new ConcurrentHashMap<>();
                     listOfServerCycles.forEach(cycleId -> {
                         try {
                             String serverCycleId = "";

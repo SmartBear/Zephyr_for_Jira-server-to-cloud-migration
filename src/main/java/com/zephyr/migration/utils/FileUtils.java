@@ -23,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Created by Himanshu Singhal on 18-11-2020.
@@ -371,7 +373,7 @@ public class FileUtils {
                 cycleNameIndex = cell.getColumnIndex();
             }
         }
-        Map<String, SearchRequest> serverCloudIdsMapping = new HashMap<>();
+        Map<String, SearchRequest> serverCloudIdsMapping = new ConcurrentHashMap<>();
         for (Row r : sheet) {
             if (r.getRowNum()==0) continue;//headers
 
