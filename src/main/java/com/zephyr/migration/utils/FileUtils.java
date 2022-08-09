@@ -145,6 +145,42 @@ public class FileUtils {
         return false;
     }
 
+    public static Set<String> getCycleMappingDataFromFile(String nDataDir, String filename) throws IOException {
+
+        Set<String> serverCycleIds = new HashSet<>();
+        //obtaining input bytes from a file
+        try (FileInputStream fis=new FileInputStream(nDataDir+"/"+filename)) {
+            HSSFWorkbook wb=new HSSFWorkbook(fis);
+            //creating a Sheet object to retrieve the object
+            HSSFSheet sheet=wb.getSheet(ApplicationConstants.CYCLE_MAPPING_SHEET_NAME);
+
+            int column_index_1 = 0;
+            int column_index_2 = 0;
+            Row row = sheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if (CLOUD_VERSION_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    column_index_1 = cell.getColumnIndex();
+                }else if (SERVER_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    column_index_2 = cell.getColumnIndex();
+                }
+            }
+            for (Row r : sheet) {
+                if (r.getRowNum()==0) continue;//headers
+                Cell c_1 = r.getCell(column_index_1);
+                Cell c_2 = r.getCell(column_index_2);
+                if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                    serverCycleIds.add(c_2.getStringCellValue());
+                }
+            }
+            wb.close();
+        } catch (Exception ex) {
+            log.error("Error occurred while closing the file stream"+ ex.fillInStackTrace());
+        }
+
+        return serverCycleIds;
+    }
+
     public static Boolean readFolderMappingFile(String nDataDir, String filename, String cloudCycleId, String serverFolderId)  {
         try (FileInputStream fis=new FileInputStream(nDataDir+"/"+filename)) {
             //creating workbook instance that refers to .xls file
@@ -177,6 +213,40 @@ public class FileUtils {
             log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
         }
         return false;
+    }
+
+    public static Set<String> getFolderMappingDataFromFile(String nDataDir, String filename)  {
+        Set<String> serverFolderIds = new HashSet<>();
+        try (FileInputStream fis=new FileInputStream(nDataDir+"/"+filename)) {
+            //creating workbook instance that refers to .xls file
+            HSSFWorkbook wb=new HSSFWorkbook(fis);
+            //creating a Sheet object to retrieve the object
+            HSSFSheet sheet=wb.getSheet(ApplicationConstants.FOLDER_MAPPING_SHEET_NAME);
+
+            int column_index_1 = 0;
+            int column_index_2 = 0;
+            Row row = sheet.getRow(0);
+            for (Cell cell : row) {
+                // Column header names.
+                if (CLOUD_CYCLE_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    column_index_1 = cell.getColumnIndex();
+                }else if (SERVER_FOLDER_ID_COLUMN_NAME.equalsIgnoreCase(cell.getStringCellValue())) {
+                    column_index_2 = cell.getColumnIndex();
+                }
+            }
+            for (Row r : sheet) {
+                if (r.getRowNum()==0) continue;//headers
+                Cell c_1 = r.getCell(column_index_1);
+                Cell c_2 = r.getCell(column_index_2);
+                if (c_1 != null && c_1.getCellType() != Cell.CELL_TYPE_BLANK && c_2 != null && c_2.getCellType() != Cell.CELL_TYPE_BLANK) {
+                    serverFolderIds.add(c_2.getStringCellValue());
+                }
+            }
+
+        } catch(IOException e) {
+            log.error("Error occurred while closing the file stream"+ e.fillInStackTrace());
+        }
+        return serverFolderIds;
     }
 
     public static List<ExecutionDTO> readExecutionMappingFile(String nDataDir, String filename, String cloudCycleId, String cloudFolderId, List<ExecutionDTO> executionList, String executionLevel)  {
