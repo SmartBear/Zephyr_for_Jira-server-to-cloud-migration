@@ -1,6 +1,15 @@
 # Zephyr_for_Jira-server-to-cloud-migration
 #### Zephyr for Jira Server to Cloud Migration
 
+### Recent Update - Version 2.1
+As part of this release, enhancement to folder migration & cycle migration is released.
+
+Added a new flag property <b>migrate.folders</b> to exclude the folder migrations if there are no folder data is present 
+under the cycle.  It can be checked via using the SQL queries or manual check using <i>Cycle Summary</i> page.
+By default, the flag is set to 'true'.
+
+Please note: if the value is set to 'false', then the utility will skip the folder migration.  
+
 ### <i>Latest Update - Version 2.0</i>
 As part of this release, we have released migration of defect links from Zephyr Squad server/DC to Zephyr Squad Cloud.
 To enable this use the below properties from application.properties file.
