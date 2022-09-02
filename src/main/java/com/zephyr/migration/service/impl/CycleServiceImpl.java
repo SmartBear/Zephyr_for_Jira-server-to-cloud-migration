@@ -95,14 +95,7 @@ public class CycleServiceImpl implements CycleService {
             if (Objects.nonNull(cycle.getName())) {
                 cycle.setId(key);
                 cycles.add(cycle);
-                try {
-                    if(Objects.nonNull(progressQueue)) {
-                        progressQueue.put("fetched Cycle from server with data : "+ cycle.toString());
-                    }
-                    log.debug("Cycle DTO:: "+ cycle.toString());
-                } catch (InterruptedException e) {
-                    log.error("",e.fillInStackTrace());
-                }
+                log.debug("Cycle DTO:: "+ cycle.toString());
             }
         });
         return cycles;

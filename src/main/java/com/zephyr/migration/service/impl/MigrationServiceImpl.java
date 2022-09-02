@@ -4,6 +4,7 @@ import com.atlassian.jira.rest.client.api.domain.Project;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.zephyr.migration.client.HttpClient;
 import com.zephyr.migration.client.JiraCloudClient;
@@ -46,6 +47,7 @@ public class MigrationServiceImpl implements MigrationService {
 
     private static final Logger log = LoggerFactory.getLogger(MigrationServiceImpl.class);
     private static final String UNEXECUTED_STATUS = "-1";
+    private static final Integer MAX_CYCLE_RECORD_PROCESS = 3000;
 
     @Autowired
     private ConfigProperties configProperties;
@@ -255,11 +257,9 @@ public class MigrationServiceImpl implements MigrationService {
                 Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new ConcurrentHashMap<>();
                 listOfServerVersions.forEach((serverVersionId -> {
                     try {
-                        progressQueue.put("Fetching cycles from server for version :: "+ serverVersionId);
                         log.info("Fetching cycles from server for version :: "+ serverVersionId);
                         List<CycleDTO> cyclesListFromServer = cycleService.fetchCyclesFromZephyrServer(projectId, serverVersionId, progressQueue);
                         zephyrServerCyclesMap.put(serverVersionId, cyclesListFromServer);
-                        progressQueue.put("Fetched cycles from server for version :: "+ serverVersionId);
                         log.info("Fetched cycles from server for version :: "+ serverVersionId);
                     } catch (Exception ex) {
                         log.error("", ex.fillInStackTrace());
@@ -285,24 +285,43 @@ public class MigrationServiceImpl implements MigrationService {
 
                 mappedServerToCloudVersionMap.forEach((serverVersionId, cloudVersionId) -> {
                     try {
-                        progressQueue.put("Creating cycles in zephyr cloud instance for version :: "+ serverVersionId);
                         log.info("Creating cycles in zephyr cloud instance for version :: [" +serverVersionId+"]");
                         List<CycleDTO> cyclesListFromServer = zephyrServerCyclesMap_final.get(serverVersionId);
                         log.info("Creating cycles in zephyr cloud size :: [" +cyclesListFromServer.size()+"]");
                         if (!isCycleMappingFileExists) {
-                            cyclesListFromServer.forEach(cycleDTO -> {
-                                if (!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
-                                    log.info("version info :: " + mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
-                                    cycleDTO.setCloudVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
-                                    ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
-                                    if (Objects.nonNull(cloudCycleBean)) {
-                                        zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                            if(cyclesListFromServer.size() > MAX_CYCLE_RECORD_PROCESS) {
+                                List<List<CycleDTO>> partitions = Lists.partition(cyclesListFromServer, MAX_CYCLE_RECORD_PROCESS);
+
+                                partitions.forEach(cycleList -> {
+                                    cycleList.forEach(cycleDTO -> {
+                                        if (!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                                            log.info("version info :: " + mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                            cycleDTO.setCloudVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                            ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
+                                            if (Objects.nonNull(cloudCycleBean)) {
+                                                zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                            }
+                                        } else {
+                                            /*Add adhoc cycle for mapping file*/
+                                            zephyrServerCloudCycleMappingMap.put(cycleDTO, prepareAdhocCycleResponse(projectId,mappedServerToCloudVersionMap.get(cycleDTO.getVersionId())));
+                                        }
+                                    });
+                                });
+                            } else {
+                                cyclesListFromServer.forEach(cycleDTO -> {
+                                    if (!cycleDTO.getId().equalsIgnoreCase(ApplicationConstants.AD_HOC_CYCLE_ID)) {
+                                        log.info("version info :: " + mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                        cycleDTO.setCloudVersionId(mappedServerToCloudVersionMap.get(cycleDTO.getVersionId()));
+                                        ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
+                                        if (Objects.nonNull(cloudCycleBean)) {
+                                            zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                        }
+                                    } else {
+                                        /*Add adhoc cycle for mapping file*/
+                                        zephyrServerCloudCycleMappingMap.put(cycleDTO, prepareAdhocCycleResponse(projectId,mappedServerToCloudVersionMap.get(cycleDTO.getVersionId())));
                                     }
-                                } else {
-                                    /*Add adhoc cycle for mapping file*/
-                                    zephyrServerCloudCycleMappingMap.put(cycleDTO, prepareAdhocCycleResponse(projectId,mappedServerToCloudVersionMap.get(cycleDTO.getVersionId())));
-                                }
-                            });
+                                });
+                            }
                             log.info("Created cycles in zephyr cloud instance for version :: [" +serverVersionId+"]");
                         }else {
                             progressQueue.put("Cycle mapping file exists, going to create the unmapped cycles.");
@@ -310,13 +329,11 @@ public class MigrationServiceImpl implements MigrationService {
                             createUnmappedCycleInCloud(mappedServerToCloudVersionMap, cyclesListFromServer, projectId, finalProjectName, migrationFilePath, finalCreated_serverCycleIds);
                             log.info("Created cycles in zephyr cloud instance for version :: [" +serverVersionId+"]");
                         }
-                        cyclesListFromServer = null;
                     } catch (Exception ex) {
-                        log.error("", ex.fillInStackTrace());
+                        log.error("Exception occurred while getting cycles data", ex.fillInStackTrace());
                     }
                 });
                 if (!zephyrServerCloudCycleMappingMap.isEmpty()) {
-                    progressQueue.put("Creating the mapping file for cycle migration.");
                     log.info("Creating the mapping file for cycle migration.");
                     migrationMappingFileGenerationUtil.generateCycleMappingReportExcel(zephyrServerCloudCycleMappingMap,
                             projectId.toString(), projectName, migrationFilePath);
@@ -356,7 +373,6 @@ public class MigrationServiceImpl implements MigrationService {
                             String serverCycleId;
                             if(cycleId.contains("_")) {
                                 serverCycleId = cycleId.substring(0,cycleId.indexOf("_"));
-                                progressQueue.put("fetching folders from zephyr server instance for cycle :: " + serverCycleId);
                                 log.info("Fetching folders from server for cycleId :: " + serverCycleId);
                                 SearchRequest searchFolderRequest = mappedServerToCloudCycleMap.get(cycleId);
                                 if(null != searchFolderRequest) {
@@ -366,13 +382,11 @@ public class MigrationServiceImpl implements MigrationService {
                                                 searchFolderRequest.getProjectId(), searchFolderRequest.getVersionId(), progressQueue);
                                         zephyrServerCycleFolderMap.put(serverCycleId, foldersListFromServer);
                                         log.info("Fetched folders from server for version :: "+ serverCycleId);
-                                        progressQueue.put("Fetched folders from server for version -> "+serverCycleId);
                                     }
                                 }
                             }
-                            serverCycleId = null;
                         } catch (Exception ex) {
-                            log.error("", ex.fillInStackTrace());
+                            log.error("Error occurred while fetching and creating the folders,", ex.fillInStackTrace());
                         }
                     });
 
@@ -404,8 +418,6 @@ public class MigrationServiceImpl implements MigrationService {
                                     if (!isFolderMappingFileExists) {
                                         foldersListFromServer.forEach(folderDTO -> {
                                             try {
-                                                progressQueue.put("creating folder in zephyr cloud instance with name :: " + folderDTO.getFolderName());
-                                                progressQueue.put("creating folder in zephyr cloud instance for cycle :: " + searchFolderRequest.getCloudCycleId());
                                                 log.info("creating folder in zephyr cloud instance with name :: " + folderDTO.getFolderName());
                                                 log.info("creating folder in zephyr cloud instance for cycle :: " + searchFolderRequest.getCloudCycleId());
                                             } catch (Exception ex) {
@@ -417,7 +429,6 @@ public class MigrationServiceImpl implements MigrationService {
                                             }
                                         });
                                     }else {
-                                        progressQueue.put("Folder mapping file exists for the project, creating unmapped folders in cloud.");
                                         log.info("creating unmapped folder data in zephyr cloud instance.");
                                         createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath, finalServerFolderIds);
                                     }
@@ -645,7 +656,6 @@ public class MigrationServiceImpl implements MigrationService {
             final String cloudAccountId = configProperties.getConfigValue("zfj.cloud.accountId");
             log.info("cloudAccountId ::: ["+cloudAccountId+"]");
 
-            Set<String> uniqueVersionIds = new HashSet<>();
             Map<String,String> uniqueVersionMap = new HashMap<>();
 
             //create cycle level executions
@@ -1305,8 +1315,8 @@ public class MigrationServiceImpl implements MigrationService {
         String _projectId = projectId.toString();
         Integer totalIssueCount = issueService.getTotalTestCountPerProjectFromJira(_projectId);
         log.info("Total issue count received from jira ::: "+totalIssueCount);
-        Integer offset = 0;
-        Integer limit = 50;
+        int offset = 0;
+        int limit = 50;
         AtomicInteger counter = new AtomicInteger(1);
         do{
             List<Issue> zephyrTests = issueService.getIssueDetailsFromJira(_projectId,offset,limit);
@@ -1345,13 +1355,11 @@ public class MigrationServiceImpl implements MigrationService {
                     Map<String,Issue> processedIssueMap = new ConcurrentHashMap<>();
 
 
-                    mappedServerToCloudExecutionIdMap.entrySet().forEach((entry) -> {
-                        String serverExecutionId = entry.getKey();
-                        String cloudExecutionId = entry.getValue();
-                        List<Issue> defectList = defectLinkService.getExecutionLevelDefectFromServer(Integer.parseInt(serverExecutionId),processedIssueMap);
+                    mappedServerToCloudExecutionIdMap.forEach((serverExecutionId, cloudExecutionId) -> {
+                        List<Issue> defectList = defectLinkService.getExecutionLevelDefectFromServer(Integer.parseInt(serverExecutionId), processedIssueMap);
 
-                        if(CollectionUtils.isNotEmpty(defectList)) {
-                            finalResponse.putAll(createExecutionLevelDefectInCloud(serverExecutionId,cloudExecutionId,defectList));
+                        if (CollectionUtils.isNotEmpty(defectList)) {
+                            finalResponse.putAll(createExecutionLevelDefectInCloud(serverExecutionId, cloudExecutionId, defectList));
                         }
                     });
 
@@ -1393,15 +1401,13 @@ public class MigrationServiceImpl implements MigrationService {
                     Map<String,Issue> processedIssueMap = new ConcurrentHashMap<>();
 
 
-                    mappedServerToCloudStepResultsIdMap.entrySet().forEach((entry) -> {
-                        String serverExecutionId = entry.getKey();
-                        Map<String,StepResultFileResponseBean> stepResultFileResponseBeanMap = entry.getValue();
+                    mappedServerToCloudStepResultsIdMap.forEach((serverExecutionId, stepResultFileResponseBeanMap) -> {
                         Map<String, List<Issue>> stepLevelDefectMap = defectLinkService.getStepLevelDefectFromZfj
                                 (Integer.parseInt(serverExecutionId), processedIssueMap);
 
-                      if(stepLevelDefectMap.size() > 0) {
+                        if (stepLevelDefectMap.size() > 0) {
                             finalResponse.putAll(createStepLevelDefectInCloud(stepResultFileResponseBeanMap, stepLevelDefectMap));
-                      }
+                        }
                     });
 
                     if(finalResponse.size() > 0 ) {
@@ -1432,7 +1438,7 @@ public class MigrationServiceImpl implements MigrationService {
         StringBuffer sb = new StringBuffer();
         defectList.forEach(defectId -> {
             cloudDefectCreationList.add(new Defect(new Long(defectId.getId())));
-            sb.append(defectId.getId()+",");
+            sb.append(defectId.getId()).append(",");
         });
 
         responseBean.setServerExecutionId(serverExecutionId);
@@ -1464,7 +1470,7 @@ public class MigrationServiceImpl implements MigrationService {
                     StringBuffer sb = new StringBuffer();
                     defectList.forEach(defectId -> {
                         cloudDefectCreationList.add(new Defect(new Long(defectId.getId())));
-                        sb.append(defectId.getId()+",");
+                        sb.append(defectId.getId()).append(",");
                     });
 
                     responseBean.setServerExecutionId(stepResultDetails.getServerExecutionId());
