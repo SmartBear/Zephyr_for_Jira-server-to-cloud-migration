@@ -88,5 +88,5 @@ public class ApplicationConstants {
     public static final String EXECUTION_ENTITY = "execution";
     public static final String STEP_RESULT_ENTITY = "stepResult";
     public static final String TEST_STEP_ENTITY = "teststep";
-
+    public static final String MDC_LOG_FILENAME = "fileName";
 }

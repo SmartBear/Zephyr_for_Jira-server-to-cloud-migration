@@ -132,9 +132,7 @@ public class VersionServiceImpl implements VersionService {
     @Override
     public Iterable<JiraVersion> getVersionListFromServer(String projectId) {
 
-        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
 
         TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
         VersionWrapper versions;
@@ -183,10 +181,7 @@ public class VersionServiceImpl implements VersionService {
     public List<JiraVersion> getVersionListFromJiraServer(String projectId, int startIndex, int limit) {
 
         String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_VERSION_START_AT,projectId,startIndex);
-
-        jiraHttpClient.setResourceName(resourceName);
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(resourceName);
 
         TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
         VersionWrapper versions;
@@ -202,9 +197,8 @@ public class VersionServiceImpl implements VersionService {
 
     @Override
     public Integer getTotalVersionCountPerProjectFromJira(String projectId) {
-        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
 
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
 
         TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
         VersionWrapper versions;

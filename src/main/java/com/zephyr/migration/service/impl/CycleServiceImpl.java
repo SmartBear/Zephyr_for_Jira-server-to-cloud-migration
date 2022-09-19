@@ -82,9 +82,8 @@ public class CycleServiceImpl implements CycleService {
         try {
             String getCyclesServerUrl = ApplicationConstants.SERVER_GET_CYCLES_URL;
             getCyclesServerUrl = String.format(getCyclesServerUrl, projectId, serverVersionId);
-            zapiHttpClient.setResourceName(getCyclesServerUrl);
 
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(getCyclesServerUrl);
             String content = response.getEntity(String.class);
             outputResponse = JsonUtil.readValue(content,reference);
 

@@ -82,11 +82,10 @@ public class FolderServiceImpl implements FolderService {
     @Override
     public List<FolderDTO> fetchFoldersFromZephyrServer(Long cycleId, String projectId, String versionId, ArrayBlockingQueue<String> progressQueue) {
 
-        zapiHttpClient.setResourceName(String.format(ApplicationConstants.SERVER_GET_FOLDERS_URL,cycleId,projectId,versionId,0,3000));
         TypeReference<List<FolderDTO>> reference = new TypeReference<List<FolderDTO>>() {};
         List<FolderDTO> folders = new ArrayList<>();
         try {
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.SERVER_GET_FOLDERS_URL,cycleId,projectId,versionId,0,3000));
             String content = response.getEntity(String.class);
             folders = JsonUtil.readValue(content,reference);
         } catch (IOException | ClientHandlerException e) {

@@ -40,9 +40,7 @@ public class IssueServiceImpl implements IssueService {
     @Override
     public Issue getIssueFromJira(String issueKey) {
 
-        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_ISSUE,issueKey));
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(String.format(ApplicationConstants.JIRA_RESOURCE_ISSUE,issueKey));
 
         TypeReference<Issue> reference = new TypeReference<Issue>() {};
         Issue issue;
@@ -61,9 +59,7 @@ public class IssueServiceImpl implements IssueService {
     public List<Issue> getIssueDetailsFromJira(String projectId, int startIndex, int limit) {
         String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE_JQL,projectId,startIndex);
 
-        jiraHttpClient.setResourceName(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE + resourceName);
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE + resourceName);
 
         TypeReference<TestCaseBean> reference = new TypeReference<TestCaseBean>() {};
         TestCaseBean testCaseBean;
@@ -85,9 +81,7 @@ public class IssueServiceImpl implements IssueService {
         log.info("Serving --> {}", "getTotalTestCountPerProjectFromJira()");
         String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE_JQL,projectId,0);
 
-        jiraHttpClient.setResourceName(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE + resourceName);
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(ApplicationConstants.JIRA_RESOURCE_SEARCH_ISSUE + resourceName);
 
         TypeReference<TestCaseBean> reference = new TypeReference<TestCaseBean>() {};
         TestCaseBean testcaseBean;

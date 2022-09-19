@@ -66,9 +66,7 @@ public class DefectLinkServiceImpl implements DefectLinkService {
         Type defectList = new TypeToken<Map<String,Map<String, Map<String, String>>>>(){}.getType();
         List<Issue> issueList = new ArrayList<>();
 
-        zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_DEFECTS_BY_EXECUTION_ID, executionId));
-
-        response = zapiHttpClient.get();
+        response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_DEFECTS_BY_EXECUTION_ID, executionId));
         content = response.getEntity(String.class);
 
         if(StringUtils.isNotBlank(content)) {
@@ -113,8 +111,7 @@ public class DefectLinkServiceImpl implements DefectLinkService {
                 List<TestStepResultDTO> responseList = new ArrayList<>();
                 TypeReference<List<TestStepResultDTO>> reference = new TypeReference<List<TestStepResultDTO>>() {};
                 try {
-                    zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID,executionId));
-                    response = zapiHttpClient.get();
+                    response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID,executionId));
                     String content = response.getEntity(String.class);
                     if(StringUtils.isNotBlank(content)) {
                         log.debug("Test Step Content=="+content);

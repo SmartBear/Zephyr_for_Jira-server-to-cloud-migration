@@ -48,11 +48,10 @@ public class AttachmentServiceImpl implements AttachmentService {
 
     @Override
     public List<AttachmentDTO> getAttachmentResponse(Integer executionId, ApplicationConstants.ENTITY_TYPE entityType) {
-        zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_ATTACHMENT, executionId, entityType.name()));
         List<AttachmentDTO> executionAttachmentList = new ArrayList<>(0);
         TypeReference<List<AttachmentDTO>> reference = new TypeReference<List<AttachmentDTO>>() {};
         try {
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_ATTACHMENT, executionId, entityType.name()));
             String content = response.getEntity(String.class);
             JsonParser parser = new JsonParser();
             JsonElement element = parser.parse(content);
@@ -75,8 +74,7 @@ public class AttachmentServiceImpl implements AttachmentService {
 
     @Override
     public File downloadExecutionAttachmentFileFromZFJ(String fileId, String fileName) {
-        zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION, fileId));
-        ClientResponse response = zapiHttpClient.getWithNoContentType();
+        ClientResponse response = zapiHttpClient.getWithNoContentType(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_ATTACHMENT_FILE_FOR_EXECUTION, fileId));
         InputStream inputStream = response.getEntityInputStream();
         return getFileFromStream(fileName, inputStream);
     }

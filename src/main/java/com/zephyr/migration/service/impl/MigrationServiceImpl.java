@@ -93,6 +93,9 @@ public class MigrationServiceImpl implements MigrationService {
     @Qualifier(value = "jiraHttpClient")
     private HttpClient jiraHttpClient;
 
+    @Autowired
+    private MigrationProgressService migrationProgressService;
+
     private final ArrayBlockingQueue<String> progressQueue = new ArrayBlockingQueue<>(10000);
 
     @Override
@@ -104,8 +107,7 @@ public class MigrationServiceImpl implements MigrationService {
 
         progressQueue.put("########### ########### ########### ########### ###########  ");
         progressQueue.put("Started Migration For project : -> project id: " + projectId + ", date/Time -> " + new Date());
-
-        boolean migrateVersions = beginVersionMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
+         boolean migrateVersions = beginVersionMigration(projectId, progressQueue);
 
         if(migrateVersions) {
             boolean migrateCycles = beginCycleMigration(projectId, SERVER_BASE_URL, SERVER_USER_NAME, SERVER_USER_PASS, progressQueue);
@@ -163,13 +165,14 @@ public class MigrationServiceImpl implements MigrationService {
     /**
      * version migration
      */
-    private boolean beginVersionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
-
+    private boolean beginVersionMigration(Long projectId,ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
+        migrationProgressService.addMigrationSteps(projectId,"Version migration started");
        // Iterable<JiraVersion> versionsFromZephyrServer = versionService.getVersionListFromServer(String.valueOf(projectId));
         Integer offset = 0, limit = 50;
         String _projectId = projectId.toString();
         Integer totalVersionCount = versionService.getTotalVersionCountPerProjectFromJira(_projectId);
         log.info("Total version count received from jira ::: "+totalVersionCount);
+        migrationProgressService.setOrUpdateMigrationEntityTotalCount(projectId,"versions", Long.valueOf(totalVersionCount));
         List<JiraVersion> versionListFromServer = new ArrayList<>();
         do{
             List<JiraVersion> versionList = versionService.getVersionListFromJiraServer(_projectId,offset,limit);
@@ -181,6 +184,7 @@ public class MigrationServiceImpl implements MigrationService {
 
         versionListFromServer.forEach(v -> {
             log.info("Version name:: "+v.getName() + " id:"+v.getId());
+            migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"versions", Long.valueOf(1));
         });
 
 
@@ -197,6 +201,7 @@ public class MigrationServiceImpl implements MigrationService {
                 migrationMappingFileGenerationUtil.doEntryOfUnscheduledVersionInExcel(projectId.toString(), migrationFilePath);
             }
             createUnmappedVersionInCloud(versionListFromServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
+            migrationProgressService.addMigrationSteps(projectId,"Version migration completed");
             return true;
         }else {
             versionService.createUnscheduledVersionInZephyrCloud(projectId.toString());
@@ -213,15 +218,18 @@ public class MigrationServiceImpl implements MigrationService {
                 List<String> mappedServerToCloudVersionList = FileUtils.readFile(migrationFilePath, ApplicationConstants.MAPPING_VERSION_FILE_NAME + projectId + ApplicationConstants.XLS);
                 createUnmappedVersionInCloud(versionListFromServer, mappedServerToCloudVersionList, projectId, migrationFilePath);
                 triggerProjectMetaReindex(projectId);
+                migrationProgressService.addMigrationSteps(projectId,"Version migration completed");
                 return true;
             }else {
                 progressQueue.put("Version list from cloud is empty");
                 log.warn("Version list from cloud is empty");
                 progressQueue.put("Initiate the migration with Unscheduled version.");
                 migrationMappingFileGenerationUtil.generateVersionMappingReportExcel(migrationFilePath, Long.toString(projectId), versionListFromServer,versionsFromZephyrCloud);
+                migrationProgressService.addMigrationSteps(projectId,"Version migration completed");
                 return true;
             }
         }
+
     }
 
     /**
@@ -236,7 +244,7 @@ public class MigrationServiceImpl implements MigrationService {
         else create the unmapped cycles in cloud instance.
         4. if the mapping file doesn't exist then create the cycle data in cloud instance & update the mapping file.
          */
-
+        migrationProgressService.addMigrationSteps(projectId,"Cycle migration started");
         Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
         String projectName = null;
         if (project != null) {
@@ -300,6 +308,9 @@ public class MigrationServiceImpl implements MigrationService {
                                             ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
                                             if (Objects.nonNull(cloudCycleBean)) {
                                                 zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                                migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"cycles", Long.valueOf(1));
+                                            }else {
+                                                migrationProgressService.setOrUpdateMigrationEntityFailedCount(projectId,"cycles", Long.valueOf(1));
                                             }
                                         } else {
                                             /*Add adhoc cycle for mapping file*/
@@ -315,6 +326,9 @@ public class MigrationServiceImpl implements MigrationService {
                                         ZfjCloudCycleBean cloudCycleBean = cycleService.createCycleInZephyrCloud(cycleDTO);
                                         if (Objects.nonNull(cloudCycleBean)) {
                                             zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                            migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"cycles", Long.valueOf(1));
+                                        }else {
+                                            migrationProgressService.setOrUpdateMigrationEntityFailedCount(projectId,"cycles", Long.valueOf(1));
                                         }
                                     } else {
                                         /*Add adhoc cycle for mapping file*/
@@ -339,11 +353,14 @@ public class MigrationServiceImpl implements MigrationService {
                             projectId.toString(), projectName, migrationFilePath);
 
                     log.info("Created the mapping file for cycle migration.");
+                    migrationProgressService.addMigrationSteps(projectId,"Cycle migration completed");
                     return true;
                 }
+                migrationProgressService.addMigrationSteps(projectId,"Cycle migration completed");
                 return true;
             }
         }
+        migrationProgressService.addMigrationSteps(projectId,"Cycle migration completed");
         return false;
     }
 
@@ -567,6 +584,9 @@ public class MigrationServiceImpl implements MigrationService {
     private void createUnmappedCycleInCloud(Map<String, String> mappedServerToCloudVersionMap, List<CycleDTO> cyclesListFromServer,
                                             Long projectId, String projectName, String migrationFilePath, Set<String> created_serverCycleIds)  {
         if(!cyclesListFromServer.isEmpty()) {
+            if(cyclesListFromServer !=null){
+                migrationProgressService.setOrUpdateMigrationEntityTotalCount(projectId,"cycles", Long.valueOf(cyclesListFromServer.size()));
+            }
             Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new ConcurrentHashMap<>();
             final Map<String, String> finalMappedServerToCloudVersionMap = mappedServerToCloudVersionMap;
 
@@ -583,11 +603,16 @@ public class MigrationServiceImpl implements MigrationService {
                                 if (Objects.nonNull(cloudCycleBean)) {
                                     log.info("cycle created.");
                                     zephyrServerCloudCycleMappingMap.put(cycleDTO, cloudCycleBean);
+                                    migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"cycles", Long.valueOf(1));
+                                }else {
+                                    migrationProgressService.setOrUpdateMigrationEntityFailedCount(projectId,"cycles", Long.valueOf(1));
                                 }
                             }
                         }catch (Exception ex) {
                             log.error("Error occurred while creating cycle.", ex.fillInStackTrace());
                         }
+                    }else {
+                        migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"cycles", Long.valueOf(1));
                     }
                 });
             if (!zephyrServerCloudCycleMappingMap.isEmpty()) {

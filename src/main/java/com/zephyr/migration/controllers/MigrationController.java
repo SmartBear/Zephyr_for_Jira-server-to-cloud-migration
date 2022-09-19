@@ -2,14 +2,18 @@ package com.zephyr.migration.controllers;
 
 import com.zephyr.migration.service.MigrationService;
 import com.zephyr.migration.utils.ConfigProperties;
+import com.zephyr.migration.utils.MigrationProgress;
+import com.zephyr.migration.utils.ProjectMigrationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -24,7 +28,7 @@ public class MigrationController {
     ConfigProperties configProp;
 
     @GetMapping("/migrate/{projectId}")
-    public String migrateVersion(@PathVariable Long projectId) throws Exception{
+    public String migrateVersion(@PathVariable Long projectId) throws Exception {
         /*change it to post method*/
         migrationService.initializeHttpClientDetails();
         migrationService.migrateSingleProject(projectId);
@@ -37,5 +41,11 @@ public class MigrationController {
         StringBuffer progressMessages = new StringBuffer();
         progressDetails.forEach(progressMessage -> progressMessages.append(progressMessage).append("<br>"));
         return progressMessages.toString();
+    }
+
+
+    @GetMapping("/migration/status")
+    public Map<Long, ProjectMigrationStatus> migrationStatus() {
+        return MigrationProgress.statusMap;
     }
 }

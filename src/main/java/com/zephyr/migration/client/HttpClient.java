@@ -15,37 +15,31 @@ import java.util.Objects;
 
 /**
  * <p>Handles http/https connections.</p>
- * 
- * @author Harsh
  *
+ * @author Harsh
  */
 public abstract class HttpClient {
-		
-	protected ClientConfig clientConfig;
-	
-	protected Client client;
-	
-	protected WebResource webResource;
 
-	public void init() {
-		org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
-        org.slf4j.bridge.SLF4JBridgeHandler.install();        
-        if(Objects.isNull(clientConfig) && Objects.isNull(client)) {
-        	clientConfig = new DefaultClientConfig();
+    protected ClientConfig clientConfig;
+
+    protected Client client;
+
+    public void init() {
+        org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+        org.slf4j.bridge.SLF4JBridgeHandler.install();
+        if (Objects.isNull(clientConfig) && Objects.isNull(client)) {
+            clientConfig = new DefaultClientConfig();
             clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.FALSE);
             client = Client.create(clientConfig);
             client.addFilter(new LoggingFilter());
         }
-	}
-	
-    public abstract void setResourceName(String url);
-    public abstract void setLatestResourceName(String url);
+    }
 
-    public ClientResponse get() {
-        if (Objects.isNull(webResource)) {
-            throw new IllegalStateException("webResource is not Initialized. call setResourceName() method ");
-        }
+    public abstract WebResource getResourceName(String url);
 
+
+    public ClientResponse get(String url) {
+        WebResource webResource = getWebResource(url);
         ClientResponse response = webResource.accept("application/json")
                 .type(MediaType.APPLICATION_JSON)
                 .get(ClientResponse.class);
@@ -53,11 +47,8 @@ public abstract class HttpClient {
         return checkStatus(response);
     }
 
-    public ClientResponse post(String content) {
-        if (Objects.isNull(webResource)) {
-            throw new IllegalStateException("webResource is not Initialized. call setResourceName() method ");
-        }
-
+    public ClientResponse post(String url, String content) {
+        WebResource webResource = getWebResource(url);
         ClientResponse response = webResource.accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .post(ClientResponse.class, content);
@@ -65,21 +56,17 @@ public abstract class HttpClient {
         return checkStatus(response);
     }
 
-    public ClientResponse getWithNoContentType() {
-        if (Objects.isNull(webResource)) {
-            throw new IllegalStateException("webResource is not Initialized. call setResourceName() method ");
-        }
+    public ClientResponse getWithNoContentType(String url) {
+        WebResource webResource = getWebResource(url);
 
         ClientResponse response = webResource.get(ClientResponse.class);
 
         return checkStatus(response);
     }
 
-    
-    public ClientResponse put(String content) {
-        if (Objects.isNull(webResource)) {
-            throw new IllegalStateException("webResource is not Initialized. call setResourceName() method ");
-        }
+
+    public ClientResponse put(String url, String content) {
+        WebResource webResource = getWebResource(url);
 
         ClientResponse response = webResource.accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
@@ -93,6 +80,14 @@ public abstract class HttpClient {
             throw new ClientHandlerException("Failed : HTTP error code : " + response.getStatus());
         }
         return response;
+    }
+
+    private WebResource getWebResource(String url) {
+        WebResource webResource = getResourceName(url);
+        if (Objects.isNull(webResource)) {
+            throw new IllegalStateException("webResource is not Initialized. call setResourceName() method ");
+        }
+        return webResource;
     }
 
 }

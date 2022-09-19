@@ -46,8 +46,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId));
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId));
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);
             JsonObject object = element.getAsJsonObject();
@@ -70,8 +69,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId, folderId));
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId, folderId));
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);
             JsonObject object = element.getAsJsonObject();

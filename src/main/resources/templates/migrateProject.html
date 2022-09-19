@@ -14,7 +14,7 @@
 
 <form action="#" th:action="@{/beginMigration}" th:object="${migrationRequest}" method="post">
     <p>
-        Please Enter Project Id: <input type="text" th:field="*{projectId}">
+        Please Enter Project Id: <input type="text" th:field="*{listOfProjects}">
     </p>
     <p>
         <input type="submit" value="Submit" id="startImporting"/> <input type="reset" value="Reset">
