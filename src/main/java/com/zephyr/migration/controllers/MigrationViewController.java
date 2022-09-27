@@ -14,7 +14,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -44,21 +49,21 @@ public class MigrationViewController {
     }
 
     @PostMapping("/beginMigration")
-    public String processForm(MigrationRequest migrationRequest) {
+    public String processForm(MigrationRequest migrationRequest, @RequestParam("file") MultipartFile file) {
         try {
+            List<Long> projectsIds = getInputProjects(migrationRequest, file);
             migrationService.initializeHttpClientDetails();
-            List<String> projectsIds = Arrays.asList(migrationRequest.getListOfProjects().split(",", -1));
             projectsIds.forEach(s -> {
-                migrationProgressService.initMigrationStatus(Long.valueOf(s));
+                migrationProgressService.initMigrationStatus(s);
             });
             log.info("Projects received for migration : {}", projectsIds);
             log.info("Projects projectsThreadSize : {} ", projectsThreadSize);
             if (projectsThreadSize > 1 && projectsIds != null && projectsIds.size() > 1) {
                 ExecutorService executorService = Executors.newFixedThreadPool(projectsThreadSize);
                 Set<Future<Boolean>> futureSet = new HashSet<Future<Boolean>>();
-                for (String projectId : projectsIds) {
+                for (Long projectId : projectsIds) {
                     futureSet.add(executorService.submit(() -> {
-                        runMigrationForTheProject(Long.valueOf(projectId));
+                        runMigrationForTheProject(projectId);
                         return true;
                     }));
                 }
@@ -77,7 +82,7 @@ public class MigrationViewController {
                 executorService.shutdown();
                 log.info("*****************ALL PROJECTS MIGRATION THREADS COMPLETED*******************");
             } else {
-                for (String projectId : projectsIds) {
+                for (Long projectId : projectsIds) {
                     runMigrationForTheProject(Long.valueOf(projectId));
                 }
                 log.info("*****************ALL PROJECTS MIGRATION COMPLETED*******************");
@@ -106,5 +111,40 @@ public class MigrationViewController {
     @GetMapping("/viewLogs")
     public String viewLogs() {
         return "migrationViewLogs";
+    }
+
+    private List<Long> getInputProjects(MigrationRequest migrationRequest, MultipartFile file) {
+        List<String> list = new ArrayList<>();
+        List<Long> pIds = new ArrayList<>();
+        String projectIds = "";
+        try {
+            if (file != null && !file.isEmpty()) {
+                String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+                if (content != null) {
+                    projectIds = content.replaceAll("/n", "").replaceAll("/r", "");
+                }
+            } else {
+                projectIds = migrationRequest.getListOfProjects();
+            }
+            if (projectIds != null) {
+                list = Arrays.asList(projectIds.split(",", -1));
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (list != null && list.size() > 0) {
+            list.stream().forEach(s -> {
+                try {
+                    pIds.add(Long.valueOf(s.trim()));
+                } catch (Exception exp) {
+                    log.error("Provided project id is not in correct format {} ", s, exp);
+                }
+            });
+        }
+
+        return pIds;
     }
 }

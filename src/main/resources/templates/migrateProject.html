@@ -12,9 +12,13 @@
 
 <h1>Zephyr Server-Cloud Migration</h1>
 
-<form action="#" th:action="@{/beginMigration}" th:object="${migrationRequest}" method="post">
+<form action="#" th:action="@{/beginMigration}" th:object="${migrationRequest}" method="post" enctype="multipart/form-data" >
     <p>
         Please Enter Project Id: <input type="text" th:field="*{listOfProjects}">
+    </p>
+    <br/><B>OR</B>
+    <p>
+    Select text file: <input type="file" name="file"/>
     </p>
     <p>
         <input type="submit" value="Submit" id="startImporting"/> <input type="reset" value="Reset">
