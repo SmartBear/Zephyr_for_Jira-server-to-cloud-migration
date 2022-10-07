@@ -21,12 +21,12 @@ public class MigrationProgressServiceImpl implements MigrationProgressService {
             status.status = ProgressStatusLevel.READY;
             status.statusSteps = new ArrayList<>();
 
-            status.counts = getEntities();
+            //status.counts = getEntities();
 
             MigrationProgress.statusMap.put(projectId, status);
         } else {
             status.status = ProgressStatusLevel.READY;
-            status.counts = getEntities();
+            //status.counts = getEntities();
         }
     }
 
@@ -52,19 +52,19 @@ public class MigrationProgressServiceImpl implements MigrationProgressService {
     @Override
     public void setOrUpdateMigrationEntityTotalCount(final Long projectId, final String entity, final Long count) {
         ProjectMigrationStatus statusBean = MigrationProgress.statusMap.get(projectId);
-        statusBean.counts.get(entity).total = statusBean.counts.get(entity).total + count;
+        //statusBean.counts.get(entity).total = statusBean.counts.get(entity).total + count;
     }
 
     @Override
     public void setOrUpdateMigrationEntityProcessCount(final Long projectId, final String entity, final Long count) {
         ProjectMigrationStatus statusBean = MigrationProgress.statusMap.get(projectId);
-        statusBean.counts.get(entity).processed = statusBean.counts.get(entity).processed + count;
+        //statusBean.counts.get(entity).processed = statusBean.counts.get(entity).processed + count;
     }
 
     @Override
     public void setOrUpdateMigrationEntityFailedCount(final Long projectId, final String entity, final Long count) {
         ProjectMigrationStatus statusBean = MigrationProgress.statusMap.get(projectId);
-        statusBean.counts.get(entity).failed = statusBean.counts.get(entity).failed + count;
+        //statusBean.counts.get(entity).failed = statusBean.counts.get(entity).failed + count;
     }
 
     private Map<String, EntityCounts> getEntities() {

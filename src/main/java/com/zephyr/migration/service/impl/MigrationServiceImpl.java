@@ -172,7 +172,7 @@ public class MigrationServiceImpl implements MigrationService {
         String _projectId = projectId.toString();
         Integer totalVersionCount = versionService.getTotalVersionCountPerProjectFromJira(_projectId);
         log.info("Total version count received from jira ::: "+totalVersionCount);
-        migrationProgressService.setOrUpdateMigrationEntityTotalCount(projectId,"versions", Long.valueOf(totalVersionCount));
+        //migrationProgressService.setOrUpdateMigrationEntityTotalCount(projectId,"versions", Long.valueOf(totalVersionCount));
         List<JiraVersion> versionListFromServer = new ArrayList<>();
         do{
             List<JiraVersion> versionList = versionService.getVersionListFromJiraServer(_projectId,offset,limit);
@@ -368,7 +368,8 @@ public class MigrationServiceImpl implements MigrationService {
      * folder migration
      */
     private boolean beginFolderMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
-        Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
+        migrationProgressService.addMigrationSteps(projectId,"Folder migration started");
+    	Project project = projectService.getProject(projectId, server_base_url,server_user_name,server_user_pass);
         String projectName = null;
         if (project != null) {
             projectName = project.getName();
@@ -443,11 +444,15 @@ public class MigrationServiceImpl implements MigrationService {
                                             ZfjCloudFolderBean cloudFolderBean = folderService.createFolderInZephyrCloud(folderDTO, searchFolderRequest);
                                             if (Objects.nonNull(cloudFolderBean)) {
                                                 zephyrServerCloudFolderMappingMap.put(folderDTO, cloudFolderBean);
+                                                migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"folders", Long.valueOf(1));
+                                            }else {
+                                                migrationProgressService.setOrUpdateMigrationEntityFailedCount(projectId,"folders", Long.valueOf(1));
                                             }
                                         });
                                     }else {
                                         log.info("creating unmapped folder data in zephyr cloud instance.");
                                         createUnmappedFolderInCloud(mappedServerToCloudCycleMap, foldersListFromServer, projectId, finalProjectName,migrationFilePath, finalServerFolderIds);
+                                        migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"folders", Long.valueOf(1));
                                     }
                                 }
                             }
@@ -462,11 +467,13 @@ public class MigrationServiceImpl implements MigrationService {
                 if (!zephyrServerCloudFolderMappingMap.isEmpty()) {
                     progressQueue.put("Creating the mapping file for folder migration.");
                     migrationMappingFileGenerationUtil.generateFolderMappingReportExcel(zephyrServerCloudFolderMappingMap, projectId.toString(), finalProjectName, migrationFilePath);
+                    migrationProgressService.addMigrationSteps(projectId,"Folder migration completed");
                     return true;
                 }
             }
         }
         log.info("Returning true from begin folder migration method.");
+        migrationProgressService.addMigrationSteps(projectId,"Folder migration completed");
         return true;
     }
 
@@ -585,7 +592,7 @@ public class MigrationServiceImpl implements MigrationService {
                                             Long projectId, String projectName, String migrationFilePath, Set<String> created_serverCycleIds)  {
         if(!cyclesListFromServer.isEmpty()) {
             if(cyclesListFromServer !=null){
-                migrationProgressService.setOrUpdateMigrationEntityTotalCount(projectId,"cycles", Long.valueOf(cyclesListFromServer.size()));
+                //migrationProgressService.setOrUpdateMigrationEntityTotalCount(projectId,"cycles", Long.valueOf(cyclesListFromServer.size()));
             }
             Map<CycleDTO, ZfjCloudCycleBean> zephyrServerCloudCycleMappingMap = new ConcurrentHashMap<>();
             final Map<String, String> finalMappedServerToCloudVersionMap = mappedServerToCloudVersionMap;
@@ -659,7 +666,8 @@ public class MigrationServiceImpl implements MigrationService {
      * execution migration
      */
     private Map<Integer, List<TestStepDTO>> beginExecutionMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException {
-        Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
+    	migrationProgressService.addMigrationSteps(projectId,"Execution migration started");
+    	Project project = projectService.getProject(projectId, server_base_url, server_user_name, server_user_pass);
         String projectName = null;
         if (project != null) {
             projectName = project.getName();
@@ -718,10 +726,12 @@ public class MigrationServiceImpl implements MigrationService {
                                     if(Objects.nonNull(zfjCloudExecutionBean)) {
                                         if(zfjCloudExecutionBean.getId() != null) {
                                             finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                            migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"executions", Long.valueOf(1));
                                         }
                                     }
                                 });
                             }
+                            
                         }
                     }else {
                         if(null != executionList && executionList.size() >0) {
@@ -738,6 +748,7 @@ public class MigrationServiceImpl implements MigrationService {
                                 if(Objects.nonNull(zfjCloudExecutionBean)) {
                                     if(zfjCloudExecutionBean.getId() != null) {
                                         finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                        migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"executions", Long.valueOf(1));
                                     }
                                 }
                             });
@@ -798,6 +809,7 @@ public class MigrationServiceImpl implements MigrationService {
                                             if(Objects.nonNull(zfjCloudExecutionBean)) {
                                                 if(zfjCloudExecutionBean.getId() != null) {
                                                     finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                                    migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"executions", Long.valueOf(1));
                                                 }
                                             }
                                         });
@@ -818,6 +830,7 @@ public class MigrationServiceImpl implements MigrationService {
                                         if(Objects.nonNull(zfjCloudExecutionBean)) {
                                             if(zfjCloudExecutionBean.getId() != null) {
                                                 finalResponse.put(serverExecution,zfjCloudExecutionBean);
+                                                migrationProgressService.setOrUpdateMigrationEntityProcessCount(projectId,"executions", Long.valueOf(1));
                                             }
                                         }
                                     });
@@ -832,10 +845,12 @@ public class MigrationServiceImpl implements MigrationService {
             if (Files.exists(executionMappedFile)) {
                 progressQueue.put("Updating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.updateExecutionMappingFile(projectId+"", projectName, migrationFilePath, finalResponse);
+                migrationProgressService.addMigrationSteps(projectId,"Execution migration completed");
                // return fetchedTestStepsFromServer;
             }else if(finalResponse.size() > 0) {
                 progressQueue.put("Creating the mapping file for execution migration for project : "+projectId);
                 migrationMappingFileGenerationUtil.generateExecutionMappingReportExcel(projectId+"", projectName,migrationFilePath,finalResponse);
+                migrationProgressService.addMigrationSteps(projectId,"Execution migration completed");
                 // return fetchedTestStepsFromServer;
             }
 
@@ -850,6 +865,7 @@ public class MigrationServiceImpl implements MigrationService {
 
     private void beginAttachmentsEntityMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
         try {
+        	migrationProgressService.addMigrationSteps(projectId,"Execution attachment migration started");
             Path executionMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLSX);
 
             if (Files.exists(executionMappedFile)) {
@@ -936,10 +952,12 @@ public class MigrationServiceImpl implements MigrationService {
                     if (Files.exists(executionAttachmentMappedFile) && !zfjCloudAttachmentBeanList.isEmpty()) {
                         progressQueue.put("Updating the mapping file for execution attachment migration for project : " + projectId);
                         migrationMappingFileGenerationUtil.updateExecutionAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                        migrationProgressService.addMigrationSteps(projectId,"Execution attachment migration completed");
                     } else {
                         if (!zfjCloudAttachmentBeanList.isEmpty()) {
                             progressQueue.put("Creating the mapping file for execution attachment migration for project : " + projectId);
                             migrationMappingFileGenerationUtil.generateExecutionAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                            migrationProgressService.addMigrationSteps(projectId,"Execution attachment migration completed");
                         }
                     }
 
@@ -958,8 +976,9 @@ public class MigrationServiceImpl implements MigrationService {
     }
 
     private void migrateStepResultLevelAttachments(Map<String, String> mappedServerToCloudExecutionIdMap, String projectId, String projectName) {
-        List<String> serverStepResultAttachmentList = new ArrayList<>();
+    	List<String> serverStepResultAttachmentList = new ArrayList<>();
         try {
+        	migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Step result level attachment migration started");
             Path stepResultAttachmentMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
             if (Files.exists(stepResultAttachmentMappedFile)) {
                 serverStepResultAttachmentList = FileUtils.readStepResultAttachmentMappingFileAndReturnList(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULT_ATTACHMENT_FILE_NAME + projectId + ApplicationConstants.XLS);
@@ -1087,19 +1106,24 @@ public class MigrationServiceImpl implements MigrationService {
         }
         if (!zfjCloudAttachmentBeanList.isEmpty() && Files.exists(stepResultAttachmentMappedFile)) {
             migrationMappingFileGenerationUtil.updateStepResultAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+            migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Step result level attachment migration completed");
         }
         if (!zfjCloudAttachmentBeanList.isEmpty() && !Files.exists(stepResultAttachmentMappedFile)) {
             migrationMappingFileGenerationUtil.generateStepResultAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+            migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Step result level attachment migration completed");
         }
         if (!stepResultFileResponseBeanList.isEmpty() && Files.exists(stepResultsMigrationMappedFile)) {
             migrationMappingFileGenerationUtil.updateStepResultsMigrationMappingFile(projectId + "", projectName, migrationFilePath, stepResultFileResponseBeanList);
+            migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Step result level attachment migration completed");
         }else if (!stepResultFileResponseBeanList.isEmpty() && !Files.exists(stepResultsMigrationMappedFile)) {
             migrationMappingFileGenerationUtil.generateStepResultsMigrationMappingFile(projectId + "", projectName, migrationFilePath, stepResultFileResponseBeanList);
+            migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Step result level attachment migration completed");
         }
     }
 
     private void importTestStepsAttachmentMigration(String projectId, String projectName, String cloudExecutionId, ArrayBlockingQueue<String> progressQueue) throws IOException, InterruptedException{
         try {
+        	migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Test step attachment migration started");
             Path testStepMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_TEST_STEP_FILE_NAME + projectId + ApplicationConstants.XLSX);
 
             if (Files.exists(testStepMappedFile)) {
@@ -1178,10 +1202,12 @@ public class MigrationServiceImpl implements MigrationService {
                     if (Files.exists(testStepsAttachmentMappedFile) && !zfjCloudAttachmentBeanList.isEmpty()) {
                         progressQueue.put("Updating the mapping file for test steps attachment migration for project : " + projectId);
                         migrationMappingFileGenerationUtil.updateTestStepAttachmentMappingFile(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                        migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Test step attachment migration completed");
                     } else {
                         if (!zfjCloudAttachmentBeanList.isEmpty()) {
                             progressQueue.put("Creating the mapping file for test steps attachment migration for project : " + projectId);
                             migrationMappingFileGenerationUtil.generateTestStepAttachmentMappingReportExcel(projectId + "", projectName, migrationFilePath, zfjCloudAttachmentBeanList);
+                            migrationProgressService.addMigrationSteps(Long.parseLong(projectId),"Test step attachment migration completed");
                         }
                     }
                 }else {
@@ -1337,6 +1363,7 @@ public class MigrationServiceImpl implements MigrationService {
         //Get the total issue count using JQL
         //Fetch the records using based on total count.
         //create the test steps accordingly
+    	migrationProgressService.addMigrationSteps(projectId,"Test Step migration started");
         String _projectId = projectId.toString();
         Integer totalIssueCount = issueService.getTotalTestCountPerProjectFromJira(_projectId);
         log.info("Total issue count received from jira ::: "+totalIssueCount);
@@ -1360,11 +1387,12 @@ public class MigrationServiceImpl implements MigrationService {
             });
             offset +=limit;
         }while (offset < totalIssueCount);
-
+        migrationProgressService.addMigrationSteps(projectId,"Test Step migration completed");
     }
 
     private void beginExecutionLevelDefectMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass) {
         try {
+        	migrationProgressService.addMigrationSteps(projectId,"Execution level defect migration started");
             Path executionMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_FILE_NAME + projectId + ApplicationConstants.XLSX);
             Path executionLevelDefectMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_EXECUTION_LEVEL_DEFECT_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLSX);
 
@@ -1393,9 +1421,11 @@ public class MigrationServiceImpl implements MigrationService {
                         if(Files.exists(executionLevelDefectMappedFile)) {
                             log.info("Execution level defect mapping file exists, updating the file.");
                              migrationMappingFileGenerationUtil.updateExecutionLevelDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                             migrationProgressService.addMigrationSteps(projectId,"Execution level defect migration completed");
                         }else {
                             log.info("Creating the execution level defect mapping after migration.");
                             migrationMappingFileGenerationUtil.generateExecutionLevelDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                            migrationProgressService.addMigrationSteps(projectId,"Execution level defect migration completed");
                         }
                     }
                 }
@@ -1411,6 +1441,7 @@ public class MigrationServiceImpl implements MigrationService {
 
     private void beginStepResultLevelDefectMigration(Long projectId, String server_base_url, String server_user_name, String server_user_pass) {
         try {
+        	migrationProgressService.addMigrationSteps(projectId,"Step result level defect migration started");
             Path stepResultsMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_FILE_NAME + projectId + ApplicationConstants.XLSX);
             Path stepResultsDefectMappedFile = Paths.get(migrationFilePath, ApplicationConstants.MAPPING_STEP_RESULTS_DEFECT_MAPPING_FILE_NAME + projectId + ApplicationConstants.XLSX);
 
@@ -1440,9 +1471,11 @@ public class MigrationServiceImpl implements MigrationService {
                         if(Files.exists(stepResultsDefectMappedFile)) {
                             log.info("Step results defect mapping file exists, updating the file.");
                             migrationMappingFileGenerationUtil.updateStepResultsDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                            migrationProgressService.addMigrationSteps(projectId,"Step result level defect migration completed");
                         }else {
                             log.info("Creating the step results defect mapping after migration.");
                             migrationMappingFileGenerationUtil.generateStepResultsDefectMigrationMappingFile(projectId + "", projectName, migrationFilePath, finalResponse);
+                            migrationProgressService.addMigrationSteps(projectId,"Step result level defect migration completed");
                         }
                     }
                 }

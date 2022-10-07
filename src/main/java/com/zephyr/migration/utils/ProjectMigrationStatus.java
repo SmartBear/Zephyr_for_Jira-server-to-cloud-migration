@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class ProjectMigrationStatus {
     public ProgressStatusLevel status = ProgressStatusLevel.READY;
-    public Map<String, EntityCounts> counts = new HashMap<>();
+    //public Map<String, EntityCounts> counts = new HashMap<>();
     public List<String> statusSteps = new ArrayList<>();
 
 }
