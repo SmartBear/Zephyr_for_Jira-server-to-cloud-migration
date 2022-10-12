@@ -89,3 +89,13 @@ div.saveEditConfig {
 	overflow-y: scroll;
 	border-top: 25px solid white;
 }
+
+
+table, th, td {
+	border: 1px solid;
+	padding: 3px;
+}
+
+table {
+	border-collapse: collapse;
+  }

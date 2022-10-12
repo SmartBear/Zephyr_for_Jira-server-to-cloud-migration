@@ -24,5 +24,11 @@
         <input type="submit" value="Submit" id="startImporting"/> <input type="reset" value="Reset">
     </p>
 </form>
+<div>
+    <p>
+        <input type="submit" value="Fetch Migration Status" id="fetchStatus" th:onclick="fetchStatus()"/>
+    </p>
+</div>
+<div class="table" id="table-data"></div>
 </body>
 </html>
