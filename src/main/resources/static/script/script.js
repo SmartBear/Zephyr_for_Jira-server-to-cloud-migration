@@ -10,6 +10,10 @@ function showLogs() {
       setTimeout(executeLogQuery, 2000);
 }
 
+function showFinalLogs() {
+     window.location = "/getProgressInformation";
+}
+
 function fetchStatus() {
     $("#fetchStatus").val("Refresh Status");
     getMigrationStatus();

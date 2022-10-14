@@ -12,7 +12,10 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,12 +47,13 @@ public class MigrationViewController {
     private int projectsThreadSize;
 
     @GetMapping("/beginMigration")
-    public String sendForm(MigrationRequest migrationRequest) {
+    public String sendForm(Model model, MigrationRequest migrationRequest) {
+    	model.addAttribute("message", "");
         return "migrateProject";
     }
 
     @PostMapping("/beginMigration")
-    public String processForm(MigrationRequest migrationRequest, @RequestParam("file") MultipartFile file) {
+    public String processForm(Model model, MigrationRequest migrationRequest, @RequestParam("file") MultipartFile file) {
         try {
             List<Long> projectsIds = getInputProjects(migrationRequest, file);
             migrationService.initializeHttpClientDetails();
@@ -91,7 +95,9 @@ public class MigrationViewController {
         } catch (Exception e) {
             log.error("Error occurred while migrating the data.", e.fillInStackTrace());
         }
-        return "migrationSuccess";
+        model.addAttribute("message", "Zephyr Server-Cloud Migration Triggered successfully.");
+        //return "migrationSuccess";
+        return "migrateProject";
     }
 
     private void runMigrationForTheProject(Long projectId) {
