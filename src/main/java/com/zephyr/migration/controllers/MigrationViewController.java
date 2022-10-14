@@ -48,7 +48,7 @@ public class MigrationViewController {
 
     @GetMapping("/beginMigration")
     public String sendForm(Model model, MigrationRequest migrationRequest) {
-    	model.addAttribute("message", "");
+    	//model.addAttribute("message", "");
         return "migrateProject";
     }
 
@@ -95,7 +95,7 @@ public class MigrationViewController {
         } catch (Exception e) {
             log.error("Error occurred while migrating the data.", e.fillInStackTrace());
         }
-        model.addAttribute("message", "Zephyr Server-Cloud Migration Triggered successfully.");
+        //model.addAttribute("message", "Zephyr Server-Cloud Migration Triggered successfully.");
         //return "migrationSuccess";
         return "migrateProject";
     }

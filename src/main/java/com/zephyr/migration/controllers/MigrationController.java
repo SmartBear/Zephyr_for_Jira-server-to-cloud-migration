@@ -39,6 +39,7 @@ public class MigrationController {
     public String fetchProgressInformation() {
         List<String> progressDetails = migrationService.getProgressDetails();
         StringBuffer progressMessages = new StringBuffer();
+        progressMessages.append("<h3>Zephyr Server-Cloud Migration Triggered successfully.</h3>").append("<br>");
         progressDetails.forEach(progressMessage -> progressMessages.append(progressMessage).append("<br>"));
         return progressMessages.toString();
     }
