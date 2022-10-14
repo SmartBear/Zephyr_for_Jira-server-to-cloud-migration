@@ -101,8 +101,10 @@ public class MigrationViewController {
             migrationProgressService.updateMigrationStatusAndStep(projectId, ProgressStatusLevel.IN_PROGRESS, "Migration started for the project....");
             migrationService.migrateSingleProject(projectId);
         } catch (Exception exp) {
+            //migrationProgressService.updateMigrationStatusAndStep(projectId, ProgressStatusLevel.FAILED, "Migration failed for the project....");
             log.error("Exception while running migration for the project {} ", projectId, exp);
         } finally {
+            migrationProgressService.updateMigrationStatusAndStep(projectId, ProgressStatusLevel.SUCCESS, "Migration completed for the project....");
             log.info("***************** : Completed migration for the project {} ", projectId);
             MDC.remove(ApplicationConstants.MDC_LOG_FILENAME);
         }
