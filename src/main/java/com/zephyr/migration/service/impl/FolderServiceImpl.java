@@ -44,7 +44,7 @@ public class FolderServiceImpl implements FolderService {
     @Override
     public ZfjCloudFolderBean createFolderInZephyrCloud(FolderDTO folderDTO, SearchRequest searchFolderRequest) {
         log.info("Serving --> {}", "createFolderInZephyrCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");

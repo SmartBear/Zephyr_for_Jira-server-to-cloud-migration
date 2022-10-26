@@ -43,7 +43,7 @@ public class MigrationViewController {
     @Autowired
     MigrationProgressService migrationProgressService;
 
-    @Value("${project.threads.run.at.time:10}")
+    @Value("${project.threads.run.at.time:1}")
     private int projectsThreadSize;
 
     @GetMapping("/beginMigration")

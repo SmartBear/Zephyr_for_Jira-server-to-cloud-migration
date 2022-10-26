@@ -71,7 +71,7 @@ public class TestStepServiceImpl implements TestStepService {
         TypeReference<List<ZfjCloudStepResultBean>> reference = new TypeReference<List<ZfjCloudStepResultBean>>() {};
         JsonParser parser = new JsonParser();
 
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -140,7 +140,7 @@ public class TestStepServiceImpl implements TestStepService {
     @Override
     public List<JiraCloudTestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId) {
         log.info("Serving --> {}", "createTestStepInJiraCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -230,7 +230,7 @@ public class TestStepServiceImpl implements TestStepService {
     @Override
     public void updateStepResult(ZfjCloudStepResultUpdateBean stepResultUpdateBean) {
         log.info("Serving --> {}", "updateStepResult()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
