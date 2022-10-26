@@ -112,6 +112,7 @@ public class MigrationViewController {
             //migrationProgressService.updateMigrationStatusAndStep(projectId, ProgressStatusLevel.FAILED, "Migration failed for the project....");
             log.error("Exception while running migration for the project {} ", projectId, exp);
         } finally {
+            migrationProgressService.addMigrationSteps(projectId, "----------------------------------------------------------------------------");
             log.info("***************** : Completed migration for the project {} ", projectId);
             MDC.remove(ApplicationConstants.MDC_LOG_FILENAME);
         }
