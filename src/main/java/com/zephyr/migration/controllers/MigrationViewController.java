@@ -63,6 +63,7 @@ public class MigrationViewController {
             log.info("Projects received for migration : {}", projectsIds);
             log.info("Projects projectsThreadSize : {} ", projectsThreadSize);
             if (projectsThreadSize > 1 && projectsIds != null && projectsIds.size() > 1) {
+                log.info("Projects running parallel");
                 ExecutorService executorService = Executors.newFixedThreadPool(projectsThreadSize);
                 Set<Future<Boolean>> futureSet = new HashSet<Future<Boolean>>();
                 for (Long projectId : projectsIds) {
@@ -86,6 +87,7 @@ public class MigrationViewController {
                 executorService.shutdown();
                 log.info("*****************ALL PROJECTS MIGRATION THREADS COMPLETED*******************");
             } else {
+                log.info("Projects running one by one");
                 for (Long projectId : projectsIds) {
                     runMigrationForTheProject(Long.valueOf(projectId));
                 }
