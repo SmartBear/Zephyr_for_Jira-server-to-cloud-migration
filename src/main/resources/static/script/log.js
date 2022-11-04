@@ -54,3 +54,47 @@ function executeProgressBarQuery() {
     });
     timeoutVar = setTimeout(executeProgressBarQuery, 2000);
 }
+
+function displayTable (data){
+    let tableHeadData = ['Project Id', 'Status', 'Status Steps'];
+
+    let table = '<table><thead><tr>'
+    let headers = ''
+    tableHeadData.map(head =>{
+        headers += '<th>' + head + '</th>'
+    });
+
+    headers = table + headers + '</tr></thead>';
+
+    $("#table-data").html(table);
+    let tableRows = '<tbody>';
+    if(data && Object.keys(data).length > 0){
+        (Object.keys(data)|| []).map(projectkey =>{
+            if(data[projectkey]){
+                let tableRow = '<tr><td>'+ projectkey + '</td>';
+                tableRow += '<td>' + data[projectkey].status + '</td>';
+                let statusSteps = '';
+                data[projectkey].statusSteps.forEach((statusStep,index) => {
+                    if(index  !== data[projectkey].statusSteps.length - 1){
+                        statusSteps +=  statusStep + ',' + '<br>';
+                    }else{
+                        statusSteps +=  statusStep;
+                    }
+                });
+                tableRow +=  '<td>' + statusSteps + '</td></tr>';
+                tableRows += tableRow;
+            }
+        })
+        table = headers + tableRows + '</tbody>';
+        $("#table-data").html(table);
+    }
+}
+
+function getMigrationStatus() {
+	$.ajax({
+		url : '/migration/status',
+		success : function(data) {
+            displayTable(data);
+		}
+	});
+}

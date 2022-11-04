@@ -49,8 +49,7 @@ public class TestStepServiceImpl implements TestStepService {
         List<TestStepResultDTO> responseList = new ArrayList<>();
         TypeReference<List<TestStepResultDTO>> reference = new TypeReference<List<TestStepResultDTO>>() {};
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID,executionId));
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_FETCH_TEST_STEP_RESULT_BY_EXECUTION_ID,executionId));
             String content = response.getEntity(String.class);
             if(StringUtils.isNotBlank(content)) {
                 log.debug("Test Step Content=="+content);
@@ -72,7 +71,7 @@ public class TestStepServiceImpl implements TestStepService {
         TypeReference<List<ZfjCloudStepResultBean>> reference = new TypeReference<List<ZfjCloudStepResultBean>>() {};
         JsonParser parser = new JsonParser();
 
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -120,8 +119,7 @@ public class TestStepServiceImpl implements TestStepService {
     public List<TestStepDTO> fetchTestStepsFromZFJ(Integer issueId) {
         List<TestStepDTO> testStepDTOS = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_TEST_STEP,issueId));
-            ClientResponse response = zapiHttpClient.get();
+             ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_TEST_STEP,issueId));
             String content = response.getEntity(String.class);
 
             JsonParser parser = new JsonParser();
@@ -142,7 +140,7 @@ public class TestStepServiceImpl implements TestStepService {
     @Override
     public List<JiraCloudTestStepDTO> createTestStepInJiraCloud(List<TestStepDTO> testSteps, Integer issueId, Long projectId) {
         log.info("Serving --> {}", "createTestStepInJiraCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -232,7 +230,7 @@ public class TestStepServiceImpl implements TestStepService {
     @Override
     public void updateStepResult(ZfjCloudStepResultUpdateBean stepResultUpdateBean) {
         log.info("Serving --> {}", "updateStepResult()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");

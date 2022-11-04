@@ -46,8 +46,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId));
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId));
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);
             JsonObject object = element.getAsJsonObject();
@@ -70,8 +69,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         TypeReference<List<ExecutionDTO>> executionReference = new TypeReference<List<ExecutionDTO>>() {};
         List<ExecutionDTO> executions = new ArrayList<>();
         try {
-            zapiHttpClient.setResourceName(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId, folderId));
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(String.format(ApplicationConstants.ZAPI_RESOURCE_GET_FOLDER_EXECUTIONS_WITHOUT_OFFSET, projectId, versionId, cycleId, folderId));
             String content = response.getEntity(String.class);
             JsonElement element = parser.parse(content);
             JsonObject object = element.getAsJsonObject();
@@ -92,7 +90,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Override
     public ZfjCloudExecutionBean createExecutionInJiraCloud(ZfjCloudExecutionBean zfjCloudExecutionBean) {
         log.info("Serving --> {}", "createExecutionInJiraCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");

@@ -40,7 +40,7 @@ public class CycleServiceImpl implements CycleService {
     @Override
     public ZfjCloudCycleBean createCycleInZephyrCloud(CycleDTO cycleDTO) {
         log.info("Serving --> {}", "createCycleInZephyrCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -82,9 +82,8 @@ public class CycleServiceImpl implements CycleService {
         try {
             String getCyclesServerUrl = ApplicationConstants.SERVER_GET_CYCLES_URL;
             getCyclesServerUrl = String.format(getCyclesServerUrl, projectId, serverVersionId);
-            zapiHttpClient.setResourceName(getCyclesServerUrl);
 
-            ClientResponse response = zapiHttpClient.get();
+            ClientResponse response = zapiHttpClient.get(getCyclesServerUrl);
             String content = response.getEntity(String.class);
             outputResponse = JsonUtil.readValue(content,reference);
 

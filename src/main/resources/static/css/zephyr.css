@@ -89,3 +89,33 @@ div.saveEditConfig {
 	overflow-y: scroll;
 	border-top: 25px solid white;
 }
+
+
+table, th, td {
+	border: 1px solid;
+	padding: 3px;
+}
+
+table {
+	border-collapse: collapse;
+  }
+td {
+	vertical-align: top;
+}
+
+.btn {
+	text-decoration: none;
+	color: #212121;
+	border-radius: 2px;
+	border: #919191 solid 1px; 
+	background: rgb(240, 240, 240); 
+	padding: 2px 6px 2px 6px;
+	font-size: 13.333px;
+	font-family: Arial;
+	font-weight: 400;
+	cursor: default;
+}
+
+.btn:hover {
+	background: rgb(220, 220, 220); ;
+}
