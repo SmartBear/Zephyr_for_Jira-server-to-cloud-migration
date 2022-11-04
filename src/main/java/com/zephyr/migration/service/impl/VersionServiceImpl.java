@@ -44,7 +44,7 @@ public class VersionServiceImpl implements VersionService {
 
     public JsonNode getVersionsFromZephyrCloud(String projectId) {
         log.info("Serving --> {}", "getVersions()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -76,7 +76,7 @@ public class VersionServiceImpl implements VersionService {
     @Override
     public void createUnscheduledVersionInZephyrCloud(String projectId) {
         log.info("Serving --> {}", "createUnscheduledVersionInZephyrCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -101,7 +101,7 @@ public class VersionServiceImpl implements VersionService {
     @Override
     public JsonNode createVersionInZephyrCloud(JiraVersion jiraServerVersion, Long projectId) {
         log.info("Serving --> {}", "createVersionInZephyrCloud()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -132,9 +132,7 @@ public class VersionServiceImpl implements VersionService {
     @Override
     public Iterable<JiraVersion> getVersionListFromServer(String projectId) {
 
-        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
 
         TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
         VersionWrapper versions;
@@ -151,7 +149,7 @@ public class VersionServiceImpl implements VersionService {
     @Override
     public JsonNode getVersionsByJiraFromZephyrCloud(String projectId) {
         log.info("Serving --> {}", "getVersions()");
-        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.baseUrl");
+        final String CLOUD_BASE_URL = configProperties.getConfigValue("zfj.cloud.zapi.endpoint");
         final String CLOUD_ACCESS_KEY = configProperties.getConfigValue("zfj.cloud.accessKey");
         final String CLOUD_ACCOUNT_ID = configProperties.getConfigValue("zfj.cloud.accountId");
         final String CLOUD_SECRET_KEY = configProperties.getConfigValue("zfj.cloud.secretKey");
@@ -183,10 +181,7 @@ public class VersionServiceImpl implements VersionService {
     public List<JiraVersion> getVersionListFromJiraServer(String projectId, int startIndex, int limit) {
 
         String resourceName = String.format(ApplicationConstants.JIRA_RESOURCE_VERSION_START_AT,projectId,startIndex);
-
-        jiraHttpClient.setResourceName(resourceName);
-
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(resourceName);
 
         TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
         VersionWrapper versions;
@@ -202,9 +197,8 @@ public class VersionServiceImpl implements VersionService {
 
     @Override
     public Integer getTotalVersionCountPerProjectFromJira(String projectId) {
-        jiraHttpClient.setResourceName(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
 
-        ClientResponse response = jiraHttpClient.get();
+        ClientResponse response = jiraHttpClient.get(String.format(ApplicationConstants.JIRA_RESOURCE_VERSION, projectId));
 
         TypeReference<VersionWrapper> ref = new TypeReference<VersionWrapper>() {};
         VersionWrapper versions;

@@ -12,13 +12,30 @@
 
 <h1>Zephyr Server-Cloud Migration</h1>
 
-<form action="#" th:action="@{/beginMigration}" th:object="${migrationRequest}" method="post">
+<form action="#" th:action="@{/beginMigration}" th:object="${migrationRequest}" method="post" enctype="multipart/form-data" >
     <p>
-        Please Enter Project Id: <input type="text" th:field="*{projectId}">
+        Please Enter Project Id: <input type="text" th:field="*{listOfProjects}">
+    </p>
+    <br/><B>OR</B>
+    <p>
+    Select text file: <input type="file" name="file"/>
     </p>
     <p>
         <input type="submit" value="Submit" id="startImporting"/> <input type="reset" value="Reset">
     </p>
 </form>
+<div>
+    <p>
+        <input type="submit" value="Fetch Migration Status" id="fetchStatus" th:onclick="fetchStatus()"/>
+        
+        <!--<input type="submit" value="Show Logs" id="ShowLogs" th:onclick="showFinalLogs()"/-->
+        
+        <a class="btn" href="/getProgressInformation" target="_blank" id="ShowLogs"> Show Logs </a>
+    </p>
+</div>
+
+<!-- <h3 th:text="${message}"></h3> -->
+
+<div class="table" id="table-data"></div>
 </body>
 </html>

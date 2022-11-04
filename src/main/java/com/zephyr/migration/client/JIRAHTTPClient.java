@@ -1,6 +1,7 @@
 package com.zephyr.migration.client;
 
 
+import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.zephyr.migration.utils.ConfigProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -22,15 +23,11 @@ public class JIRAHTTPClient extends HttpClient{
 
 
     @Override
-    public void setResourceName(String resourceName) {
-        webResource = client.resource(configProperties.getConfigValue("zfj.server.baseUrl") + API_URL + resourceName);
-
+    public WebResource getResourceName(String resourceName) {
+        return client.resource(configProperties.getConfigValue("zfj.server.baseUrl") + API_URL + resourceName);
     }
 
-    @Override
-    public void setLatestResourceName(String url) {
-        setResourceName(url);
-    }
+
 
     public void init() {
         super.init();

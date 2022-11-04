@@ -6,14 +6,14 @@
 
     <groupId>com.zephyr</groupId>
     <artifactId>Zephyr_for_Jira-server-to-cloud-migration</artifactId>
-    <version>2.1</version>
+    <version>3.0</version>
 
     <packaging>jar</packaging>
     <name>server-cloud-migration</name>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.3.3.RELEASE</version>
+        <version>2.7.3</version>
         <relativePath />
         <!-- lookup parent from repository -->
     </parent>

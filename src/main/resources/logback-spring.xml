@@ -49,10 +49,35 @@
         </filter>
     </appender>
 
+    <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <!-- in the absence of the class attribute, it is assumed that the
+             desired discriminator type is
+             ch.qos.logback.classic.sift.MDCBasedDiscriminator -->
+        <discriminator>
+            <key>fileName</key>
+            <defaultValue>migration</defaultValue>
+        </discriminator>
+        <sift>
+            <appender name="FILE-${fileName}" class="ch.qos.logback.core.FileAppender">
+                <file>./migration/logs/project/${fileName}.log</file>
+                <append>true</append>
+                <layout class="ch.qos.logback.classic.PatternLayout">
+                    <!--<pattern>%date{MM/dd/yyyy-HH:mm:ss.SSS}  %level  %message [- logger=%logger thread=%thread class=%class{} s3Key=%X{fileName} callType=%X{callType} shortDate=%date{MM/dd-HH:mm} nodeId=%X{nodeId}  module=%X{module} -] %n%xException [- end -]%n</pattern>-->
+                    <pattern>%date{MM/dd/yyyy-HH:mm:ss.SSS} - %level - %message %n </pattern>
+                </layout>
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                    <level>INFO</level>
+                </filter>
+            </appender>
+        </sift>
+    </appender>
+
+
     <root level="info">
         <appender-ref ref="file-only-error" />
         <appender-ref ref="console-root" />
         <appender-ref ref="file-raw-logs" />
+        <appender-ref ref="SIFT" />
     </root>
 
 </configuration>
