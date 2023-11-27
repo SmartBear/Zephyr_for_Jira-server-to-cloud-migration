@@ -35,7 +35,7 @@ import java.util.*;
 public class TestStepServiceImpl implements TestStepService {
 
     private static final Logger log = LoggerFactory.getLogger(TestStepServiceImpl.class);
-    private static final int TEST_STEP_PARTITION_LIST_SIZE = 50;
+    private static final int TEST_STEP_PARTITION_LIST_SIZE = 20;
 
     @Autowired
     @Qualifier(value = "zapiHttpClient")

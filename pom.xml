@@ -6,7 +6,7 @@
 
     <groupId>com.zephyr</groupId>
     <artifactId>Zephyr_for_Jira-server-to-cloud-migration</artifactId>
-    <version>3.0</version>
+    <version>3.1</version>
 
     <packaging>jar</packaging>
     <name>server-cloud-migration</name>
